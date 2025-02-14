@@ -46,7 +46,6 @@ jobs:
             echo ${AZURE} | base64 -d > id_rsa_azure
             mv id_rsa_azure   ~/.ssh/id_rsa_azure
             chmod 700 ~/.ssh 
-            chmod 600 ~/.ssh/id_rsa_gitee
             chmod 600 ~/.ssh/id_rsa_azure
             echo SG9zdCBnaXRlZS5jb20KICAgIEhvc3ROYW1lIGdpdGVlLmNvbQogICAgVXNlciBnaXQKICAgIElkZW50aXR5RmlsZSB+Ly5zc2gvaWRfcnNhX2dpdGVlCiAgICBTdHJpY3RIb3N0S2V5Q2hlY2tpbmcgbm8KSG9zdCB2cy1zc2gudmlzdWFsc3R1ZGlvLmNvbQogICAgSG9zdE5hbWUgdnMtc3NoLnZpc3VhbHN0dWRpby5jb20KICAgIFVzZXIgZ2l0CiAgICBJZGVudGl0eUZpbGUgfi8uc3NoL2lkX3JzYV9henVyZQogICAgU3RyaWN0SG9zdEtleUNoZWNraW5nIG5v | base64 -d  > ~/.ssh/config
 
