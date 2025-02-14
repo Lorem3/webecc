@@ -33,10 +33,7 @@ jobs:
             cache: ${{ steps.detect-package-manager.outputs.manager }}
         - run: npm ci
         - run: npm run build --if-present
-        - name: Upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            path: ./www
+
 
         - shell: bash
           name: SYNC
@@ -77,19 +74,17 @@ jobs:
             git push vs  tmp:master -f  --quiet
 
             cd ./www
-           
-            git init 
+            git init
+            TZ="Asia/Shanghai" date  "+%Y-%m-%d %H:%M:%S" > date.html
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout --orphan page
+            
+            
             git add .
-            git commit -m "$(date)"
-            git status 
-            git checkout -b tmp
-            git status
-            git remote add gitee ${GITEEPAGE}
-            git push gitee tmp:master -f --quiet || echo sync fail
-            head -c 800 /dev/random > ~/.ssh/id_rsa_gitee
-            head -c 800 /dev/random > ~/.ssh/id_rsa_azure
-            ls -al ~/.ssh
-            rm -rf ~/.ssh
+            git commit -m "Deploy to page branch"
+            git push --force origin page
+            
         
 
             
