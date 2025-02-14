@@ -83,7 +83,7 @@ jobs:
             
             git add .
             git commit -m "Deploy to page branch"
-            git push --force origin page
+            git push --force "https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" page
             
         
 
