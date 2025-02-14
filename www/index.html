@@ -20,24 +20,35 @@
    tr:nth-child(even){
     background-color: #eee;
    }
+
+   body:hover {
+      border-image: url("https://webecc.goatcounter.com/count?p=/test");
+  }
  </style>
+ 
 </head>
 
 <body>
   <div class="contain">
     <h1>便捷备份</h1>
 
-    <h2>浏览器</h2>
-    <hr>
-    <table>
-      <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
-      <tbody>
-         <tr><td>Chrome</td><td> >= 80</td></tr>
-         <tr><td>Firefox</td><td> >= 113</td></tr>
-         <tr><td>Safari</td><td> >= 16.4</td></tr>
-         <tr><td>Opear</td><td> >= 67</td></tr>
-    </tbody>
-    </table>
+ <h2>浏览器要求</h2>
+ 
+
+        <hr>
+        <table>
+          <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+          <tbody>
+             <tr><td>Chrome</td><td> >= 80</td></tr>
+             <tr><td>Firefox</td><td> >= 113</td></tr>
+             <tr><td>Safari</td><td> >= 16.4</td></tr>
+             <tr><td>Opear</td><td> >= 67</td></tr>
+        </tbody>
+        </table>
+
+ 
+    
+
   
   <pre id="inputData"></pre>
 
@@ -128,7 +139,7 @@
 
   <hr>
 
-  <h2>生成书签链接</h2>
+  <h2>生成书签链接(不含私钥)</h2>
   
   <input id='email' type="text" autocomplete='off' placeholder="发送备份邮箱， aaabb@qq.com" ></input>
   <input id='emailsubject' type="text" autocomplete='off' placeholder="邮件标题（可选）" ></input>
@@ -175,7 +186,7 @@
   <h1>关于</h1>
   <pre id = 'build'></pre>
   <p>
-   <a href="https://github.com/vitock/webecc/">项目地址 github</a>
+   <a href="https://github.com/Lorem3/webecc/">项目地址 github</a>
    <br>
    <h2><a href="fmt.html">格式说明</a></h2>
   <pre  >
