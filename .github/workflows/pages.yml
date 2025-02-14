@@ -38,16 +38,12 @@ jobs:
         - shell: bash
           name: SYNC
           env:
-            GITEE: ${{ secrets.GITEE }}
             AZURE: ${{ secrets.AZURE }}
             GIEEREPO: ${{ secrets.GIEEREPO }}
-            GITEEPAGE: ${{ secrets.GITEEPAGE }}
             AZUREREPO: ${{ secrets.AZUREREPO }}
           run: |
             mkdir  -p ~/.ssh
-            echo ${GITEE} | base64 -d > id_rsa_gitee
             echo ${AZURE} | base64 -d > id_rsa_azure
-            mv id_rsa_gitee   ~/.ssh/id_rsa_gitee
             mv id_rsa_azure   ~/.ssh/id_rsa_azure
             chmod 700 ~/.ssh 
             chmod 600 ~/.ssh/id_rsa_gitee
@@ -68,22 +64,21 @@ jobs:
             git add .
             git commit -m "$(date)"
             git checkout -b tmp 
-            git remote add tee ${GIEEREPO}
             git remote add vs ${AZUREREPO}
-            git push tee  tmp:master -f  --quiet
             git push vs  tmp:master -f  --quiet
 
             cd ./www
-            git init
             TZ="Asia/Shanghai" date  "+%Y-%m-%d %H:%M:%S" > date.html
+            git init
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git checkout --orphan page
             
             
             git add .
-            git commit -m "Deploy to page branch"
-            git push --force "https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" page
+            git commit -m "$(TZ="Asia/Shanghai" date  "+%Y-%m-%d %H:%M:%S")"
+            git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" page
+
             
         
 
