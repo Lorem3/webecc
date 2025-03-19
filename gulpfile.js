@@ -143,7 +143,7 @@ gulp.task("genReadMe", function (cb) {
   let html = `
   <html>
   <style>
-${fs.readFileSync("./www/css/readme.min.css").toString()}
+${fs.readFileSync("./css/readme.css").toString()}
   </style>
 ${htmlBody}
 
