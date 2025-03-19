@@ -1,4 +1,7 @@
+
 (async function () {
+const __BUILD_MOD__ = ''
+const  __BUILD_TIME__ = ''
   interface InputData {
     prefix: string;
     pubkey: string;
@@ -248,14 +251,19 @@
       }
     }
 
+    let checkbox = document.getElementById('newline') as  HTMLInputElement;
+    let newLine =   checkbox.checked ?  "          <br><br>        ": "\n";
+
+ 
+
     let msg = `
-   ${G_Input?.prefix || ""}
-   备份时间:${beijingtime()}
+   ${G_Input?.prefix || ""} ${newLine}
+   备份时间:${beijingtime()} ${newLine}
 
-   公钥:${getPublicKey()}
+   公钥:${getPublicKey()}    ${newLine}
 
-   网页地址:
-   ${location.href}
+   网页地址:     ${newLine}
+   ${location.href}         ${newLine}
 
    数据base64:
 
@@ -280,17 +288,22 @@
       }
     }
 
+    let checkbox = document.getElementById('newline') as  HTMLInputElement;
+    let newLine =   checkbox.checked ?  "          <br><br>        ": "\n";
+
+
+
     let msg = `
-   ${G_Input?.prefix || ""}
-   备份时间:${beijingtime()}
+   ${G_Input?.prefix || ""}  ${newLine}
+   备份时间:${beijingtime()} ${newLine}
 
-   公钥:${getPublicKey()}
+   公钥:${getPublicKey()} ${newLine}
 
-   网页地址:
-   ${location.href}
+   网页地址: ${newLine}
+   ${location.href}  ${newLine}
 
 
-   数据base64:
+   数据base64: ${newLine}
 
    ${cipher}
 
@@ -300,7 +313,7 @@
     let mailto = `mailto:${G_Input.toEmail}?subject=${encodeURIComponent(
       G_Input.emailSubject || "备份"
     )}&body=${encodeURIComponent(msg)}`;
-    console.log(mailto);
+    console.log('mailto',mailto);
     window.open(mailto, "target", "");
   };
 
@@ -380,6 +393,8 @@
   };
 
   let btime = document.getElementById("build") as HTMLElement;
+
+  
 
   btime.innerText = `编译信息:\n${__BUILD_MOD__}\n${__BUILD_TIME__} `;
 

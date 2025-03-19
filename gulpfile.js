@@ -5,7 +5,11 @@ var concat = require("gulp-concat");
 var uglify = require("gulp-terser");
 var cssmin = require("gulp-cssmin");
 var rename = require("gulp-rename");
-var Markdown = require("markdown-to-html").Markdown;
+
+
+var showdown  = require('showdown')
+var MdConverter = new showdown.Converter({tables:true,strikethrough:true })
+
 var tsProject = ts.createProject("tsconfig.json");
 const fs = require("fs");
 
@@ -49,6 +53,7 @@ function getugliyconfig() {
   const ugliyconfigRelease = {
     mangle: false,
     output: {
+      beautify: true,
       ascii_only: true,
     },
     compress: {
@@ -82,13 +87,20 @@ gulp.task("cpfile", function () {
 gulp.task("copystatic", gulp.parallel(["cpfile", "cpjs"]));
 function clean(cb) {
   let rm = fs.rm ? fs.rm : fs.rmdir;
-
-  rm("./tmp", { recursive: true }, () => {
-    rm("./www/js", { recursive: true }, (e) => {
-      console.log(e);
-      cb();
+  console.log("clean",rm);
+  try {
+    rm("./tmp", () => {
+      console.log("clean3");
+      rm("./www/js", (e) => {
+        console.log("clean3333");
+        console.log(e);
+        cb();
+      });
     });
-  });
+  } catch (error) {
+    console.log(error);
+  }
+  
 }
 gulp.task("clear", clean);
 
@@ -122,14 +134,19 @@ gulp.task("cssmin", function () {
 });
 
 gulp.task("genReadMe", function (cb) {
-  var md = new Markdown();
-  md.bufmax = 2048;
-  var opts = { title: "README.md", stylesheet: "css/readme.min.css" };
-  md.render("./README.md", opts, (e) => {
-    var fileStream = fs.createWriteStream("www/README.html");
-    md.pipe(fileStream);
-    cb();
-  });
+  let htmlBody = MdConverter.makeHtml (fs.readFileSync("./README.md").toString());
+  let html = `
+  <html>
+  <style>
+${fs.readFileSync("www/css/readme.min.css").toString()}
+  </style>
+${htmlBody}
+
+  `
+  fs.writeFileSync("www/README.html", html);
+  cb();
+
+   
 });
 
 gulp.task("genHashFile", function () {
@@ -142,7 +159,7 @@ gulp.task("genHashFile", function () {
     if (/.*js$/.test(e) || /.*wasm$/.test(e)) {
       return "tmp/" + e;
     }
-  });
+  }).filter(e=>e);
   // files.push("static/wasm_gzip_bg.wasm");
   files.push("www/index.html");
   console.log(files)

@@ -24,6 +24,13 @@
    body:hover {
       border-image: url("https://webecc.goatcounter.com/count?p=/webECC");
   }
+
+  #newline{
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border:solid 12px #f00;
+  }
  </style>
  
 </head>
@@ -119,6 +126,13 @@
       <a id="sendemail" href="javascript:void(0)">发送加密结果到邮件</a>
       <br>
       <a id="sendemail2" href="javascript:void(0)">发送加密结果到邮件(手动粘贴加密数据)</a>
+
+
+      <br>
+      <label class="newline2">
+        br换行 
+        <input type="checkbox" name="newLine" id="newline" />  
+      </label>
     
     </div>
     <textarea id='ciphertext' class="bigTxtArea" type="text" autocomplete='off' placeholder="输入秘文或者选择加密后的文件(.ec)" ></textarea>
