@@ -21,6 +21,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  del_runs:
+      needs: build
+      runs-on: ubuntu-latest
+      permissions:
+        actions: write
+        contents: read
+      steps:
+        - name: Delete workflow runs for current repo
+          uses: Mattraks/delete-workflow-runs@v2
+          with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            repository: ${{ github.repository }}
+            retain_days: 14
+            keep_minimum_runs: 2
   build:
 
       runs-on: ubuntu-latest
