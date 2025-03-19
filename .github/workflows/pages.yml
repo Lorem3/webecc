@@ -29,56 +29,10 @@ jobs:
         - name: Setup Node
           uses: actions/setup-node@v3
           with:
-            node-version: "16"
+            node-version: "20"
             cache: ${{ steps.detect-package-manager.outputs.manager }}
         - run: npm ci
-        - run: npm run build --if-present
-
-
-        - shell: bash
-          name: SYNC
-          env:
-            AZURE: ${{ secrets.AZURE }}
-            GIEEREPO: ${{ secrets.GIEEREPO }}
-            AZUREREPO: ${{ secrets.AZUREREPO }}
-          run: |
-            mkdir  -p ~/.ssh
-            echo ${AZURE} | base64 -d > id_rsa_azure
-            mv id_rsa_azure   ~/.ssh/id_rsa_azure
-            chmod 700 ~/.ssh 
-            chmod 600 ~/.ssh/id_rsa_azure
-            echo SG9zdCBnaXRlZS5jb20KICAgIEhvc3ROYW1lIGdpdGVlLmNvbQogICAgVXNlciBnaXQKICAgIElkZW50aXR5RmlsZSB+Ly5zc2gvaWRfcnNhX2dpdGVlCiAgICBTdHJpY3RIb3N0S2V5Q2hlY2tpbmcgbm8KSG9zdCB2cy1zc2gudmlzdWFsc3R1ZGlvLmNvbQogICAgSG9zdE5hbWUgdnMtc3NoLnZpc3VhbHN0dWRpby5jb20KICAgIFVzZXIgZ2l0CiAgICBJZGVudGl0eUZpbGUgfi8uc3NoL2lkX3JzYV9henVyZQogICAgU3RyaWN0SG9zdEtleUNoZWNraW5nIG5v | base64 -d  > ~/.ssh/config
-
- 
-            ls -al ~/.ssh
-
-            echo "SYNC to Other  "
-            git config --global user.email "vi"
-            git config --global user.name "github-action"
-
-
-            git status
-            rm -rf .git
-            git init 
-            git add .
-            git commit -m "$(date)"
-            git checkout -b tmp 
-            git remote add vs ${AZUREREPO}
-            git push vs  tmp:master -f  --quiet
-
-            cd ./www
-            TZ="Asia/Shanghai" date  "+%Y-%m-%d %H:%M:%S" > date.html
-            git init
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git checkout --orphan page
-            
-            
-            git add .
-            git commit -m "$(TZ="Asia/Shanghai" date  "+%Y-%m-%d %H:%M:%S")"
-            git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" page
-
-            
+        - run: npm run build --if-present 
         
 
             
