@@ -91,11 +91,16 @@ function clean(cb) {
   try {
     rm("./tmp", () => {
       console.log("clean3");
-      rm("./www/js", (e) => {
-        console.log("clean3333");
-        console.log(e);
-        cb();
-      });
+      if(fs.existsSync('./www/js')){
+        rm("./www/js", (e) => {
+          console.log("clean3333");
+          console.log(e);
+          cb();
+        });
+      }else{
+        cb()
+      }
+      
     });
   } catch (error) {
     console.log(error);
