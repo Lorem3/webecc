@@ -254,6 +254,9 @@ const  __BUILD_TIME__ = ''
     let checkbox = document.getElementById('newline') as  HTMLInputElement;
     let newLine =   checkbox.checked ?  "          <br><br>        ": "\n";
 
+    let log = console.log;
+    log('newLine ' + newLine + "--")
+
  
 
     let msg = `
@@ -290,7 +293,8 @@ const  __BUILD_TIME__ = ''
 
     let checkbox = document.getElementById('newline') as  HTMLInputElement;
     let newLine =   checkbox.checked ?  "          <br><br>        ": "\n";
-
+    let log = console.log;
+    log('newLine ' + newLine + "--")
 
 
     let msg = `
@@ -393,10 +397,7 @@ const  __BUILD_TIME__ = ''
   };
 
   let btime = document.getElementById("build") as HTMLElement;
-
-  
-
-  btime.innerText = `编译信息:\n${__BUILD_MOD__}\n${__BUILD_TIME__} `;
+  btime.innerText = `\n${__BUILD_MOD__}\n${__BUILD_TIME__} `;
 
   (async function initDefaultValues() {
     console.log(location.hash);
