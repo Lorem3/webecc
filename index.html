@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>便捷备份</title>
+  <link rel="stylesheet" type="text/css" href="css/style.min.css">
+  </link>
+  <script>var exports = {};</script>
+
+ <style lang="">
+   table {
+    border-collapse: collapse;
+   }
+   th ,th ,td{
+    padding: 0.2rem 3rem 0.2rem 3rem;
+    border-bottom: 1px solid black;
+   }
+
+   tr:nth-child(even){
+    background-color: #eee;
+   }
+
+   body:hover {
+      border-image: url("https://webecc.goatcounter.com/count?p=/webECC");
+  }
+
+  #newline{
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border:solid 12px #f00;
+  }
+ </style>
+ 
+</head>
+
+<body>
+  <div class="contain">
+    <h1>便捷备份</h1>
+
+ <h2>浏览器要求</h2>
+ 
+
+        <hr>
+        <table>
+          <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+          <tbody>
+             <tr><td>Chrome</td><td> >= 80</td></tr>
+             <tr><td>Firefox</td><td> >= 113</td></tr>
+             <tr><td>Safari</td><td> >= 16.4</td></tr>
+             <tr><td>Opear</td><td> >= 67</td></tr>
+        </tbody>
+        </table>
+
+ 
+    
+
+  
+  <pre id="inputData"></pre>
+
+  <hr>
+  <h2>密钥信息</h2>
+
+  <div class="row2">
+    <text  class="title">公钥</text>
+    <input id='public' type="text" autocomplete='off' placeholder="公钥" ></input>
+  </div>
+  <div class="row2">
+    <text  class="title">私钥</text>
+    <input id='private' type="text" autocomplete='off' placeholder="私钥 （不能公开）" ></input>
+  </div>
+  <div class="row2">
+    <text  class="title">短语</text>
+    <input id='keyphrase' type="text" autocomplete='off' placeholder="密码短语（不能公开）"></input>
+  </div>
+
+  <div class="row2 btnHolder">
+   
+    <div id = 'generateNewKP' class="btn"><text class="btnTitle">随机生成密钥对</text></div>
+    <div id = 'genpubkey' class="btn"><text class="btnTitle">根据私钥生成公钥</text></div>
+    <div id = 'genkeyfrompharse' class="btn"><text class="btnTitle">根据短语生成</text></div>
+  </div>
+
+
+  <hr>
+  <br> 
+  <h2>加解密</h2>
+    <div class="row2 btnHolder">
+      <div id = 'encrypt' class="btn"><text class="btnTitle">加密</text></div>
+      <div id = 'decrypt' class="btn"><text class="btnTitle">解密</text></div>
+
+    </div>
+   
+  <div class="row2 btnHolder">
+    
+    
+  </div>
+
+
+ <div class="row ">
+ 
+  <div class="border content">
+    <div  class="title">明文</div>
+    <a id = 'downloadPlain' href="javascript:void(0)" > 下载解密文件 </a>
+    <textarea id='plaintext' class="bigTxtArea" type="text" placeholder="输入明文" autocomplete='off'></textarea>
+  </div>
+ 
+  &lt;&lt;===&gt;&gt;
+  <div class="border content">
+    <div class="title">秘文Base64</div>
+    <div>
+      <div class="row ">
+        <form id = 'clearfileform'>
+          <div class="row2">
+            <input id = "cipherfile" class="border" type="file" name="file" autocomplete='off' />
+            <div  id = 'clearfile' class="btn clearbtn  "><text class="btnTitle">清空文件</text></div>
+          </div>
+          
+        </form>
+        
+      </div>
+      <a id = 'downloadCipher' href="javascript:void(0)" > 下载加密文件 </a>
+      <br>
+      <br>
+      <a id="sendemail" href="javascript:void(0)">发送加密结果到邮件</a>
+      <br>
+      <a id="sendemail2" href="javascript:void(0)">发送加密结果到邮件(手动粘贴加密数据)</a>
+
+
+      <br>
+      <label class="newline2">
+        br换行 
+        <input type="checkbox" name="newLine" id="newline" />  
+      </label>
+    
+    </div>
+    <textarea id='ciphertext' class="bigTxtArea" type="text" autocomplete='off' placeholder="输入秘文或者选择加密后的文件(.ec)" ></textarea>
+  </div>
+</div>
+
+  
+
+  <script type='module' src="js/tool.js"></script>
+  <script type='module' src="js/index.js"></script>
+
+  <p>
+  <p>
+
+
+
+ 
+
+  <hr>
+
+  <h2>生成书签链接(不含私钥)</h2>
+  
+  <input id='email' type="text" autocomplete='off' placeholder="发送备份邮箱， aaabb@qq.com" ></input>
+  <input id='emailsubject' type="text" autocomplete='off' placeholder="邮件标题（可选）" ></input>
+  <input id='prefix' type="text" autocomplete='off' placeholder="密码短语前缀/用户名，aaabb@qq.com#" ></input>
+  <br>
+  <br>
+  <div>
+  <a  id = "genbookmark" href="javascript:void(0)">生成书签链接(直接使用公钥)</a>
+  </div>
+  <p>
+  <div>
+    <a  id = "genbookmark2" href="javascript:void(0)">生成书签链接(使用密码短语派生的公钥)</a>
+  </div>
+
+  <div id = 'bookmark'>  </div>
+
+
+  <br><br><br><br><br><br>
+  <hr>
+   <h1>如何使用</h1>
+   <h2>备份</h2>
+   <p>1. 输入短语</p>
+   <p>2. 输入备份邮箱</p>
+   <p>3. 输入邮件标题</p>
+   <p>4. 短语前缀（可以是你的邮箱地址，也可以是一段话，随意）</p>
+   <p>5. 生成书签链接并保存</p>
+
+
+   
+   <p>6. 从书签链接打开网页，在明文输入框，输入你的信息，然后点击再右边 "发送加密结果到邮件"</p>
+   <br>
+   <p> <strong>* 后续使用就只需要从第6步开始。无需输入重复密码</strong></p>
+   <h2>还原</h2>
+    <p>1. 在右边输入框粘贴密文</p>
+    <p>2. 输入密码短语</p>
+    <p>3. 点击根据“短语生成” 来生成密钥</p>
+    <p>4. 点击解密</p>
+
+
+
+
+
+  <hr>
+  <h1>关于</h1>
+  <pre id = 'build'></pre>
+  <p>
+   <a href="https://github.com/Lorem3/webecc/">项目地址 github</a>
+   <br>
+   <h2><a href="fmt.html">格式说明</a></h2>
+  <pre  >
+    此网页是一个利用Curve25519椭圆曲线进行加密的工具网站，所有操作都在本地完成。
+
+    由于Curve25519的特定格式要求，下面有D. J. Bernstein文章链接，详细说明
+    0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+    1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+    实际是一个密钥
+  </pre>
+
+  <a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a>
+  <br>
+  <text>...Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</text>
+  <pre >
+    mysecret[0] &= 248;
+    mysecret[31] &= 127;
+    mysecret[31] |= 64
+  </pre>
+  <p></p>
+  </div>
+</body>
+
+</html>
