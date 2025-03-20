@@ -64,7 +64,7 @@ jobs:
             git init 
             git add .
             git commit -m "Generated files after build"
-            git checkout -b dist
+            git checkout -b page
             echo https://github.com/${{ github.repository }}.git
             git remote add origin https://github.com/${{ github.repository }}.git
 
