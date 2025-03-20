@@ -1,7 +1,6 @@
 
 (async function () {
-const __BUILD_MOD__ = ''
-const  __BUILD_TIME__ = ''
+
   interface InputData {
     prefix: string;
     pubkey: string;
@@ -397,9 +396,12 @@ const  __BUILD_TIME__ = ''
   };
 
   let btime = document.getElementById("build") as HTMLElement;
-  btime.innerText = `${__BUILD_MOD__}\n${__BUILD_TIME__} `;
+  
+  btime.innerText = `Package:${__BUILD_MOD__} \n ${__BUILD_TIME__} `;
+   
 
   (async function initDefaultValues() {
+
     console.log(location.hash);
     let search = new URLSearchParams(location.hash);
 

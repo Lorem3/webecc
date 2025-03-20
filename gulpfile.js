@@ -29,8 +29,10 @@ function beijingtime() {
 function getugliyconfig() {
   const global_defs = {
     __BUILD_TIME__: beijingtime(),
-    __BUILD_MOD__: `${buidMode}-${HASHVALUE || ""}`,
+    __BUILD_MOD__: `${buidMode}  ${HASHVALUE || ""}`,
   };
+
+
 
   const ugliyconfigDebug = {
     mangle: false,
@@ -68,6 +70,7 @@ function getugliyconfig() {
     },
   };
 
+  console.log("global_defs",global_defs)
   var ugliyconfig =
     process.argv[2] == "dev" ? ugliyconfigDebug : ugliyconfigRelease;
 
@@ -179,10 +182,11 @@ gulp.task("calHash", function (cb) {
   sha256 = crypto.createHash("sha256");
   HASHVALUE = sha256.update(b64).digest("hex").substring(0,8);
 
+  console.log('HASHVALUE',HASHVALUE)
 
   let commit = fs.readFileSync('hash.txt').toString()
-  HASHVALUE = commit.trim() + "-" + HASHVALUE;
-
+  HASHVALUE = `cmt: ${commit.trim()} hash: ${HASHVALUE}`;
+  console.log('HASHVALUE',HASHVALUE)
   cb();
 });
 
