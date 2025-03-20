@@ -397,7 +397,7 @@ const  __BUILD_TIME__ = ''
   };
 
   let btime = document.getElementById("build") as HTMLElement;
-  btime.innerText = `\n${__BUILD_MOD__}\n${__BUILD_TIME__} `;
+  btime.innerText = `${__BUILD_MOD__}\n${__BUILD_TIME__} `;
 
   (async function initDefaultValues() {
     console.log(location.hash);
