@@ -47,8 +47,34 @@ jobs:
             cache: ${{ steps.detect-package-manager.outputs.manager }}
         - run: |
             npm ci
+        - run: |
             git log -1 --format=%h > hash.txt
-        - run: npm run build --if-present 
+            ls -al 
+            npm run build --if-present 
+
+
+
+        - run: |
+
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "you@example.com"
+
+            ls -al
+            cd www
+            git init 
+            git add .
+            git commit -m "Generated files after build"
+            git checkout -b dist
+            echo https://github.com/${{ github.repository }}.git
+            git remote add origin https://github.com/${{ github.repository }}.git
+
+            
+
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:dist -f  # 使用 GITHUB_TOKEN 进行身份验证
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Git
+
+ 
         
 
             
