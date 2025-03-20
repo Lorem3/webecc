@@ -179,6 +179,10 @@ gulp.task("calHash", function (cb) {
   sha256 = crypto.createHash("sha256");
   HASHVALUE = sha256.update(b64).digest("hex").substring(0,8);
 
+
+  let commit = fs.readFileSync('hash.txt').toString()
+  HASHVALUE = commit.trim() + "-" + HASHVALUE;
+
   cb();
 });
 
