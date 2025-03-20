@@ -70,7 +70,7 @@ jobs:
 
             
 
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:dist -f  # 使用 GITHUB_TOKEN 进行身份验证
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:page -f  # 使用 GITHUB_TOKEN 进行身份验证
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Git
 
