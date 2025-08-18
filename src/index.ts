@@ -335,10 +335,13 @@
     let arr = new TextEncoder().encode(jsonstring);
     let dataBuff = await ec.encrypt(webPublic, arr);
     let data = ec.base64Encode(dataBuff);
+    
+    // Convert to URL-safe base64 for data2
+    let data2 = regularBase64ToUrlSafe(data);
 
     let bookmark = `${location.origin}${
       location.pathname
-    }?t=${Date.now()}#&data=${encodeURIComponent(data)}`;
+    }?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data2)}`;
 
     let a = document.createElement("a");
     a.innerText = bookmark;
@@ -400,12 +403,37 @@
   btime.innerText = `Package:${__BUILD_MOD__} \n ${__BUILD_TIME__} `;
    
 
+  // Convert URL-safe base64 to regular base64
+  function urlSafeBase64ToRegular(urlSafeBase64: string): string {
+    return urlSafeBase64
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+  }
+
+  // Convert regular base64 to URL-safe base64
+  function regularBase64ToUrlSafe(regularBase64: string): string {
+    return regularBase64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, ''); // Remove padding
+  }
+
   (async function initDefaultValues() {
 
     console.log(location.hash);
     let search = new URLSearchParams(location.hash);
 
     let data = search.get("data") as string;
+    let data2 = search.get("data2") as string;
+    
+    // Use data2 if available, otherwise use data
+    if (data2) {
+      data = urlSafeBase64ToRegular(data2);
+    }
+
+    if (!data) {
+      return; // No data to process
+    }
 
     let ttlog = console.log;
     ttlog({ webPrivate, webPublic });
