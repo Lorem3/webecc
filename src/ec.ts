@@ -121,10 +121,21 @@ class EC{
         return new Uint8Array(await subtle.exportKey('raw',result))
     }
 
-    base64Encode(arr:Uint8Array):string{
-        return base64js.fromByteArray(arr,76)
+    base64Encode(arr:Uint8Array,urlsafe = 0):string{
+        let r = base64js.fromByteArray(arr,76)
+        if (urlsafe) {
+            r = r.replace(/\+/g, '-')
+            r = r.replace(/\//g, '_')
+            r = r.replace(/=/g, '')
+        }
+        return r
     }
-    base64Decode(str:string):Uint8Array{
+    base64Decode(str:string,urlsafe = 0):Uint8Array{
+        if (urlsafe) {
+            str = str.replace(/-/g, '+')
+            str = str.replace(/_/g, '/')
+            str = str.replace(/=/g, '')
+        }
         return base64js.toByteArray(str)
     }
     async generateNewKeyPair(seckey ?:string): Promise<{private:string,public:string}>{

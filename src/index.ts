@@ -1,6 +1,8 @@
 
 (async function () {
 
+  let g_urlsafe = 1 as 1|0
+
   interface InputData {
     prefix: string;
     pubkey: string;
@@ -65,7 +67,7 @@
     try {
       let te = new TextEncoder();
       let enc = await ec.encrypt(p, te.encode(text));
-      setCipherText(ec.base64Encode(enc));
+      setCipherText(ec.base64Encode(enc,g_urlsafe));
       return true;
     } catch (error) {
       setErrMsg(error as string);
@@ -111,7 +113,7 @@
       return;
     }
     try {
-      let arr = ec.base64Decode(base64);
+      let arr = ec.base64Decode(base64,g_urlsafe);
       let dec = await ec.decrypt(p, arr);
       let te = new TextDecoder();
       setPlainText(te.decode(dec));
@@ -259,6 +261,7 @@
  
 
     let msg = `
+    v2   
    ${G_Input?.prefix || ""} ${newLine}
    备份时间:${beijingtime()} ${newLine}
 
@@ -297,6 +300,7 @@
 
 
     let msg = `
+    v2-urlsafe
    ${G_Input?.prefix || ""}  ${newLine}
    备份时间:${beijingtime()} ${newLine}
 
@@ -334,14 +338,12 @@
     let jsonstring = JSON.stringify(s);
     let arr = new TextEncoder().encode(jsonstring);
     let dataBuff = await ec.encrypt(webPublic, arr);
-    let data = ec.base64Encode(dataBuff);
+    let data = ec.base64Encode(dataBuff,1);
     
-    // Convert to URL-safe base64 for data2
-    let data2 = regularBase64ToUrlSafe(data);
 
     let bookmark = `${location.origin}${
       location.pathname
-    }?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data2)}`;
+    }?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data)}`;
 
     let a = document.createElement("a");
     a.innerText = bookmark;
@@ -403,21 +405,6 @@
   btime.innerText = `Package:${__BUILD_MOD__} \n ${__BUILD_TIME__} `;
    
 
-  // Convert URL-safe base64 to regular base64
-  function urlSafeBase64ToRegular(urlSafeBase64: string): string {
-    return urlSafeBase64
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-  }
-
-  // Convert regular base64 to URL-safe base64
-  function regularBase64ToUrlSafe(regularBase64: string): string {
-    return regularBase64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, ''); // Remove padding
-  }
-
   (async function initDefaultValues() {
 
     console.log(location.hash);
@@ -428,7 +415,10 @@
     
     // Use data2 if available, otherwise use data
     if (data2) {
-      data = urlSafeBase64ToRegular(data2);
+      data = data2
+    }
+    if (data && !data2) {
+      g_urlsafe = 0
     }
 
     if (!data) {
@@ -438,7 +428,7 @@
     let ttlog = console.log;
     ttlog({ webPrivate, webPublic });
 
-    let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data));
+    let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data,g_urlsafe));
     let plain = new TextDecoder().decode(plainBf);
     ttlog(plain);
 

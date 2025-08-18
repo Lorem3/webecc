@@ -65,8 +65,8 @@ declare interface  EC{
     decrypt(privateKeyB64:string,data:Uint8Array):Promise<Uint8Array>
     generateNewKeyPair(seckey ?:string): Promise<{private:string,public:string}>
 
-    base64Encode(arr:Uint8Array):string 
-    base64Decode(str:string):Uint8Array
+    base64Encode(arr:Uint8Array,urlsafe ?:1|0):string 
+    base64Decode(str:string,urlsafe ?:1|0):Uint8Array
   }
 declare function initEC():EC;
 
