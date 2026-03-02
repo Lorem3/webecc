@@ -9,16 +9,26 @@
   <script>var exports = {};</script>
   <style>
     :root {
-      --page-bg: #f5f5f7;
+      --page-bg: #f0f2f5;
       --card-bg: #fff;
-      --border: #e0e0e0;
-      --text: #1d1d1f;
-      --text-muted: #6e6e73;
+      --border: #e3e6ea;
+      --border-focus: #2563eb;
+      --text: #1a1a1d;
+      --text-muted: #5c5c66;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --radius: 10px;
+      --radius: 12px;
+      --radius-sm: 8px;
       --space: 1.5rem;
+      --space-sm: 0.75rem;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --shadow: 0 1px 2px rgba(0,0,0,.04);
+      --shadow-hover: 0 4px 12px rgba(0,0,0,.08);
+      --transition: 0.2s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root { --transition: 0s; }
     }
 
     body {
@@ -26,26 +36,52 @@
       color: var(--text);
       font-family: var(--font-sans);
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
 
     .contain {
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
       border-radius: var(--radius);
       border: 1px solid var(--border);
+      padding: 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space);
+      margin-bottom: var(--space);
+      transition: box-shadow var(--transition);
+    }
+    .section-card:hover {
+      box-shadow: var(--shadow-hover);
     }
 
     h1 {
-      font-size: 1.75rem;
+      font-size: 1.375rem;
       font-weight: 600;
-      margin-bottom: var(--space);
-      letter-spacing: -0.02em;
+      margin: 0 0 var(--space-sm);
+      letter-spacing: -0.01em;
     }
 
     h2 {
-      font-size: 1.125rem;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--text);
-      margin: var(--space) 0 0.75rem;
+      margin: 0 0 var(--space-sm);
     }
 
     section {
@@ -61,40 +97,77 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      max-width: 360px;
       font-size: 0.9375rem;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
     }
     th, td {
-      padding: 0.5rem 1rem;
+      padding: 0.625rem 1rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
     th {
       font-weight: 600;
       color: var(--text-muted);
+      background: #f8f9fa;
     }
-    tr:nth-child(even) {
-      background: #fafafa;
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td {
+      background: #fafbfc;
     }
 
+    .row2 {
+      gap: var(--space-sm);
+    }
     .row2 .title {
-      min-width: 4em;
+      min-width: 4.5em;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    input[type="text"]:focus,
+    input[type="file"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.9;
     }
 
     .btn {
       background: var(--text);
-      border-radius: 8px;
+      border: none;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      min-width: 150px;
+      min-width: 140px;
+      padding: 0.625rem 1.25rem;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, transform 0.05s;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
     }
     .btn:hover {
       background: #333;
+      box-shadow: var(--shadow);
     }
     .btn:active {
       transform: scale(0.98);
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.2);
     }
     .clearbtn {
       background: var(--text-muted);
@@ -103,29 +176,62 @@
       background: #555;
     }
 
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+    .btnHolder {
+      margin-left: 0;
+    }
+
     .border {
       border-color: var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
 
     .content {
-      border-radius: 8px;
-      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm);
+      transition: border-color var(--transition);
+    }
+    .content:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
     }
 
     .bigTxtArea {
-      border-radius: 6px;
-      border-color: var(--border);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
       font-family: inherit;
       font-size: 0.875rem;
+      padding: 0.75rem;
+      resize: vertical;
+      min-height: 120px;
     }
 
-    a[href^="javascript"] {
+    .action-link {
+      display: inline-flex;
+      align-items: center;
       color: var(--accent);
       text-decoration: none;
+      font-size: 0.9375rem;
+      padding: 0.25rem 0;
+      margin-right: 1rem;
+      margin-bottom: 0.25rem;
+      transition: color var(--transition);
     }
-    a[href^="javascript"]:hover {
+    .action-link:hover {
+      color: var(--accent-hover);
       text-decoration: underline;
+    }
+    .action-link:focus-visible {
+      outline: none;
+      text-decoration: underline;
+    }
+    .action-links {
+      margin: var(--space-sm) 0;
     }
 
     .plain-cipher-row {
@@ -135,6 +241,8 @@
     }
     .plain-cipher-row .border.content {
       width: 100%;
+      height: auto;
+      min-height: 200px;
       box-sizing: border-box;
     }
     .plain-cipher-row .bigTxtArea {
@@ -162,10 +270,11 @@
       width: 18px;
       height: 18px;
       accent-color: var(--accent);
+      cursor: pointer;
     }
 
     #inputData {
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
 
     pre {
@@ -173,27 +282,40 @@
       color: var(--text-muted);
     }
     #build, .contain pre {
-      background: #fafafa;
+      background: #f8f9fa;
       padding: 1rem;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
     }
 
     .bookmark-inputs {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      gap: var(--space-sm);
+      margin-bottom: var(--space);
     }
     .bookmark-inputs input {
       flex: 1;
       min-width: 200px;
     }
 
+    .bookmark-actions {
+      margin-top: var(--space-sm);
+    }
+    .bookmark-actions a {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
     .usage-list p, .about-intro {
       margin: 0.5rem 0;
       color: var(--text-muted);
       font-size: 0.9375rem;
+    }
+
+    .section-muted {
+      background: #f8f9fa;
+      border-color: var(--border);
     }
 
     body:hover {
@@ -204,109 +326,9 @@
 
 <body>
   <div class="contain">
-    <h1>便捷备份</h1>
+    <h1 class="page-title">便捷备份</h1>
 
-    <section>
-      <h2>浏览器要求</h2>
-      <table>
-        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
-        <tbody>
-          <tr><td>Chrome</td><td>≥ 80</td></tr>
-          <tr><td>Firefox</td><td>≥ 113</td></tr>
-          <tr><td>Safari</td><td>≥ 16.4</td></tr>
-          <tr><td>Opera</td><td>≥ 67</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <pre id="inputData"></pre>
-
-    <hr />
-    <section>
-      <h2>密钥信息</h2>
-      <div class="row2">
-        <span class="title">公钥</span>
-        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
-      </div>
-      <div class="row2">
-        <span class="title">私钥</span>
-        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" />
-      </div>
-      <div class="row2">
-        <span class="title">短语</span>
-        <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
-      </div>
-      <div class="row2 btnHolder">
-        <div id="generateNewKP" class="btn"><span class="btnTitle">随机生成密钥对</span></div>
-        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
-        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成</span></div>
-      </div>
-    </section>
-
-    <hr />
-    <section>
-      <h2>加解密</h2>
-      <div class="row2 btnHolder">
-        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
-        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
-      </div>
-
-      <div class="row plain-cipher-row">
-        <div class="border content">
-          <div class="title">明文</div>
-          <a id="downloadPlain" href="javascript:void(0)">下载解密文件</a>
-          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
-        </div>
-        <div class="flow-divider">↓</div>
-        <div class="border content">
-          <div class="title">密文 Base64</div>
-          <div>
-            <div class="row">
-              <form id="clearfileform">
-                <div class="row2">
-                  <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
-                  <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
-                </div>
-              </form>
-            </div>
-            <a id="downloadCipher" href="javascript:void(0)">下载加密文件</a>
-            <br />
-            <a id="sendemail" href="javascript:void(0)">发送加密结果到邮件</a>
-            <br />
-            <a id="sendemail2" href="javascript:void(0)">发送加密结果到邮件（手动粘贴加密数据）</a>
-            <br />
-            <label class="newline2">
-              br 换行
-              <input type="checkbox" name="newLine" id="newline" />
-            </label>
-          </div>
-          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
-        </div>
-      </div>
-    </section>
-
-    <script type="module" src="js/tool.js"></script>
-    <script type="module" src="js/index.js"></script>
-
-    <hr />
-    <section>
-      <h2>生成书签链接（不含私钥）</h2>
-      <div class="bookmark-inputs">
-        <input id="email" type="text" autocomplete="off" placeholder="发送备份邮箱，如 aaabb@qq.com" />
-        <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
-        <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
-      </div>
-      <div>
-        <a id="genbookmark" href="javascript:void(0)">生成书签链接（直接使用公钥）</a>
-      </div>
-      <div>
-        <a id="genbookmark2" href="javascript:void(0)">生成书签链接（使用密码短语派生的公钥）</a>
-      </div>
-      <div id="bookmark"></div>
-    </section>
-
-    <hr />
-    <section>
+    <section class="section-card section-muted usage-section">
       <h1>如何使用</h1>
       <h2>备份</h2>
       <div class="usage-list">
@@ -325,10 +347,90 @@
         <p>3. 点击「根据短语生成」生成密钥</p>
         <p>4. 点击解密</p>
       </div>
+      <h2>生成书签链接（不含私钥）</h2>
+      <div class="bookmark-inputs">
+        <input id="email" type="text" autocomplete="off" placeholder="发送备份邮箱，如 aaabb@qq.com" />
+        <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
+        <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
+      </div>
+      <div class="bookmark-actions">
+        <a id="genbookmark" href="javascript:void(0)" class="action-link">生成书签链接（直接使用公钥）</a>
+        <a id="genbookmark2" href="javascript:void(0)" class="action-link">生成书签链接（使用密码短语派生的公钥）</a>
+      </div>
+      <div id="bookmark"></div>
+    </section>
+
+    <hr class="hr-after-usage" />
+    <pre id="inputData"></pre>
+
+    <hr />
+    <section class="section-card">
+      <h2>密钥信息</h2>
+      <div class="row2">
+        <span class="title">公钥</span>
+        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
+      </div>
+      <div class="row2">
+        <span class="title">私钥</span>
+        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" />
+      </div>
+      <div class="row2">
+        <span class="title">短语</span>
+        <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="generateNewKP" class="btn"><span class="btnTitle">随机生成密钥对</span></div>
+        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成</span></div>
+      </div>
     </section>
 
     <hr />
-    <section>
+    <section class="section-card">
+      <h2>加解密</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+      </div>
+
+      <div class="row plain-cipher-row">
+        <div class="border content">
+          <div class="title">明文</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">下载解密文件</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="border content">
+          <div class="title">密文 Base64</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
+            <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
+            <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
+          </div>
+          <label class="newline2">
+            br 换行
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="js/tool.js"></script>
+    <script type="module" src="js/index.js"></script>
+
+    <hr />
+    <section class="section-card section-muted about-section">
       <h1>关于</h1>
       <pre id="build"></pre>
       <p><a href="https://github.com/Lorem3/webecc/">项目地址 GitHub</a></p>
@@ -345,7 +447,39 @@
 mysecret[31] &= 127;
 mysecret[31] |= 64;</pre>
     </section>
+
+    <hr />
+    <section class="section-card browser-requirements-section">
+      <h2>浏览器要求</h2>
+      <table>
+        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
   </div>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var hrAfterUsage = document.querySelector('.hr-after-usage');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && hrAfterUsage && browserSection) {
+        contain.removeChild(usageSection);
+        contain.removeChild(hrAfterUsage);
+        contain.insertBefore(hrAfterUsage, browserSection);
+        contain.insertBefore(usageSection, browserSection);
+      }
+    })();
+  </script>
 </body>
 
 </html>
