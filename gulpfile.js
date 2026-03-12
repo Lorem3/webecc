@@ -3,7 +3,7 @@ const crypto = require("crypto");
 var ts = require("gulp-typescript");
 var concat = require("gulp-concat");
 var uglify = require("gulp-terser");
-var cssmin = require("gulp-cssmin");
+var cleanCSS = require("gulp-clean-css");
 var rename = require("gulp-rename");
 
 
@@ -136,7 +136,7 @@ gulp.task("removetest", function (cb) {
 gulp.task("cssmin", function () {
   return gulp
     .src("css/*.css")
-    .pipe(cssmin())
+    .pipe(cleanCSS())
     .pipe(rename({ suffix: ".min" }))
     .pipe(gulp.dest("www/css/"));
 });
