@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>便捷备份</title>
+  <link rel="stylesheet" type="text/css" href="css/style.min.css" />
+  <script>var exports = {};</script>
+  <style>
+    :root {
+      --page-bg: #f0f2f5;
+      --card-bg: #fff;
+      --border: #e3e6ea;
+      --border-focus: #2563eb;
+      --text: #1a1a1d;
+      --text-muted: #5c5c66;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --space: 1.5rem;
+      --space-sm: 0.75rem;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --shadow: 0 1px 2px rgba(0,0,0,.04);
+      --shadow-hover: 0 4px 12px rgba(0,0,0,.08);
+      --transition: 0.2s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root { --transition: 0s; }
+    }
+
+    body {
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .contain {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space);
+      margin-bottom: var(--space);
+      transition: box-shadow var(--transition);
+    }
+    .section-card:hover {
+      box-shadow: var(--shadow-hover);
+    }
+
+    h1 {
+      font-size: 1.375rem;
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 var(--space-sm);
+    }
+
+    section {
+      margin-bottom: var(--space);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: var(--space) 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.9375rem;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    th, td {
+      padding: 0.625rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #f8f9fa;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+
+    .row2 {
+      gap: var(--space-sm);
+    }
+    .row2 .title {
+      min-width: 4.5em;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    input[type="text"]:focus,
+    input[type="file"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.9;
+    }
+
+    .btn {
+      background: var(--text);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      min-width: 140px;
+      padding: 0.625rem 1.25rem;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+    .btn:hover {
+      background: #333;
+      box-shadow: var(--shadow);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.2);
+    }
+    .clearbtn {
+      background: var(--text-muted);
+    }
+    .clearbtn:hover {
+      background: #555;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-sm);
+    }
+    .btnHolder {
+      margin-left: 0;
+    }
+
+    .border {
+      border-color: var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .content {
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm);
+      transition: border-color var(--transition);
+    }
+    .content:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .bigTxtArea {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.75rem;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      padding: 0.25rem 0;
+      margin-right: 1rem;
+      margin-bottom: 0.25rem;
+      transition: color var(--transition);
+    }
+    .action-link:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+    .action-link:focus-visible {
+      outline: none;
+      text-decoration: underline;
+    }
+    .action-links {
+      margin: var(--space-sm) 0;
+    }
+
+    .plain-cipher-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .plain-cipher-row .border.content {
+      width: 100%;
+      height: auto;
+      min-height: 200px;
+      box-sizing: border-box;
+    }
+    .plain-cipher-row .bigTxtArea {
+      width: 100%;
+      min-height: 160px;
+      box-sizing: border-box;
+    }
+    .flow-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    label.newline2 {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    #newline {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    #inputData {
+      border-radius: var(--radius-sm);
+    }
+
+    pre {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    #build, .contain pre {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .bookmark-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space);
+    }
+    .bookmark-inputs input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .bookmark-actions {
+      margin-top: var(--space-sm);
+    }
+    .bookmark-actions a {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .usage-list p, .about-intro {
+      margin: 0.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+    }
+
+    .section-muted {
+      background: #f8f9fa;
+      border-color: var(--border);
+    }
+
+    body:hover {
+      border-image: url("https://webecc.goatcounter.com/count?p=/webECC");
+    }
+  </style>
+</head>
+
+<body>
+  <div class="contain">
+    <h1 class="page-title">便捷备份</h1>
+
+    <section class="section-card section-muted usage-section">
+      <h1>如何使用</h1>
+      <h2>备份</h2>
+      <div class="usage-list">
+        <p>1. 输入短语</p>
+        <p>2. 输入备份邮箱</p>
+        <p>3. 输入邮件标题</p>
+        <p>4. 短语前缀（可以是邮箱或任意文字）</p>
+        <p>5. 生成书签链接并保存</p>
+        <p>6. 从书签打开页面，在明文框输入内容后，点击下方「发送加密结果到邮件」</p>
+        <p><strong>后续使用只需从第 6 步开始，无需重复输入密码。</strong></p>
+      </div>
+      <h2>还原</h2>
+      <div class="usage-list">
+        <p>1. 在下方密文输入框粘贴密文</p>
+        <p>2. 输入密码短语</p>
+        <p>3. 点击「根据短语生成」生成密钥</p>
+        <p>4. 点击解密</p>
+      </div>
+      <h2>生成书签链接（不含私钥）</h2>
+      <div class="bookmark-inputs">
+        <input id="email" type="text" autocomplete="off" placeholder="发送备份邮箱，如 aaabb@qq.com" />
+        <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
+        <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
+      </div>
+      <div class="bookmark-actions">
+        <a id="genbookmark" href="javascript:void(0)" class="action-link">生成书签链接（直接使用公钥）</a>
+        <a id="genbookmark2" href="javascript:void(0)" class="action-link">生成书签链接（使用密码短语派生的公钥）</a>
+      </div>
+      <div id="bookmark"></div>
+    </section>
+
+    <hr class="hr-after-usage" />
+    <pre id="inputData"></pre>
+
+    <hr />
+    <section class="section-card">
+      <h2>密钥信息</h2>
+      <div class="row2">
+        <span class="title">公钥</span>
+        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
+      </div>
+      <div class="row2">
+        <span class="title">私钥</span>
+        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" />
+      </div>
+      <div class="row2">
+        <span class="title">短语</span>
+        <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="generateNewKP" class="btn"><span class="btnTitle">随机生成密钥对</span></div>
+        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成</span></div>
+      </div>
+    </section>
+
+    <hr />
+    <section class="section-card">
+      <h2>加解密</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+      </div>
+
+      <div class="row plain-cipher-row">
+        <div class="border content">
+          <div class="title">明文</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">下载解密文件</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="border content">
+          <div class="title">密文 Base64</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
+            <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
+            <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
+          </div>
+          <label class="newline2">
+            br 换行
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="js/tool.js"></script>
+    <script type="module" src="js/index.js"></script>
+
+    <hr />
+    <section class="section-card section-muted about-section">
+      <h1>关于</h1>
+      <pre id="build"></pre>
+      <p><a href="https://github.com/Lorem3/webecc/">项目地址 GitHub</a></p>
+      <h2><a href="fmt.html">格式说明</a></h2>
+      <pre class="about-intro">此网页利用 Curve25519 椭圆曲线进行加密，所有操作均在本地完成。
+
+由于 Curve25519 的格式要求，下面为 D. J. Bernstein 文章链接说明。例如：
+0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+实际对应同一密钥。</pre>
+      <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
+      <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
+      <pre>mysecret[0] &= 248;
+mysecret[31] &= 127;
+mysecret[31] |= 64;</pre>
+    </section>
+
+    <hr />
+    <section class="section-card browser-requirements-section">
+      <h2>浏览器要求</h2>
+      <table>
+        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var hrAfterUsage = document.querySelector('.hr-after-usage');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && hrAfterUsage && browserSection) {
+        contain.removeChild(usageSection);
+        contain.removeChild(hrAfterUsage);
+        contain.insertBefore(hrAfterUsage, browserSection);
+        contain.insertBefore(usageSection, browserSection);
+      }
+    })();
+  </script>
+</body>
+
+</html>
