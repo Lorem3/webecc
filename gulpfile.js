@@ -127,6 +127,38 @@ gulp.task("indexjs", async function (cb) {
     .pipe(uglify(getugliyconfig()))
     .pipe(gulp.dest("www/js"));
 });
+
+gulp.task("inlineHtml", function (cb) {
+  try {
+    const htmlPath = "./www/index.html";
+    const cssPath = "./www/css/style.min.css";
+    const toolJsPath = "./www/js/tool.js";
+    const indexJsPath = "./www/js/index.js";
+
+    let html = fs.readFileSync(htmlPath, "utf8");
+    const css = fs.readFileSync(cssPath, "utf8");
+    const toolJs = fs.readFileSync(toolJsPath, "utf8");
+    const indexJs = fs.readFileSync(indexJsPath, "utf8");
+
+    html = html.replace(
+      /<link\s+rel="stylesheet"\s+type="text\/css"\s+href="css\/style\.min\.css"\s*\/>/,
+      `<style>\n${css}\n</style>`
+    );
+    html = html.replace(
+      /<script\s+type="module"\s+src="js\/tool\.js"><\/script>/,
+      `<script type="module">\n${toolJs}\n</script>`
+    );
+    html = html.replace(
+      /<script\s+type="module"\s+src="js\/index\.js"><\/script>/,
+      `<script type="module">\n${indexJs}\n</script>`
+    );
+
+    fs.writeFileSync(htmlPath, html);
+    cb();
+  } catch (error) {
+    cb(error);
+  }
+});
 gulp.task("removetest", function (cb) {
   fs.unlink("./tmp/test.js", () => {
     cb();
@@ -208,6 +240,7 @@ gulp.task(
     "hash",
     "combinejs",
     "indexjs",
+    "inlineHtml",
   ])
 );
 
@@ -223,5 +256,6 @@ gulp.task(
     "hash",
     "combinejs",
     "indexjs",
+    "inlineHtml",
   ])
 );
