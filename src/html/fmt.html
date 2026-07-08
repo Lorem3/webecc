@@ -76,7 +76,8 @@
 <table>
 <thead>
 <tr>
-<th>2字节</th>
+<th>1字节</th>
+<th>1字节</th>
 <th>2字节</th>
 <th>2字节</th>
 <th>2字节</th>
@@ -94,14 +95,26 @@
 </table>
 <p><code>下面short都是小端模式</code></p>
 <ul>
-<li><p>1-2字节short 意义</p>
+<li><p>第1字节 格式标志</p>
 <ul>
-<li>4：先gzip后加密</li>
-<li>5：直接加密</li>
+<li><strong>旧格式 (Blake2b)</strong>:<ul>
+<li>4：先gzip后加密 (Blake2b)</li>
+<li>5：直接加密 (Blake2b)</li>
 </ul>
 </li>
-<li><p>3-4字节的short值表示 iv的长度 ，16  </p>
+<li><strong>新格式 (SHA-512)</strong>: 使用位标志<ul>
+<li>bit3 (0x08): 固定为1，表示新格式</li>
+<li>bit2 (0x04): 固定为1</li>
+<li>bit1 (0x02): 保留</li>
+<li>bit0 (0x01): 压缩标志，1=先gzip后加密，0=直接加密</li>
+<li>示例: 0x0D (13) = 新格式+压缩, 0x0C (12) = 新格式+不压缩</li>
+</ul>
 </li>
+</ul>
+</li>
+<li><p>第2字节: 保留 (0)</p>
+</li>
+<li>3-4字节的short值表示 iv的长度 ，16  </li>
 <li>5-6字节的short值表示 mac校验hash的长度 32</li>
 <li>7-8字节 字节表示临时公钥长度 ，32</li>
 <li>IV   // 随机生成</li>
@@ -112,7 +125,7 @@
 <h2 id="-">过程</h2>
 <pre><code>生成临时公钥私钥 tmpSecKey , tmpPubKey
 
-sharedX（32 byte）= publickKey • tmpSecKey 
+sharedX（32 byte）= publickKey • tmpSecKey
 
 buffer[96];
 copy sharedX  =&gt; buffer[0..31]
@@ -120,27 +133,49 @@ copy sharedX  =&gt; buffer[0..31]
 /**
 * 下面公钥按照小端模式比较，先比较高位置，再比较低位
 */
-if tmpPubKey &gt; publickKey  
+if tmpPubKey &gt; publickKey
     copy publickKey =&gt; buffer[32...63]
-    copy tmpPubKey =&gt; buffer[64...95]   
-else  
+    copy tmpPubKey =&gt; buffer[64...95]
+else
     copy publickKey =&gt; buffer[32...63]
-    copy tmpPubKey =&gt; buffer[64...95]    
-end  
+    copy tmpPubKey =&gt; buffer[64...95]
+end
 
+根据格式选择hash算法:
+
+【旧格式 (format=0)】
 利用hash算法 blake2b 生成64字节长度digest
 digest = blake2b(buffer)
+
+【新格式 (format=1)】
+利用hash算法 SHA-512 生成64字节长度digest
+digest = sha512(buffer)
 
 其中 digest[0..31] 作为 AES-CBC 的密钥 aesKey,使用IV 一起加密密钥生成 加密数据 EncryptData
 
 其中 digest[32,63]作为计算mac的密钥 HKEY，输出32字节数据
 
-也是采用blake2b,指定输出32字节，key = HKEY
+【旧格式 MAC计算】
+采用blake2b,指定输出32字节，key = HKEY
+mac = blake2b(IV + tmpPubKey + EncryptData, key=HKEY)
 
-mac = blake2b(IV + tmpPubKey + EncryptData)
+【新格式 MAC计算】
+采用HMAC-SHA-512，截取前32字节
+mac = hmac_sha512(HKEY, IV + tmpPubKey + EncryptData)[0..31]
 
 
-</code></pre><h1 id="-">根据密码短语生成密钥</h1>
+</code></pre><h2 id="-">兼容性</h2>
+<ul>
+<li><strong>解码时自动识别格式</strong>：通过第1字节判断<ul>
+<li>byte0 = 4 或 5：旧格式 (Blake2b)</li>
+<li>byte0 的 bit3 (0x08) = 1：新格式 (SHA-512)</li>
+<li>其他值：不支持，抛出异常</li>
+</ul>
+</li>
+<li><strong>编码时默认使用新格式</strong>：format 参数默认值为 1 (SHA-512)</li>
+<li><strong>向后兼容</strong>：可以解密旧格式数据，但新加密默认使用 SHA-512</li>
+</ul>
+<h1 id="-">根据密码短语生成密钥</h1>
 <p>步骤</p>
 <ol>
 <li>prefix(如果有) + 密码短语  作为  key  = prefix + phrase</li>
