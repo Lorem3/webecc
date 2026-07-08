@@ -263,10 +263,10 @@ gulp.task(
     "cssmin",
     "copystatic",
     "build",
+    "copytemplate",
     "hash",
     "combinejs",
     "indexjs",
-    "copytemplate",
     "inlineHtml",
   ])
 );
@@ -280,13 +280,13 @@ gulp.task(
     "copystatic",
     "build",
     "removetest",
+    "copytemplate",
     "hash",
     "checkFiles",
     "combinejs",
     "checkFiles",
     "indexjs",
     "wait",
-    "copytemplate",
     "inlineHtml",
   ])
 );
