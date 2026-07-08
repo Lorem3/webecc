@@ -239,6 +239,10 @@ gulp.task("calHash", function (cb) {
 
 gulp.task("hash", gulp.series(["genHashFile", "calHash"]));
 
+gulp.task("wait", function (cb) {
+  setTimeout(cb, 5000);
+});
+
 gulp.task(
   "dev",
   gulp.series([
@@ -249,7 +253,7 @@ gulp.task(
     "build",
     "hash",
     "combinejs",
-    "indexjs",
+    "indexjs",    
     "inlineHtml",
   ])
 );
@@ -268,6 +272,7 @@ gulp.task(
     "combinejs",
     "checkFiles",
     "indexjs",
+    "wait",
     "inlineHtml",
   ])
 );
