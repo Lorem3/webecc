@@ -125,6 +125,17 @@ gulp.task("combinejs", async function (cb) {
     .pipe(gulp.dest("www/js"));
 });
 
+gulp.task("copyencjs", async function (cb) {
+  try {
+    fs.copyFileSync("./tmp/enc.js", "./www/js/enc.js");
+    console.log("Copied enc.js to www/js/");
+    cb();
+  } catch (error) {
+    console.error("Error copying enc.js:", error);
+    cb(error);
+  }
+});
+
 gulp.task("indexjs", async function (cb) {
   return gulp
     .src(["./tmp/index.js"])
@@ -266,6 +277,7 @@ gulp.task(
     "copytemplate",
     "hash",
     "combinejs",
+    "copyencjs",
     "indexjs",
     "inlineHtml",
   ])
@@ -284,6 +296,7 @@ gulp.task(
     "hash",
     "checkFiles",
     "combinejs",
+    "copyencjs",
     "checkFiles",
     "indexjs",
     "wait",
