@@ -93,77 +93,55 @@ class Enc {
             }
 
             // 1. Import recipient's public key
-            console.log('Enc: 1. Importing public key...');
             const recipientPubKey = await subtle.importKey(
                 'raw', pubKey, { name: 'X25519' }, true, []
             );
-            console.log('Enc: 1. OK');
 
             // 2. Generate ephemeral X25519 key pair
-            console.log('Enc: 2. Generating ephemeral key pair...');
             const ephemeralKeyPair = await subtle.generateKey(
                 { name: 'X25519' },
                 true,
                 ['deriveBits', 'deriveKey']
             ) as CryptoKeyPair;
-            console.log('Enc: 2. OK');
 
             // 3. Export ephemeral public key
-            console.log('Enc: 3. Exporting ephemeral public key...');
             const ephemeralPubJwk = await subtle.exportKey('jwk', ephemeralKeyPair.publicKey);
             const ephemeralPubBytes = new Uint8Array(
                 atob(ephemeralPubJwk.x!.replace(/-/g, '+').replace(/_/g, '/'))
                     .split('')
                     .map(c => c.charCodeAt(0))
             );
-            console.log('Enc: 3. OK, length:', ephemeralPubBytes.length);
 
             // 4. Compute shared secret using ECDH
-            // 注意：这里使用 { name: 'X25519' } 而不是 { name: 'ECDH' }
-            console.log('Enc: 4. Computing shared secret with deriveBits...');
-            console.log('Enc: 4. recipientPubKey algorithm:', recipientPubKey.algorithm);
-            console.log('Enc: 4. ephemeralKeyPair.privateKey algorithm:', ephemeralKeyPair.privateKey.algorithm);
             const sharedBits = await subtle.deriveBits(
                 { name: 'X25519', public: recipientPubKey },
                 ephemeralKeyPair.privateKey,
                 256
             );
             const sharedSecret = new Uint8Array(sharedBits);
-            console.log('Enc: 4. OK, length:', sharedSecret.length);
 
             // 5. Derive encryption key
-            console.log('Enc: 5. Deriving encryption key...');
             const hash64 = await this.hashDH(sharedSecret, pubKey, ephemeralPubBytes);
             const encKey = hash64.subarray(0, 32);
             const macKey = hash64.subarray(32, 64);
-            console.log('Enc: 5. OK');
 
             // 6. Compress data
-            console.log('Enc: 6. Compressing data...');
             const compressed = await this.zlib.gzip(msg);
-            console.log('Enc: 6. OK, length:', compressed.length);
 
             // 7. Generate random IV
-            console.log('Enc: 7. Generating IV...');
             const iv = crypto.getRandomValues(new Uint8Array(16));
-            console.log('Enc: 7. OK');
 
             // 8. Encrypt with AES-CBC
-            console.log('Enc: 8. Encrypting with AES...');
             const enc = await this.aesEncrypt(encKey, iv, compressed);
-            console.log('Enc: 8. OK, length:', enc.length);
 
             // 9. Compute MAC
-            console.log('Enc: 9. Computing MAC...');
             const macData = new Uint8Array(iv.length + ephemeralPubBytes.length + enc.length);
             macData.set(iv, 0);
             macData.set(ephemeralPubBytes, iv.length);
             macData.set(enc, iv.length + ephemeralPubBytes.length);
             const mac = await this.hmacSha512(macKey, macData);
-            console.log('Enc: 9. OK');
 
             // 10. Build result
-            console.log('Enc: 10. Building result...');
             const result = new Uint8Array(8 + iv.length + mac.length + ephemeralPubBytes.length + enc.length);
             result[0] = 0x0D;
             result[1] = 0;
@@ -183,10 +161,8 @@ class Enc {
             start += ephemeralPubBytes.length;
             result.set(enc, start);
 
-            console.log('Enc: 10. OK, total length:', result.length);
             return result;
         } catch (e) {
-            console.error('Enc encrypt error:', e);
             throw e;
         }
     }
