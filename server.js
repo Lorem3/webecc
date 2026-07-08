@@ -6,9 +6,9 @@ const fs = require('fs');
 // Array of Mime Types
 const mimeTypes = {
   // Text Types
-  "html": "text/html",
-  "css": "text/css",
-  "js": "text/javascript",
+  "html": "text/html; charset=utf-8",
+  "css": "text/css; charset=utf-8",
+  "js": "text/javascript; charset=utf-8",
   // Image Types
   "jpeg": "image/jpeg",
   "jpg": "image/jpeg",

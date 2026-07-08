@@ -157,8 +157,19 @@ class EC{
         return kp2
     }
     async decrypt(privateKeyB64:string,data:Uint8Array){
-        if (!(data[0] == 4 || data[0] == 5) || data?.length < 88) {
+        let byte0 = data[0]
+        let useSha = (byte0 & 0x08) !== 0  // bit3: SHA-512 vs Blake2b
+        // 旧格式 byte0=4(gzip+blake) / 5(raw+blake)，bit3=0
+        // 新格式 bit3=0/1,bit2=1,bit1=0,bit0=压缩
+        let isNew = useSha || (byte0 !== 4 && byte0 !== 5)
+        if (isNew && (byte0 & 0x06) !== 0x04) {
             throw "data format not support"
+        }
+        let isZip  = useSha ? ((byte0 & 0x01) !== 0) : (byte0 === 4)
+        let format:0|1 = useSha ? 1 : 0
+        let type = isNew ? (isZip ? 4 : 5) : byte0
+        if (data.length < 88) {
+            throw "data too short"
         }
         let privateKey = base64js.toByteArray(privateKeyB64);
         if (privateKey.length != 32) {
@@ -173,35 +184,39 @@ class EC{
 
         let kp = X25519.generateKeyPair(privateKey);
         let hash64 = new Uint8Array(64);
-        this.hashDH(dh,kp.public,tmpPub,hash64);
+        await this.hashDH(dh,kp.public,tmpPub,hash64,format);
 
-        
-        let b2b = blake2b.blake2bInit(32,hash64.subarray(32,64));
+        let macData = new Uint8Array(iv.length + tmpPub.length + enc.length)
+        macData.set(iv,0)
+        macData.set(tmpPub,iv.length)
+        macData.set(enc,iv.length + tmpPub.length)
 
- 
-        blake2b.blake2bUpdate(b2b,iv)
-        blake2b.blake2bUpdate(b2b,tmpPub)
-        blake2b.blake2bUpdate(b2b,enc);
-
-        let mac2 = blake2b.blake2bFinal(b2b)
+        let mac2:Uint8Array
+        if (format == 1) {
+            mac2 = await this.hmacSha512(hash64.subarray(32,64),macData)
+        } else {
+            let b2b = blake2b.blake2bInit(32,hash64.subarray(32,64))
+            blake2b.blake2bUpdate(b2b,macData)
+            mac2 = blake2b.blake2bFinal(b2b)
+        }
         for (let i = 0; i < 32; i++) {
             if (mac[i] != mac2[i]) {
                 throw "MAC NOT FIT"
             }
         }
- 
+
 
         let dec = await this.aesDecrypt(hash64.subarray(0,32),iv,enc);
 
-        if (data[0] == 4) {
-            
+        if (type == 4) {
+
             return  await this.zlib.ungzip(dec)
         }
 
         return dec
     }
 
-    private hashDH(dh:Uint8Array,pub1:Uint8Array,pub2:Uint8Array,dh64:Uint8Array){
+    private async hashDH(dh:Uint8Array,pub1:Uint8Array,pub2:Uint8Array,dh64:Uint8Array,format:0|1 = 0){
 
         let shared96 = new Uint8Array(96)
         dh.forEach((e ,i)=>{
@@ -236,25 +251,30 @@ class EC{
             })
         }
 
-        let b2b = blake2b.blake2bInit(64);
-        blake2b.blake2bUpdate(b2b,shared96)
-        let r = blake2b.blake2bFinal(b2b)
+        let r:Uint8Array
+        if (format == 1) {
+            r = await this.sha512(shared96)
+        } else {
+            let b2b = blake2b.blake2bInit(64);
+            blake2b.blake2bUpdate(b2b,shared96)
+            r = blake2b.blake2bFinal(b2b)
+        }
         r.forEach((e,i)=>{dh64[i] = e});
         shared96.fill(0);
         r.fill(0);
     }
-    async encrypt(pubBase64:string,data:Uint8Array,zipFist:boolean = true){
-        if (zipFist) {
+    async encrypt(pubBase64:string,data:Uint8Array,zipFirst:boolean = true,format:0|1 = 1){
+        if (zipFirst) {
             let zipdata = await this.zlib.gzip(data)
-            return this._encrypt(pubBase64,zipdata,true)
+            return this._encrypt(pubBase64,zipdata,true,format)
 
         }else{
-            return this._encrypt(pubBase64,data,false)
+            return this._encrypt(pubBase64,data,false,format)
         }
-        
+
     }
 
-    private async _encrypt(pubBase64:string,data:Uint8Array,isZipData:boolean = true){
+    private async _encrypt(pubBase64:string,data:Uint8Array,isZipData:boolean = true,format:0|1 = 1){
         let pubKey = base64js.toByteArray(pubBase64);
         if (pubKey.length != 32) {
             throw "pubkey length error"
@@ -264,23 +284,30 @@ class EC{
         let dh = X25519.sharedKey(kp.private,pubKey);
 
         let hash2 = new Uint8Array(64);
-        this.hashDH(dh,pubKey,kp.public,hash2)
+        await this.hashDH(dh,pubKey,kp.public,hash2,format)
         kp.private.fill(0)
 
-        
-        // b2b.update('')
         let key = hash2.subarray(0,32)
         let iv = await crypto.getRandomValues(new Uint8Array(16))
         let enc = await this.aesEncrypt(key,iv,data)
         var tmpPub = kp.public
-        let b2b = blake2b.blake2bInit(32,hash2.subarray(32,64)) as Blake2b
-        blake2b.blake2bUpdate(b2b,iv)
-        blake2b.blake2bUpdate(b2b,tmpPub)
-        blake2b.blake2bUpdate(b2b,enc);
-        let mac = blake2b.blake2bFinal(b2b)
+
+        let macData = new Uint8Array(iv.length + tmpPub.length + enc.length)
+        macData.set(iv,0)
+        macData.set(tmpPub,iv.length)
+        macData.set(enc,iv.length + tmpPub.length)
+
+        let mac:Uint8Array
+        if (format == 1) {
+            mac = await this.hmacSha512(hash2.subarray(32,64),macData)
+        } else {
+            let b2b = blake2b.blake2bInit(32,hash2.subarray(32,64)) as Blake2b
+            blake2b.blake2bUpdate(b2b,macData)
+            mac = blake2b.blake2bFinal(b2b)
+        }
 
         let result = new Uint8Array(8 + mac.length + iv.length + tmpPub.length + enc.length )
-        result[0]= isZipData ? 4 : 5;
+        result[0]= format ? (0x04 | (isZipData ? 0x01 : 0) | 0x08) : (isZipData ? 4 : 5);
         result[1]= 0
         result[2]= 16;
         result[3]= 0;
@@ -319,6 +346,18 @@ class EC{
         } as AesKeyAlgorithm
         let keyObj = await subtle.importKey('raw',key,p,false,['encrypt']);
         return new  Uint8Array(await subtle.encrypt(p,keyObj,data));
+    }
+
+    private async hmacSha512(key:Uint8Array,data:Uint8Array):Promise<Uint8Array>{
+        let keyObj = await subtle.importKey(
+            'raw',key,{name:'HMAC',hash:'SHA-512'},false,['sign']
+        );
+        let sig = await subtle.sign('HMAC',keyObj,data);
+        return new Uint8Array(sig).subarray(0,32);
+    }
+    private async sha512(data:Uint8Array):Promise<Uint8Array>{
+        let hash = await subtle.digest('SHA-512',data);
+        return new Uint8Array(hash);
     }
 }
 
