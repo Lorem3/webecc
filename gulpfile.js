@@ -239,6 +239,17 @@ gulp.task("calHash", function (cb) {
 
 gulp.task("hash", gulp.series(["genHashFile", "calHash"]));
 
+gulp.task("copytemplate", function (cb) {
+  try {
+    fs.copyFileSync("./src/html/index.html", "./www/index.html");
+    console.log("Copied template from src/html/index.html to www/index.html");
+    cb();
+  } catch (error) {
+    console.error("Error copying template:", error);
+    cb(error);
+  }
+});
+
 gulp.task("wait", function (cb) {
   setTimeout(cb, 5000);
 });
@@ -253,7 +264,8 @@ gulp.task(
     "build",
     "hash",
     "combinejs",
-    "indexjs",    
+    "indexjs",
+    "copytemplate",
     "inlineHtml",
   ])
 );
@@ -273,6 +285,7 @@ gulp.task(
     "checkFiles",
     "indexjs",
     "wait",
+    "copytemplate",
     "inlineHtml",
   ])
 );

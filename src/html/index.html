@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>便捷备份</title>
+  <link rel="stylesheet" type="text/css" href="css/style.min.css" />
+  <script>var exports = {};</script>
+</head>
+
+<body>
+  <div class="contain">
+    <h1 class="page-title">便捷备份</h1>
+
+    <section class="section-card section-muted usage-section">
+      <h1>如何使用</h1>
+      <h2>备份</h2>
+      <div class="usage-list">
+        <p>1. 输入短语</p>
+        <p>2. 输入备份邮箱</p>
+        <p>3. 输入邮件标题</p>
+        <p>4. 短语前缀（可以是邮箱或任意文字）</p>
+        <p>5. 生成书签链接并保存</p>
+        <p>6. 从书签打开页面，在明文框输入内容后，点击下方「发送加密结果到邮件」</p>
+        <p><strong>后续使用只需从第 6 步开始，无需重复输入密码。</strong></p>
+      </div>
+      <h2>还原</h2>
+      <div class="usage-list">
+        <p>1. 在下方密文输入框粘贴密文</p>
+        <p>2. 输入密码短语</p>
+        <p>3. 点击「根据短语生成」生成密钥</p>
+        <p>4. 点击解密</p>
+      </div>
+      <h2>生成书签链接（不含私钥）</h2>
+      <div class="bookmark-inputs">
+        <input id="email" type="text" autocomplete="off" placeholder="发送备份邮箱，如 aaabb@qq.com" />
+        <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
+        <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
+      </div>
+      <div class="bookmark-actions">
+        <a id="genbookmark" href="javascript:void(0)" class="action-link">生成书签链接（直接使用公钥）</a>
+        <a id="genbookmark2" href="javascript:void(0)" class="action-link">生成书签链接（使用密码短语派生的公钥）</a>
+      </div>
+      <div id="bookmark"></div>
+    </section>
+
+    <hr class="hr-after-usage" />
+    <pre id="inputData"></pre>
+
+    <hr />
+    <section class="section-card">
+      <h2>密钥信息</h2>
+      <div class="row2">
+        <span class="title">公钥</span>
+        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
+      </div>
+      <div class="row2">
+        <span class="title">私钥</span>
+        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" />
+      </div>
+      <div class="row2">
+        <span class="title">短语</span>
+        <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="generateNewKP" class="btn"><span class="btnTitle">随机生成密钥对</span></div>
+        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成</span></div>
+      </div>
+    </section>
+
+    <hr />
+    <section class="section-card">
+      <h2>加解密</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+      </div>
+
+      <div class="row plain-cipher-row">
+        <div class="border content">
+          <div class="title">明文</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">下载解密文件</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="border content">
+          <div class="title">密文 Base64</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
+            <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
+            <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
+          </div>
+          <label class="newline2">
+            br 换行
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="js/tool.js"></script>
+    <script type="module" src="js/index.js"></script>
+
+    <hr />
+    <section class="section-card section-muted about-section">
+      <h1>关于</h1>
+      <pre id="build"></pre>
+      <p><a href="https://github.com/Lorem3/webecc/">项目地址 GitHub</a></p>
+      <h2><a href="fmt.html">格式说明</a></h2>
+      <pre class="about-intro">此网页利用 Curve25519 椭圆曲线进行加密，所有操作均在本地完成。
+
+由于 Curve25519 的格式要求，下面为 D. J. Bernstein 文章链接说明。例如：
+0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+实际对应同一密钥。</pre>
+      <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
+      <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
+      <pre>mysecret[0] &= 248;
+mysecret[31] &= 127;
+mysecret[31] |= 64;</pre>
+    </section>
+
+    <hr />
+    <section class="section-card browser-requirements-section">
+      <h2>浏览器要求</h2>
+      <table>
+        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var hrAfterUsage = document.querySelector('.hr-after-usage');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && hrAfterUsage && browserSection) {
+        contain.removeChild(usageSection);
+        contain.removeChild(hrAfterUsage);
+        contain.insertBefore(hrAfterUsage, browserSection);
+        contain.insertBefore(usageSection, browserSection);
+      }
+    })();
+  </script>
+</body>
+
+</html>

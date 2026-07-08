@@ -6,9 +6,6 @@ src/test.ts
 tmp
 tmp/*
 pkinfo.txt
-www/js
-www/js/*
-www/css
-www/css/*
-www/README.html
+www
+www/*
 hash.txt
