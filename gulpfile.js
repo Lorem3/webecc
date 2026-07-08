@@ -242,7 +242,8 @@ gulp.task("hash", gulp.series(["genHashFile", "calHash"]));
 gulp.task("copytemplate", function (cb) {
   try {
     fs.copyFileSync("./src/html/index.html", "./www/index.html");
-    console.log("Copied template from src/html/index.html to www/index.html");
+    fs.copyFileSync("./src/html/fmt.html", "./www/fmt.html");
+    console.log("Copied templates from src/html/ to www/");
     cb();
   } catch (error) {
     console.error("Error copying template:", error);
