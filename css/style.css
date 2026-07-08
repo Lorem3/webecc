@@ -138,6 +138,7 @@ textarea::placeholder {
 }
 
 .btn {
+  display: flex;
   background: var(--text);
   border: none;
   border-radius: var(--radius-sm);
