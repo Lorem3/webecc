@@ -1,10 +1,10 @@
 
 # 这是用来做什么的？
-定期导出密码管理器的密钥加密备份，发送到邮箱。  
+定期导出密码管理器的密钥加密备份，发送到邮箱。
 **所有操作在浏览器本地进行，无服务器参与。**
 
-> 以前搞丢过bitwarden的两步验证，只能删掉账号。  
-> 定期导出管理器的密钥 
+> 以前搞丢过bitwarden的两步验证，只能删掉账号。
+> 定期导出管理器的密钥
 > 将公钥放到链接里面，方便每次备份，不用每次输入短语
 
 
@@ -49,8 +49,10 @@ json结构
 `下面short都是小端模式`
 
 + 1-2字节short 意义
-  - 4：先gzip后加密
-  - 5：直接加密
+  - 4：老格式，先gzip后加密 (Blake2b)
+  - 5：老格式，直接加密 (Blake2b)
+  - 12：新格式，直接加密 (HMAC-SHA512)
+  - 13：新格式，先gzip后加密 (HMAC-SHA512)
 
 + 3-4字节的short值表示 iv的长度 ，16  
 + 5-6字节的short值表示 mac校验hash的长度 32
@@ -61,7 +63,7 @@ json结构
 + EncryptData
 
 
-## 过程
+## 老格式 (format=0, Blake2b)
 
 ```
 生成临时公钥私钥 tmpSecKey , tmpPubKey
@@ -96,8 +98,71 @@ mac = blake2b(IV + tmpPubKey + EncryptData)
 
 ```
 
- 
 
+## 新格式 (format=1, HMAC-SHA512)
+
+```
+生成临时公钥私钥 tmpSecKey , tmpPubKey
+
+sharedX（32 byte）= publickKey • tmpSecKey 
+
+buffer[96];
+copy sharedX  => buffer[0..31]
+
+/**
+* 下面公钥按照小端模式比较，先比较高位置，再比较低位
+*/
+if tmpPubKey > publickKey  
+    copy publickKey => buffer[32...63]
+    copy tmpPubKey => buffer[64...95]   
+else  
+    copy publickKey => buffer[32...63]
+    copy tmpPubKey => buffer[64...95]    
+end  
+
+利用 SHA-512 生成64字节长度digest
+digest = SHA-512(buffer)
+
+其中 digest[0..31] 作为 AES-CBC 的密钥 aesKey,使用IV 一起加密密钥生成 加密数据 EncryptData
+
+其中 digest[32,63]作为计算mac的密钥 HKEY，输出32字节数据
+
+采用 HMAC-SHA512,输出32字节，key = HKEY
+
+mac = HMAC-SHA512(HKEY, IV + tmpPubKey + EncryptData)
+
+
+```
+
+
+# 独立加密模块 (enc.ts)
+
+独立的加密模块，使用 Web Crypto API 实现，不依赖 curve25519.js。
+
+## 特性
+- 纯 Web Crypto API 实现
+- 支持 X25519 ECDH 密钥交换
+- 支持 gzip 压缩
+- 支持 SHA-512 密钥派生
+- 支持 HMAC-SHA512 MAC 校验
+- 支持 AES-CBC 加密
+- 输入输出均为 Uint8Array
+
+## 使用方法
+
+```typescript
+// 初始化
+const enc = await initEnc();
+
+// 加密
+const pubKey = new Uint8Array([...]); // 32字节公钥
+const msg = new TextEncoder().encode('Hello');
+const encrypted = await enc.encrypt(pubKey, msg);
+
+// 解密 (使用 EC 类)
+const privKey = '...'; // base64私钥
+const decrypted = await ec.decrypt(privKey, encrypted);
+```
 
 
 # 根据密码短语生成密钥
@@ -115,4 +180,3 @@ PBKDF2 参数
 |iteration|123456|
 |hash|SHA-256|
 |outLen|256bit|
- 
