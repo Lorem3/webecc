@@ -115,7 +115,7 @@ gulp.task("clear", clean);
 gulp.task("combinejs", async function (cb) {
   // fs.renameSync("www/js/wasm_gzip_bg.wasm", "www/js/tool_bg.wasm");
   return gulp
-    .src(["./tmp/!(index).js"])
+    .src(["./tmp/*.js", "!./tmp/index.js"])
     .pipe(concat("tool.js"))
     .pipe(uglify(getugliyconfig()))
     .pipe(gulp.dest("www/js"));
