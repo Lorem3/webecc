@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>README.md</title>
+  <link rel="stylesheet" href="css/readme.min.css">
+  <style lang="">
+  
+  body{
+        background-color: #efefef;
+        max-width: 960px;
+        margin:auto;
+    }
+    .main{
+        background-color: white;
+        padding: 2em;
+    }
+    tr:nth-child(even){
+        background-color: #efefef;
+    }
+
+    pre{
+        background-color: #efefef;
+        padding: 2em;
+    }
+  
+  </style>
+</head>
+<div class="main">
+<h1 id="-">这是用来做什么的？</h1>
+<p>定期导出密码管理器的密钥加密备份，发送到邮箱。<br><strong>所有操作在浏览器本地进行，无服务器参与。</strong></p>
+<blockquote>
+<p>以前搞丢过bitwarden的两步验证，只能删掉账号。<br>定期导出管理器的密钥<br>将公钥放到链接里面，方便每次备份，不用每次输入短语</p>
+</blockquote>
+<h1 id="-">带入参数</h1>
+<p>通过页面的一对密钥对 解密hash里面的data,解密成一个json</p>
+<pre><code>私钥 yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=
+公钥 dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
+</code></pre><p>json结构</p>
+<pre><code>{
+    prefix:string  
+    pubkey:string
+    toEmail:string
+}
+</code></pre><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+<th>其他</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>prefix</td>
+<td>密码短语的前缀(建议邮箱后面加上<code>#</code>)，和密码短语一起生成密钥对</td>
+<td>可为空</td>
+</tr>
+<tr>
+<td>pubkey</td>
+<td>传入的默认公钥，用来加密</td>
+</tr>
+<tr>
+<td>toEmail</td>
+<td>生成mailto链接，发送加密的结果作为备份</td>
+</tr>
+<tr>
+<td>emailSubject</td>
+<td>邮件主题</td>
+</tr>
+</tbody>
+</table>
+<h2 id="-hash-">通过hash 带入参数</h2>
+<p><a href="https://webecc.pages.dev/#&amp;data=BAAQACAAIAB3v4SZnpkL7YvNQK4Up1anEtK61zy7RWgCxTKz1jpp9oH8QLfqdbqAZRFcNnHvqYHnqfx91GT1hvch7LdnMM6c88W6QV5V56fpWLcXU5jXVWv%2BiZY4P3INk%2FJw6o5NtVJhYTHFK0UcXb7hLdx7GCaTIgWg0Zon3%2B9BIEaspj8c166yRsjD5TeZb5IWUjzPUGaxb1vQ3FCQH%2FRE6MLcf7S2hhMUT2yJzXaoqJIUMOnHtbcPmY4BpN6trjItVlE0rJkZsreBRybrcrMXyzdasklMLpk2LVcY5G4noZDRnY93nESSKkerOv%2Fs4nz82fvJjEzY%2F%2FRcAoy7JP%2BgOlvXSsUp">https://webecc.pages.dev/#&amp;data=BAAQACAAIAB3v4SZnpkL7YvNQK4Up1anEtK61zy7RWgCxTKz1jpp9oH8QLfqdbqAZRFcNnHvqYHnqfx91GT1hvch7LdnMM6c88W6QV5V56fpWLcXU5jXVWv%2BiZY4P3INk%2FJw6o5NtVJhYTHFK0UcXb7hLdx7GCaTIgWg0Zon3%2B9BIEaspj8c166yRsjD5TeZb5IWUjzPUGaxb1vQ3FCQH%2FRE6MLcf7S2hhMUT2yJzXaoqJIUMOnHtbcPmY4BpN6trjItVlE0rJkZsreBRybrcrMXyzdasklMLpk2LVcY5G4noZDRnY93nESSKkerOv%2Fs4nz82fvJjEzY%2F%2FRcAoy7JP%2BgOlvXSsUp</a></p>
+<h1 id="-">格式说明</h1>
+<h2 id="-">结构</h2>
+<table>
+<thead>
+<tr>
+<th>2字节</th>
+<th>2字节</th>
+<th>2字节</th>
+<th>2字节</th>
+<th>IV</th>
+<th>MAC</th>
+<th>随机公钥</th>
+<th>加密数据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>下面short都是小端模式</code></p>
+<ul>
+<li><p>1-2字节short 意义</p>
+<ul>
+<li>4：先gzip后加密</li>
+<li>5：直接加密</li>
+</ul>
+</li>
+<li><p>3-4字节的short值表示 iv的长度 ，16  </p>
+</li>
+<li>5-6字节的short值表示 mac校验hash的长度 32</li>
+<li>7-8字节 字节表示临时公钥长度 ，32</li>
+<li>IV   // 随机生成</li>
+<li>MAC  ，//最后计算生成</li>
+<li>tmpPubKey //随机生成公钥私钥，私钥(tmpSecKey)使用后丢弃</li>
+<li>EncryptData</li>
+</ul>
+<h2 id="-">过程</h2>
+<pre><code>生成临时公钥私钥 tmpSecKey , tmpPubKey
+
+sharedX（32 byte）= publickKey • tmpSecKey 
+
+buffer[96];
+copy sharedX  =&gt; buffer[0..31]
+
+/**
+* 下面公钥按照小端模式比较，先比较高位置，再比较低位
+*/
+if tmpPubKey &gt; publickKey  
+    copy publickKey =&gt; buffer[32...63]
+    copy tmpPubKey =&gt; buffer[64...95]   
+else  
+    copy publickKey =&gt; buffer[32...63]
+    copy tmpPubKey =&gt; buffer[64...95]    
+end  
+
+利用hash算法 blake2b 生成64字节长度digest
+digest = blake2b(buffer)
+
+其中 digest[0..31] 作为 AES-CBC 的密钥 aesKey,使用IV 一起加密密钥生成 加密数据 EncryptData
+
+其中 digest[32,63]作为计算mac的密钥 HKEY，输出32字节数据
+
+也是采用blake2b,指定输出32字节，key = HKEY
+
+mac = blake2b(IV + tmpPubKey + EncryptData)
+
+
+</code></pre><h1 id="-">根据密码短语生成密钥</h1>
+<p>步骤</p>
+<ol>
+<li>prefix(如果有) + 密码短语  作为  key  = prefix + phrase</li>
+<li>PBKDF2(key) 生成32 字作为私钥, secKey = PBKDF2(key)</li>
+<li>根据私钥生成 密钥对</li>
+</ol>
+<p>PBKDF2 参数</p>
+<table>
+<thead>
+<tr>
+<th>PBKDF2参数</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>salt</td>
+<td>The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]</td>
+</tr>
+<tr>
+<td>iteration</td>
+<td>123456</td>
+</tr>
+<tr>
+<td>hash</td>
+<td>SHA-256</td>
+</tr>
+<tr>
+<td>outLen</td>
+<td>256bit</td>
+</tr>
+</tbody>
+</table>
+</div>
+</body>
+</html>
