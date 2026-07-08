@@ -94,26 +94,30 @@ function clean(cb) {
   try {
     rm("./tmp", () => {
       console.log("clean3");
-      if(fs.existsSync('./www/js')){
-        rm("./www/js", (e) => {
-          console.log("clean3333");
-          console.log(e);
-          cb();
-        });
-      }else{
-        cb()
+      // 确保 www/js 目录存在
+      if (!fs.existsSync('./www/js')) {
+        fs.mkdirSync('./www/js', { recursive: true });
+        console.log("Created www/js directory");
       }
-      
+      cb();
     });
   } catch (error) {
     console.log(error);
+    cb();
   }
-  
+
 }
 gulp.task("clear", clean);
 
 gulp.task("combinejs", async function (cb) {
   // fs.renameSync("www/js/wasm_gzip_bg.wasm", "www/js/tool_bg.wasm");
+  const files = fs.readdirSync("./tmp").filter(f => f.endsWith(".js") && f !== "index.js");
+  console.log("Files to combine:", files);
+  if (files.length === 0) {
+    console.log("WARNING: No JS files found in tmp/ to combine!");
+    cb();
+    return;
+  }
   return gulp
     .src(["./tmp/*.js", "!./tmp/index.js"])
     .pipe(concat("tool.js"))
@@ -126,6 +130,12 @@ gulp.task("indexjs", async function (cb) {
     .src(["./tmp/index.js"])
     .pipe(uglify(getugliyconfig()))
     .pipe(gulp.dest("www/js"));
+});
+
+gulp.task("checkFiles", async function (cb) {
+  console.log("tmp/ contents:", fs.readdirSync("./tmp"));
+  console.log("www/js/ contents:", fs.existsSync("./www/js") ? fs.readdirSync("./www/js") : "directory does not exist");
+  cb();
 });
 
 gulp.task("inlineHtml", function (cb) {
@@ -254,7 +264,9 @@ gulp.task(
     "build",
     "removetest",
     "hash",
+    "checkFiles",
     "combinejs",
+    "checkFiles",
     "indexjs",
     "inlineHtml",
   ])
