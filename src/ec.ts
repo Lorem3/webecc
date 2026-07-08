@@ -88,7 +88,7 @@ class EC{
         this.zlib = new GZip
 
     }
-    
+
     toHex(arr:Uint8Array){
         let strArr = []  as  string[]
         arr.forEach(e=>{let s = e.toString(16) ;strArr.push(s.length == 1 ? '0' + s : s)})
@@ -148,7 +148,7 @@ class EC{
         }else{
             a = await this.genRandomKeyBuffer();
         }
-        
+
         let kp = X25519.generateKeyPair(a);
         let kp2 = {
             public:base64js.fromByteArray(kp.public),

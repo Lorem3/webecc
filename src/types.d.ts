@@ -25,7 +25,7 @@ interface Blake2b {
     digest(out: 'hex'): string;
 }
 declare interface Blake2b {
-    
+
 }
 declare interface Blake2bHelp {
      blake2bInit(outlen:number, key ?:Uint8Array, salt?:Uint8Array, personal?:Uint8Array):Blake2b
@@ -53,7 +53,8 @@ declare const exports:{
     default():void
     test:()=>void
     zlib:ZLIB,
-    initEC:()=> Promise<EC>
+    initEC:()=> Promise<EC>,
+    initEnc:()=> Promise<Enc>
 }
 
 
@@ -69,6 +70,11 @@ declare interface  EC{
     base64Decode(str:string,urlsafe ?:1|0):Uint8Array
   }
 declare function initEC():EC;
+
+declare interface Enc{
+    encrypt(pubKey:Uint8Array,msg:Uint8Array):Promise<Uint8Array>
+}
+declare function initEnc():Promise<Enc>;
 
 
 declare const __DEBUG__:boolean
