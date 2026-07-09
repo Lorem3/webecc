@@ -170,11 +170,40 @@ textarea::placeholder {
 .btn-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-sm);
   margin-top: var(--space-sm);
 }
 .btnHolder {
   margin-left: 0;
+}
+.base64-type-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: var(--space-sm);
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #f8f9fa;
+}
+.base64-type-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.radio-label input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .border {

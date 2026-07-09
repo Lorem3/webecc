@@ -79,6 +79,12 @@
       <div class="row2 btnHolder btn-group">
         <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
         <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+        <div class="base64-type-group">
+          <span class="base64-type-label">密文类型</span>
+          <label class="radio-label"><input type="radio" name="base64Type" value="auto" checked /> auto</label>
+          <label class="radio-label"><input type="radio" name="base64Type" value="standard" /> 标准 base64</label>
+          <label class="radio-label"><input type="radio" name="base64Type" value="urlsafe" /> URL-safe base64</label>
+        </div>
       </div>
 
       <div class="row plain-cipher-row">

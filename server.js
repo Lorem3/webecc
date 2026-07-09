@@ -39,7 +39,7 @@ const port = 3000;
 // Create Server
 const server = http.createServer((req, res) => {
   var uri = url.parse(req.url).pathname;
-  var fileName = path.join(process.cwd(), unescape(uri)); // Current working directory + uri
+  var fileName = path.join(process.cwd(), 'www', unescape(uri)); // www directory + uri
   console.log('Loading ' + uri);
   var stats;
 

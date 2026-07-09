@@ -1,7 +1,74 @@
 
 (async function () {
 
-  let g_urlsafe = 1 as 1|0
+  type Base64Type = 'standard' | 'urlsafe' | 'auto'
+
+  function getBase64Type(): Base64Type {
+    const checked = document.querySelector('input[name="base64Type"]:checked') as HTMLInputElement
+    return (checked?.value as Base64Type) || 'auto'
+  }
+
+  function setBase64Type(type: Base64Type) {
+    const radio = document.querySelector(`input[name="base64Type"][value="${type}"]`) as HTMLInputElement
+    if (radio) {
+      radio.checked = true
+      radio.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+  }
+
+  function detectBase64Type(str: string): Base64Type | null {
+    const trimmed = str.replace(/\s/g, '')
+    if (!trimmed) return null
+    const hasUrlSafe = /[-_]/.test(trimmed)
+    const hasStandard = /[+/]/.test(trimmed)
+    if (hasUrlSafe && !hasStandard) return 'urlsafe'
+    if (hasStandard && !hasUrlSafe) return 'standard'
+    if (!hasUrlSafe && !hasStandard) {
+      if (trimmed.endsWith('=')) return 'standard'
+      return null
+    }
+    return 'standard'
+  }
+
+  function showBase64TypeModal(): Promise<Base64Type> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div')
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999'
+
+      const box = document.createElement('div')
+      box.style.cssText = 'background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)'
+
+      const title = document.createElement('h3')
+      title.textContent = '无法自动识别密文类型'
+      title.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;font-weight:600'
+
+      const desc = document.createElement('p')
+      desc.textContent = '请选择该密文的 Base64 类型：'
+      desc.style.cssText = 'margin:0 0 1rem;font-size:0.9375rem;color:var(--text-muted,#666)'
+
+      const btnRow = document.createElement('div')
+      btnRow.style.cssText = 'display:flex;gap:0.75rem;justify-content:flex-end'
+
+      const makeBtn = (label: string, type: Base64Type, primary = false) => {
+        const btn = document.createElement('button')
+        btn.textContent = label
+        btn.style.cssText = primary
+          ? 'padding:0.5rem 1.25rem;border:none;border-radius:8px;background:#000;color:#fff;font-size:0.9375rem;cursor:pointer'
+          : 'padding:0.5rem 1.25rem;border:1px solid #ccc;border-radius:8px;background:#fff;font-size:0.9375rem;cursor:pointer'
+        btn.onclick = () => { document.body.removeChild(overlay); resolve(type) }
+        return btn
+      }
+
+      btnRow.appendChild(makeBtn('标准 base64', 'standard'))
+      btnRow.appendChild(makeBtn('URL-safe base64', 'urlsafe', true))
+      box.appendChild(title)
+      box.appendChild(desc)
+      box.appendChild(btnRow)
+      overlay.appendChild(box)
+      overlay.onclick = (e) => { if (e.target === overlay) { document.body.removeChild(overlay); resolve('standard') } }
+      document.body.appendChild(overlay)
+    })
+  }
 
   interface InputData {
     prefix: string;
@@ -67,7 +134,8 @@
     try {
       let te = new TextEncoder();
       let enc = await ec.encrypt(p, te.encode(text));
-      setCipherText(ec.base64Encode(enc,g_urlsafe));
+      const b64type = getBase64Type()
+      setCipherText(ec.base64Encode(enc, b64type === 'urlsafe' ? 1 : 0));
       return true;
     } catch (error) {
       setErrMsg(error as string);
@@ -113,7 +181,17 @@
       return;
     }
     try {
-      let arr = ec.base64Decode(base64,g_urlsafe);
+      const detected = detectBase64Type(base64)
+      let urlsafe: 0 | 1
+      if (detected !== null) {
+        setBase64Type(detected)
+        urlsafe = detected === 'urlsafe' ? 1 : 0
+      } else {
+        const chosen = await showBase64TypeModal()
+        setBase64Type(chosen)
+        urlsafe = chosen === 'urlsafe' ? 1 : 0
+      }
+      let arr = ec.base64Decode(base64, urlsafe);
       let dec = await ec.decrypt(p, arr);
       let te = new TextDecoder();
       setPlainText(te.decode(dec));
@@ -417,9 +495,6 @@
     if (data2) {
       data = data2
     }
-    if (data && !data2) {
-      g_urlsafe = 0
-    }
 
     if (!data) {
       return; // No data to process
@@ -428,7 +503,7 @@
     let ttlog = console.log;
     ttlog({ webPrivate, webPublic });
 
-    let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data,g_urlsafe));
+    let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data, data2 ? 1 : 0));
     let plain = new TextDecoder().decode(plainBf);
     ttlog(plain);
 
