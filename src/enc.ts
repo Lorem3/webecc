@@ -143,7 +143,7 @@ class Enc {
 
             // 10. Build result
             const result = new Uint8Array(8 + iv.length + mac.length + ephemeralPubBytes.length + enc.length);
-            result[0] = 0x0D;
+            result[0] = 0x0C;
             result[1] = 0;
             result[2] = 16;
             result[3] = 0;

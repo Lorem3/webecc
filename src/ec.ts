@@ -160,12 +160,12 @@ class EC{
         let byte0 = data[0]
         let useSha = (byte0 & 0x08) !== 0  // bit3: SHA-512 vs Blake2b
         // 旧格式 byte0=4(gzip+blake) / 5(raw+blake)，bit3=0
-        // 新格式 bit3=0/1,bit2=1,bit1=0,bit0=压缩
+        // 新格式 bit3=1,bit2=1,bit1=0,bit0=0压缩/1不压缩
         let isNew = useSha || (byte0 !== 4 && byte0 !== 5)
         if (isNew && (byte0 & 0x06) !== 0x04) {
             throw "data format not support"
         }
-        let isZip  = useSha ? ((byte0 & 0x01) !== 0) : (byte0 === 4)
+        let isZip  = useSha ? ((byte0 & 0x01) === 0) : (byte0 === 4)
         let format:0|1 = useSha ? 1 : 0
         let type = isNew ? (isZip ? 4 : 5) : byte0
         if (data.length < 88) {
@@ -307,7 +307,7 @@ class EC{
         }
 
         let result = new Uint8Array(8 + mac.length + iv.length + tmpPub.length + enc.length )
-        result[0]= format ? (0x04 | (isZipData ? 0x01 : 0) | 0x08) : (isZipData ? 4 : 5);
+        result[0]= format ? (0x04 | (isZipData ? 0 : 0x01) | 0x08) : (isZipData ? 4 : 5);
         result[1]= 0
         result[2]= 16;
         result[3]= 0;

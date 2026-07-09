@@ -51,8 +51,8 @@ json结构
 + 1-2字节short 意义
   - 4：老格式，先gzip后加密 (Blake2b)
   - 5：老格式，直接加密 (Blake2b)
-  - 12：新格式，直接加密 (HMAC-SHA512)
-  - 13：新格式，先gzip后加密 (HMAC-SHA512)
+  - 12：新格式，先gzip后加密 (HMAC-SHA512)
+  - 13：新格式，直接加密 (HMAC-SHA512)
 
 + 3-4字节的short值表示 iv的长度 ，16  
 + 5-6字节的short值表示 mac校验hash的长度 32
