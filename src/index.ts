@@ -1,5 +1,7 @@
 
-(async function () {
+const App = (function () {
+
+  async function init() {
 
   type Base64Type = 'standard' | 'urlsafe' | 'auto'
 
@@ -78,7 +80,7 @@
   }
   let G_Input: InputData;
 
-  let ec = await exports.initEC();
+  let ec = await ECC.initEC();
 
   function getPirvateKey() {
     let input = document.getElementById("private") as HTMLInputElement;
@@ -479,9 +481,7 @@
   };
 
   let btime = document.getElementById("build") as HTMLElement;
-  
-  btime.innerText = `Package:${__BUILD_MOD__} \n ${__BUILD_TIME__} `;
-   
+  btime.innerText = "Package:" + __BUILD_MOD__ + "\n " + __BUILD_TIME__;
 
   (async function initDefaultValues() {
 
@@ -523,10 +523,11 @@
     }
   })();
 
+  }
 
- 
-
+  return { init };
 })();
+App.init();
 
 
 

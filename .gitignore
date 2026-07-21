@@ -2,7 +2,6 @@ node_modules
 node_modules/*
 dist
 dist/*
-src/test.ts
 tmp
 tmp/*
 pkinfo.txt

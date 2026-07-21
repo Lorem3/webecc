@@ -1,4 +1,6 @@
 
+const ECC = (function () {
+
 var subtle = crypto.subtle
 
 class GZip{
@@ -149,7 +151,7 @@ class EC{
             a = await this.genRandomKeyBuffer();
         }
 
-        let kp = X25519.generateKeyPair(a);
+        let kp = await X25519.generateKeyPair(a);
         let kp2 = {
             public:base64js.fromByteArray(kp.public),
             private:base64js.fromByteArray(kp.private)
@@ -180,9 +182,9 @@ class EC{
         let mac = data.subarray(24,56);
         let tmpPub = data.subarray(56,88);
         let enc = data.subarray(88)
-        let dh = X25519.sharedKey(privateKey,tmpPub);
+        let dh = await X25519.sharedKey(privateKey,tmpPub);
 
-        let kp = X25519.generateKeyPair(privateKey);
+        let kp = await X25519.generateKeyPair(privateKey);
         let hash64 = new Uint8Array(64);
         await this.hashDH(dh,kp.public,tmpPub,hash64,format);
 
@@ -280,8 +282,8 @@ class EC{
             throw "pubkey length error"
         }
         let a = await this.genRandomKeyBuffer(32);
-        let kp = X25519.generateKeyPair(a);
-        let dh = X25519.sharedKey(kp.private,pubKey);
+        let kp = await X25519.generateKeyPair(a);
+        let dh = await X25519.sharedKey(kp.private,pubKey);
 
         let hash2 = new Uint8Array(64);
         await this.hashDH(dh,pubKey,kp.public,hash2,format)
@@ -361,8 +363,10 @@ class EC{
     }
 }
 
-export async function initEC(){
+async function initEC(){
     // await init();
     return new EC()
 }
-exports.initEC = initEC
+
+    return { initEC };
+})();

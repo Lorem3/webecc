@@ -22,61 +22,50 @@ concurrency:
 
 jobs:
   del_runs:
-      needs: build
-      runs-on: ubuntu-latest
-      permissions:
-        actions: write
-        contents: read
-      steps:
-        - name: Delete workflow runs for current repo
-          uses: Mattraks/delete-workflow-runs@v2
-          with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-            repository: ${{ github.repository }}
-            retain_days: 14
-            keep_minimum_runs: 2
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Delete workflow runs for current repo
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 14
+          keep_minimum_runs: 2
+
   build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - name: Setup Node
-          uses: actions/setup-node@v3
-          with:
-            node-version: "20"
-            cache: ${{ steps.detect-package-manager.outputs.manager }}
-        - run: |
-            npm ci
-        - run: |
-            git log -1 --format=%h > hash.txt
-            ls -al 
-            npm run build --if-present 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
 
+      - name: Install dependencies
+        run: npm ci
 
+      - name: Build
+        run: |
+          git log -1 --format=%h > hash.txt
+          npm run build
 
-        - run: |
+      - name: Deploy www/ to page branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "you@example.com"
-
-            ls -al
-            cd www
-            git init 
-            git add .
-            git commit -m "Generated files after build"
-            git checkout -b page
-            echo https://github.com/${{ github.repository }}.git
-            git remote add origin https://github.com/${{ github.repository }}.git
-
-            
-
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:page -f  # 使用 GITHUB_TOKEN 进行身份验证
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Git
-
- 
-        
-
-            
-   
-      
+          cd www
+          git init
+          git add .
+          git commit -m "Generated files after build"
+          git checkout -b page
+          git remote add origin https://github.com/${{ github.repository }}.git
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:page -f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
