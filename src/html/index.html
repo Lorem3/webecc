@@ -41,8 +41,12 @@
         <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
       </div>
       <div class="bookmark-actions">
-        <a id="genbookmark" href="javascript:void(0)" class="action-link">生成书签链接（直接使用公钥）</a>
         <a id="genbookmark2" href="javascript:void(0)" class="action-link">生成书签链接（使用密码短语派生的公钥）</a>
+        <a id="moreExpand" href="javascript:void(0)" class="action-link">更多展开</a>
+        <a id="genbookmark" href="javascript:void(0)" class="action-link" style="display:none">生成书签链接（直接使用公钥）</a>
+        <div id="genbookmarkExplain" class="bookmark-hint" style="display:none">
+          说明：如果你的公钥是通过密码短语派生的，请使用密码短语书签。
+        </div>
       </div>
       <div id="bookmark"></div>
     </section>
@@ -65,6 +69,11 @@
         <span class="title">短语</span>
         <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
       </div>
+      <div class="row2" id="saltRow" style="display:none">
+        <span class="title">Salt</span>
+        <span id="salt" class="salt-text"></span>
+      </div>
+      <p id="saltSaveHint" style="display:none">请<strong>生成书签保存</strong>，刷新页面后将无法复现同一密钥</p>
       <div class="row2 btnHolder btn-group">
         <div id="generateNewKP" class="btn"><span class="btnTitle">随机生成密钥对</span></div>
         <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
@@ -110,6 +119,7 @@
             <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
             <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
           </div>
+          <p style="color:#101010;margin:0.5rem 0 0"><strong>请确保本页面链接也粘贴到邮件内容</strong></p>
           <label class="newline2">
             br 换行
             <input type="checkbox" name="newLine" id="newline" />

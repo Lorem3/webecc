@@ -40,12 +40,11 @@ function getHash() {
 
 const esbuildOpts = {
   target: 'es2020',
-  // 仅去掉注释/多余空白，不压缩标识符与语法
-  minifyWhitespace: true,
+  minifyWhitespace: !isDev,
   minifyIdentifiers: false,
   minifySyntax: false,
   drop: isDev ? [] : ['console'],
-  legalComments: 'none',
+  legalComments: isDev ? 'inline' : 'none',
   logLevel: 'warning',
   define: {
     __DEBUG__: isDev ? 'true' : 'false',
@@ -113,8 +112,13 @@ function cpTemplate() {
 
 function cssMin() {
   mkdirp('www/css');
-  execSync('npx esbuild css/style.css --minify --outfile=www/css/style.min.css', { stdio: 'inherit' });
-  console.log('  cssMin done');
+  if (isDev) {
+    cp('css/style.css', 'www/css/style.min.css');
+    console.log('  cssMin skipped (dev, no minify)');
+  } else {
+    execSync('npx esbuild css/style.css --minify --outfile=www/css/style.min.css', { stdio: 'inherit' });
+    console.log('  cssMin done');
+  }
 }
 
 function genReadMe() {

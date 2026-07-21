@@ -72,13 +72,34 @@ const App = (function () {
     })
   }
 
+  const FIXED_SALT =
+    "The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]";
+
+  const KDF_V1 = {
+    ver: "1.0",
+    hash: "SHA-256",
+    iterations: 123456,
+  } as const;
+
+  const KDF_V2 = {
+    ver: "2.0",
+    hash: "SHA-512",
+    iterations: 210000,
+  } as const;
+
   interface InputData {
     prefix: string;
     pubkey: string;
     toEmail: string;
     emailSubject: string;
+    salt?: string;
+    ver?: string;
+    kdfHash?: string;
+    kdfIterations?: number;
   }
-  let G_Input: InputData;
+  let G_Input: InputData | undefined;
+  let currentSalt: string | undefined;
+  let currentKdf: { ver: string; hash: string; iterations: number } | undefined;
 
   let ec = await ECC.initEC();
 
@@ -225,7 +246,79 @@ const App = (function () {
     }
   };
 
-  async function pbkdf2(phrase: string) {
+  function generateRandomSalt(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(33));
+    return ec.base64Encode(bytes);
+  }
+
+  function resolveSalt(): string {
+    if (G_Input?.salt) {
+      return G_Input.salt;
+    }
+    if (G_Input) {
+      return FIXED_SALT;
+    }
+    // 没有从书签带入 salt 的情况下，只在页面生命周期内生成一次并复用，
+    // 避免用户多次点击“根据短语生成”导致每次派生结果不同。
+    if (currentSalt) return currentSalt;
+    currentSalt = generateRandomSalt();
+    return currentSalt;
+  }
+
+  function kdfFromInput(
+    input?: InputData
+  ): { ver: string; hash: string; iterations: number } | undefined {
+    if (!input) return undefined;
+    if (input.kdfHash && input.kdfIterations) {
+      return {
+        ver: input.ver ?? KDF_V1.ver,
+        hash: input.kdfHash,
+        iterations: input.kdfIterations,
+      };
+    }
+    if (input.ver === KDF_V2.ver) return { ...KDF_V2 };
+    if (input.ver === KDF_V1.ver) return { ...KDF_V1 };
+    return undefined;
+  }
+
+  function resolveKdfParams(): { ver: string; hash: string; iterations: number } {
+    const fromBookmark = kdfFromInput(G_Input);
+    if (fromBookmark) return fromBookmark;
+    if (!G_Input) return { ...KDF_V2 };
+    return { ...KDF_V1 };
+  }
+
+  function resolveKdfForBookmark(): { ver: string; hash: string; iterations: number } {
+    const fromBookmark = kdfFromInput(G_Input);
+    if (fromBookmark) return fromBookmark;
+    if (G_Input) return { ...KDF_V1 };
+    if (currentKdf) return { ...currentKdf };
+    return { ...KDF_V2 };
+  }
+
+  function getAvailableSalt(): string | undefined {
+    return G_Input?.salt ?? currentSalt;
+  }
+
+  function showSaltInfo(salt: string) {
+    currentSalt = salt;
+    const row = document.getElementById("saltRow");
+    const el = document.getElementById("salt");
+    if (!row || !el) return;
+    el.textContent = salt;
+    row.style.display = "flex";
+
+    const hint = document.getElementById("saltSaveHint");
+    if (hint) {
+      hint.style.display = G_Input ? "none" : "block";
+    }
+  }
+
+  async function pbkdf2(
+    phrase: string,
+    saltStr?: string,
+    kdf?: { hash: string; iterations: number }
+  ) {
     var substl = crypto.subtle;
 
     let keyRaw = new TextEncoder().encode(phrase);
@@ -233,13 +326,14 @@ const App = (function () {
     let key = await substl.importKey("raw", keyRaw, "PBKDF2", false, [
       "deriveBits",
     ]);
-    let salt =
-      "The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]";
+    let salt = saltStr ?? FIXED_SALT;
+    let iterations = kdf?.iterations ?? KDF_V1.iterations;
+    let hash = kdf?.hash ?? KDF_V1.hash;
 
     let pbkdf2 = {
       name: "PBKDF2",
-      hash: "SHA-256",
-      iterations: 123456,
+      hash,
+      iterations,
       salt: new TextEncoder().encode(salt),
     };
     let af = await substl.deriveBits(pbkdf2, key, 256);
@@ -261,13 +355,17 @@ const App = (function () {
       return;
     }
 
-    if (G_Input?.prefix) {
+    const salt = resolveSalt();
+    if (G_Input?.prefix && !G_Input.salt) {
       phrase = `${G_Input.prefix}${phrase}`;
     }
 
-    let kp = await pbkdf2(phrase);
+    const kdf = resolveKdfParams();
+    currentKdf = kdf;
+    let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
     setPirvateKey(kp.private);
     setPublicKey(kp.public);
+    showSaltInfo(salt);
   };
 
   document.getElementById("downloadPlain")!.onclick = async () => {
@@ -411,9 +509,22 @@ const App = (function () {
     pubkey: string,
     toEmail: string,
     prefix: string,
-    emailSubject?: string
+    emailSubject?: string,
+    salt?: string,
+    options?: {
+      phraseHint?: boolean;
+      kdf?: { ver: string; hash: string; iterations: number };
+    }
   ) {
-    let s = { prefix, pubkey, toEmail, emailSubject };
+    let s: InputData = { prefix, pubkey, toEmail, emailSubject };
+    if (salt) {
+      s.salt = salt;
+    }
+    if (options?.kdf) {
+      s.ver = options.kdf.ver;
+      s.kdfHash = options.kdf.hash;
+      s.kdfIterations = options.kdf.iterations;
+    }
 
     let jsonstring = JSON.stringify(s);
     let arr = new TextEncoder().encode(jsonstring);
@@ -431,6 +542,14 @@ const App = (function () {
 
     let holder = document.getElementById("bookmark");
     holder?.replaceChildren(a);
+
+    if (options?.phraseHint) {
+      const hint = document.createElement("p");
+      hint.className = "bookmark-hint";
+      hint.textContent =
+        "如果你的公钥是通过密码短语派生的，请使用密码短语书签";
+      holder?.appendChild(hint);
+    }
   }
 
   document.getElementById("genbookmark")!.onclick = async () => {
@@ -451,7 +570,10 @@ const App = (function () {
     ) as HTMLInputElement;
     let subject = emailSubjectEle.value.trim();
 
-    await genbookmark(pubkey, toEmail, prefix, subject);
+    await genbookmark(pubkey, toEmail, prefix, subject, getAvailableSalt(), {
+      phraseHint: true,
+      kdf: resolveKdfForBookmark(),
+    });
   };
 
   document.getElementById("genbookmark2")!.onclick = async () => {
@@ -465,9 +587,13 @@ const App = (function () {
     let prefixE = document.getElementById("prefix") as HTMLInputElement;
     let prefix = prefixE.value.trim();
 
-    let phrase2 = `${prefix || ""}${phrase || ""}`;
-
-    let pubkey = (await pbkdf2(phrase2)).public;
+    const saltStr = generateRandomSalt();
+    let pubkey = (
+      await pbkdf2(phrase, saltStr, {
+        hash: KDF_V2.hash,
+        iterations: KDF_V2.iterations,
+      })
+    ).public;
 
     let emailEle = document.getElementById("email") as HTMLInputElement;
     let toEmail = emailEle.value.trim();
@@ -477,8 +603,25 @@ const App = (function () {
     ) as HTMLInputElement;
     let subject = emailSubjectEle.value.trim();
 
-    await genbookmark(pubkey, toEmail, prefix, subject);
+    await genbookmark(pubkey, toEmail, prefix, subject, saltStr, {
+      kdf: { ...KDF_V2 },
+    });
+    showSaltInfo(saltStr);
   };
+
+  // 默认隐藏“直接使用公钥”的书签入口，点击“更多展开”后显示
+  (function initMoreExpandBookmark() {
+    const moreExpand = document.getElementById("moreExpand") as HTMLElement | null;
+    const genbookmark = document.getElementById("genbookmark") as HTMLElement | null;
+    const explain = document.getElementById("genbookmarkExplain") as HTMLElement | null;
+    if (!moreExpand || !genbookmark) return;
+
+    moreExpand.onclick = () => {
+      genbookmark.style.display = "block";
+      if (explain) explain.style.display = "block";
+      moreExpand.style.display = "none";
+    };
+  })();
 
   let btime = document.getElementById("build") as HTMLElement;
   btime.innerText = "Package:" + __BUILD_MOD__ + "\n " + __BUILD_TIME__;
@@ -519,6 +662,13 @@ const App = (function () {
         "\t"
       )}`;
       setPublicKey(jsonObj.pubkey);
+      const kdf = kdfFromInput(jsonObj);
+      if (kdf) {
+        currentKdf = kdf;
+      }
+      if (jsonObj.salt) {
+        showSaltInfo(jsonObj.salt);
+      }
     } else {
     }
   })();

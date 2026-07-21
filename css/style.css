@@ -326,6 +326,15 @@ pre {
   display: block;
   margin-bottom: 0.5rem;
 }
+.bookmark-hint {
+  display: block;
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
 
 .usage-list p, .about-intro {
   margin: 0.5rem 0;
@@ -336,6 +345,28 @@ pre {
 .section-muted {
   background: #f8f9fa;
   border-color: var(--border);
+}
+
+#saltRow {
+  min-height: 50px;
+  align-items: flex-start;
+}
+
+#saltRow .title {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.salt-text {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  word-break: break-all;
+  line-height: 1.5;
 }
 
 body:hover {
