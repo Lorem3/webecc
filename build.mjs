@@ -40,7 +40,10 @@ function getHash() {
 
 const esbuildOpts = {
   target: 'es2020',
-  minify: false,
+  // 仅去掉注释/多余空白，不压缩标识符与语法
+  minifyWhitespace: true,
+  minifyIdentifiers: false,
+  minifySyntax: false,
   drop: isDev ? [] : ['console'],
   legalComments: 'none',
   logLevel: 'warning',
