@@ -103,6 +103,39 @@ const App = (function () {
 
   let ec = await ECC.initEC();
 
+  // 同步两个短语输入框的内容
+  function syncKeyphraseInputs() {
+    const keyphraseBookmark = document.getElementById("keyphraseBookmark") as HTMLInputElement;
+    const keyphrase = document.getElementById("keyphrase") as HTMLInputElement;
+    if (!keyphraseBookmark || !keyphrase) return;
+
+    let isSyncing = false;
+
+    const syncFromBookmark = () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      keyphrase.value = keyphraseBookmark.value;
+      isSyncing = false;
+    };
+
+    const syncFromKeyphrase = () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      keyphraseBookmark.value = keyphrase.value;
+      isSyncing = false;
+    };
+
+    keyphraseBookmark.addEventListener("input", syncFromBookmark);
+    keyphrase.addEventListener("input", syncFromKeyphrase);
+  }
+
+  // 确保 DOM 加载完成后再绑定同步事件
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", syncKeyphraseInputs);
+  } else {
+    syncKeyphraseInputs();
+  }
+
   function getPirvateKey() {
     let input = document.getElementById("private") as HTMLInputElement;
     return input?.value.trim();
