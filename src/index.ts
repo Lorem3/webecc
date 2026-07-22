@@ -471,17 +471,15 @@ const App = (function () {
 
  
 
-    let msg = `
-    v2   
-   ${G_Input?.prefix || ""} ${newLine}
-   备份时间:${beijingtime()} ${newLine}
+    let msg = `   
+${G_Input?.prefix || ""} ${newLine}
+备份时间:${beijingtime()} ${newLine}
 
-   公钥:${getPublicKey()}    ${newLine}
+公钥:${getPublicKey()}    ${newLine}
 
-   网页地址:     ${newLine}
+网页地址:     ${newLine}
    ${location.href}         ${newLine}
-
-   数据base64:
+数据base64:
 
 
    `;
@@ -511,17 +509,15 @@ const App = (function () {
 
 
     let msg = `
-    v2-urlsafe
-   ${G_Input?.prefix || ""}  ${newLine}
-   备份时间:${beijingtime()} ${newLine}
+${G_Input?.prefix || ""}  ${newLine}
+备份时间:${beijingtime()} ${newLine}
 
-   公钥:${getPublicKey()} ${newLine}
+公钥:${getPublicKey()} ${newLine}
 
-   网页地址: ${newLine}
-   ${location.href}  ${newLine}
+网页地址: ${newLine}
+${location.href}  ${newLine}
 
-
-   数据base64: ${newLine}
+数据base64: ${newLine}
 
    ${cipher}
 
@@ -533,6 +529,67 @@ const App = (function () {
     )}&body=${encodeURIComponent(msg)}`;
     console.log('mailto',mailto);
     window.open(mailto, "target", "");
+  };
+
+  // SHA-512 哈希并截取前33字节转为 Base64
+  async function sha512ToBase64(input: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+    const hashArray = new Uint8Array(hashBuffer).slice(0, 33);
+    return ec.base64Encode(hashArray);
+  }
+
+  // 保存到 CloudFlare
+  document.getElementById("saveToCloudflare")!.onclick = async () => {
+    const pubkey = getPublicKey();
+    if (!pubkey) {
+      setErrMsg("公钥为空");
+      return;
+    }
+
+    // 先确保有加密数据
+    let cipher = getCipherText();
+    if (!cipher) {
+      const t = await encryptClick();
+      if (!t) return;
+      cipher = getCipherText();
+      if (!cipher) return;
+    }
+
+    const key = encodeURIComponent(await sha512ToBase64(pubkey));
+    const emailSubjectEle = document.getElementById("emailsubject") as HTMLInputElement;
+    const subject = emailSubjectEle.value.trim() || "备份";
+
+    let content = `
+备份时间:${beijingtime()}
+公钥:${getPublicKey()}
+网页地址: ${location.href}
+
+数据base64:
+
+${cipher}
+`;
+
+    const noe = encodeURIComponent(subject);
+    const encodedContent = encodeURIComponent(content);
+    console.log('encodedContent',encodedContent);
+
+    const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&noe=${noe}&content=${encodedContent}`;
+    window.open(url, "_blank");
+  };
+
+  // 从 CloudFlare 恢复
+  document.getElementById("restoreFromCloudflare")!.onclick = async () => {
+    const pubkey = getPublicKey();
+    if (!pubkey) {
+      setErrMsg("公钥为空");
+      return;
+    }
+
+    const key = encodeURIComponent(await sha512ToBase64(pubkey));
+    const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
+    window.open(url, "_blank");
   };
 
   let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
@@ -562,12 +619,14 @@ const App = (function () {
     let jsonstring = JSON.stringify(s);
     let arr = new TextEncoder().encode(jsonstring);
     let dataBuff = await ec.encrypt(webPublic, arr);
-    let data = ec.base64Encode(dataBuff,1);
-    
+    let data = ec.base64Encode(dataBuff,1).replace(/[\r\n]/g, '');
+
 
     let bookmark = `${location.origin}${
       location.pathname
     }?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data)}`;
+
+    console.log('网页地址:', bookmark);
 
     let a = document.createElement("a");
     a.innerText = bookmark;
