@@ -312,6 +312,10 @@ const App = (function () {
   };
 
   document.getElementById("generateNewKP")!.onclick = async () => {
+    if (G_Input) {
+      setErrMsg(`书签模式不能使用随机生成功能。如果要重新生成书签，请重新打开 ${location.origin}${location.pathname}`);
+      return;
+    }
     let kp = await ec.generateNewKeyPair();
     setPirvateKey(kp.private);
     setPublicKey(kp.public);
@@ -326,6 +330,13 @@ const App = (function () {
     }
     try {
       let kp = await ec.generateNewKeyPair(seckey);
+
+      // 书签模式下检查公钥是否匹配
+      if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
+        setErrMsg("生成的公钥与书签中保存的公钥不匹配，请检查私钥是否正确");
+        return;
+      }
+
       setPirvateKey(kp.private);
       setPublicKey(kp.public);
     } catch (error: any) {
@@ -450,6 +461,13 @@ const App = (function () {
     const kdf = resolveKdfParams();
     currentKdf = kdf;
     let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
+
+    // 书签模式下检查公钥是否匹配
+    if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
+      setErrMsg("生成的公钥与书签中保存的公钥不匹配，请检查短语是否正确");
+      return;
+    }
+
     setPirvateKey(kp.private);
     setPublicKey(kp.public);
     showSaltInfo(salt);
@@ -684,7 +702,7 @@ ${location.href}  ${newLine}
 
     // 检查是否从书签入口进入（有 salt）
     if (!G_Input?.salt) {
-      setErrMsg("请从书签入口进入后再保存");
+      setErrMsg("请重新生成书签地址，从书签地址进入");
       return;
     }
 
@@ -730,7 +748,7 @@ ${location.href}  ${newLine}
 
     // 检查是否从书签入口进入（有 salt）
     if (!G_Input?.salt) {
-      setErrMsg("请从书签入口进入后再恢复");
+      setErrMsg("请重新生成书签地址，从书签地址进入");
       return;
     }
 
