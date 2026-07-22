@@ -95,6 +95,11 @@
           <label class="radio-label"><input type="radio" name="base64Type" value="urlsafe" /> URL-safe base64</label>
         </div>
       </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToCloudflare" class="btn"><span class="btnTitle">保存密文到 CloudFlare</span></div>
+        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">从 CloudFlare 恢复密文</span></div>
+      </div>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">采用 Cloudflare D1 免费数据库存储，不保证可靠性。<br/>以公钥哈希作为唯一标识，请妥善保管您的公钥/书签地址。</p>
 
       <div class="row plain-cipher-row">
         <div class="border content">
@@ -119,10 +124,6 @@
             <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
             <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
             <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
-          </div>
-          <div class="row2 btnHolder btn-group">
-            <div id="saveToCloudflare" class="btn"><span class="btnTitle">保存到 CloudFlare</span></div>
-            <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">从 CloudFlare 恢复</span></div>
           </div>
           <p style="color:#101010;margin:0.5rem 0 0"><strong>请确保本页面链接也粘贴到邮件内容</strong></p>
           <label class="newline2">
