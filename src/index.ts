@@ -96,6 +96,7 @@ const App = (function () {
     ver?: string;
     kdfHash?: string;
     kdfIterations?: number;
+    type?: 'phrase' | 'pubkey';
   }
   let G_Input: InputData | undefined;
   let currentSalt: string | undefined;
@@ -231,26 +232,79 @@ const App = (function () {
       return;
     }
 
-    let base64 = getCipherText();
+    let base64 = getCipherText().trim();
     if (!base64) {
       setErrMsg("请输入秘文base64 或选择文件");
       return;
     }
     try {
-      const detected = detectBase64Type(base64)
-      let urlsafe: 0 | 1
-      if (detected !== null) {
-        setBase64Type(detected)
-        urlsafe = detected === 'urlsafe' ? 1 : 0
+      // 检查是否是 N. 格式（CloudFlare D1 保存的加密密文）
+      if (base64.startsWith('N.')) {
+        const pubkey = getPublicKey();
+        const salt = G_Input?.salt;
+        console.log('=== N. format debug ===');
+        console.log('pubkey:', pubkey?.substring(0, 20) + '...');
+        console.log('salt:', salt?.substring(0, 20) + '...');
+        if (!pubkey || !salt) {
+          setErrMsg("解密 N. 格式需要公钥和 salt（请从书签入口进入）");
+          return;
+        }
+
+        try {
+          // 先用 AES-GCM 解密
+          const contentKey = await generateContentKey(pubkey, salt);
+          const nBase64 = base64.slice(2);
+          console.log('nBase64 length:', nBase64.length);
+          console.log('nBase64 first 100:', nBase64.substring(0, 100));
+          const encryptedData = ec.base64Decode(nBase64);
+          console.log('encryptedData length:', encryptedData.length);
+          console.log('encryptedData first 20:', Array.from(encryptedData.slice(0, 20)));
+
+          // AES-GCM 解密
+          const iv = encryptedData.slice(0, 12);
+          const ciphertext = encryptedData.slice(12);
+          console.log('iv length:', iv.length);
+          console.log('ciphertext length:', ciphertext.length);
+          console.log('ciphertext last 16 (tag):', Array.from(ciphertext.slice(-16)));
+
+          const decryptedBuffer = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            contentKey,
+            ciphertext
+          );
+          console.log('decryptedBuffer type:', typeof decryptedBuffer);
+          console.log('decryptedBuffer byteLength:', (decryptedBuffer as ArrayBuffer).byteLength);
+
+          const decryptedCipher = new Uint8Array(decryptedBuffer);
+          console.log('decryptedCipher length:', decryptedCipher.length);
+          console.log('decryptedCipher first 20:', Array.from(decryptedCipher.slice(0, 20)));
+          console.log('decryptedCipher byte0:', decryptedCipher[0]);
+
+          // 直接用解密后的字节传给 ec.decrypt
+          let dec = await ec.decrypt(p, decryptedCipher);
+          let te = new TextDecoder();
+          setPlainText(te.decode(dec));
+        } catch (e) {
+          console.error('N. format decrypt error:', e);
+          setErrMsg("N. 格式解密失败: " + e);
+        }
       } else {
-        const chosen = await showBase64TypeModal()
-        setBase64Type(chosen)
-        urlsafe = chosen === 'urlsafe' ? 1 : 0
+        // 普通密文解密
+        const detected = detectBase64Type(base64)
+        let urlsafe: 0 | 1
+        if (detected !== null) {
+          setBase64Type(detected)
+          urlsafe = detected === 'urlsafe' ? 1 : 0
+        } else {
+          const chosen = await showBase64TypeModal()
+          setBase64Type(chosen)
+          urlsafe = chosen === 'urlsafe' ? 1 : 0
+        }
+        let arr = ec.base64Decode(base64, urlsafe);
+        let dec = await ec.decrypt(p, arr);
+        let te = new TextDecoder();
+        setPlainText(te.decode(dec));
       }
-      let arr = ec.base64Decode(base64, urlsafe);
-      let dec = await ec.decrypt(p, arr);
-      let te = new TextDecoder();
-      setPlainText(te.decode(dec));
     } catch (error) {
       setErrMsg(error as string);
       console.log(error);
@@ -431,7 +485,7 @@ const App = (function () {
   }
 
   document.getElementById("downloadCipher")!.onclick = async () => {
-    let s = getCipherText();
+    let s = getCipherText().trim();
     if (!s) {
       setErrMsg("文件内容为空");
       return;
@@ -451,13 +505,13 @@ const App = (function () {
     obj.reset();
   };
   document.getElementById("sendemail2")!.onclick = async () => {
-    let cipher = getCipherText();
+    let cipher = getCipherText().trim();
     if (!cipher) {
       let t = await encryptClick();
       if (!t) {
         return;
       }
-      cipher = getCipherText();
+      cipher = getCipherText().trim();
       if (!cipher) {
         return;
       }
@@ -490,13 +544,13 @@ ${G_Input?.prefix || ""} ${newLine}
     window.open(mailto, "target", "");
   };
   document.getElementById("sendemail")!.onclick = async () => {
-    let cipher = getCipherText();
+    let cipher = getCipherText().trim();
     if (!cipher) {
       let t = await encryptClick();
       if (!t) {
         return;
       }
-      cipher = getCipherText();
+      cipher = getCipherText().trim();
       if (!cipher) {
         return;
       }
@@ -531,13 +585,93 @@ ${location.href}  ${newLine}
     window.open(mailto, "target", "");
   };
 
-  // SHA-512 哈希并截取前33字节转为 Base64
-  async function sha512ToBase64(input: string): Promise<string> {
+  // HMAC-SHA512 两层派生，截取前33字节转为 Base64（用于 D1 key）
+  async function generateKey(pubkey: string, salt: string): Promise<string> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest("SHA-512", data);
-    const hashArray = new Uint8Array(hashBuffer).slice(0, 33);
-    return ec.base64Encode(hashArray);
+
+    // PRK = hmac_sha512(pubkey, salt)
+    const prkKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(pubkey),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const prk = await crypto.subtle.sign("HMAC", prkKey, encoder.encode(salt));
+
+    // KEY = hmac_sha512(PRK, "cloudflare-d1-access") 截取前33字节
+    const keyKey = await crypto.subtle.importKey(
+      "raw",
+      new Uint8Array(prk),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const keyBuffer = await crypto.subtle.sign("HMAC", keyKey, encoder.encode("cloudflare-d1-access"));
+    const keyArray = new Uint8Array(keyBuffer).slice(0, 33);
+
+    return ec.base64Encode(keyArray);
+  }
+
+  // HMAC-SHA512 两层派生，截取前32字节（用于内容加密）
+  async function generateContentKey(pubkey: string, salt: string): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+
+    // PRK = hmac_sha512(pubkey, salt)
+    const prkKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(pubkey),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const prk = await crypto.subtle.sign("HMAC", prkKey, encoder.encode(salt));
+
+    // KEY = hmac_sha512(PRK, "d1_content") 截取前32字节
+    const keyKey = await crypto.subtle.importKey(
+      "raw",
+      new Uint8Array(prk),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const keyBuffer = await crypto.subtle.sign("HMAC", keyKey, encoder.encode("d1_content"));
+    const keyArray = new Uint8Array(keyBuffer).slice(0, 32);
+
+    // 导入为 AES-GCM256 密钥
+    return crypto.subtle.importKey(
+      "raw",
+      keyArray,
+      { name: "AES-GCM" },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  // AES-GCM256 加密
+  async function aesGcmEncrypt(data: Uint8Array, key: CryptoKey): Promise<Uint8Array> {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      data
+    );
+    // 前12字节是 IV，后面是密文
+    const result = new Uint8Array(iv.length + encrypted.byteLength);
+    result.set(iv, 0);
+    result.set(new Uint8Array(encrypted), iv.length);
+    return result;
+  }
+
+  // AES-GCM256 解密
+  async function aesGcmDecrypt(data: Uint8Array, key: CryptoKey): Promise<Uint8Array> {
+    const iv = data.slice(0, 12);
+    const ciphertext = data.slice(12);
+    return crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext
+    );
   }
 
   // 保存到 CloudFlare
@@ -548,28 +682,35 @@ ${location.href}  ${newLine}
       return;
     }
 
+    // 检查是否从书签入口进入（有 salt）
+    if (!G_Input?.salt) {
+      setErrMsg("请从书签入口进入后再保存");
+      return;
+    }
+
     // 先确保有加密数据
-    let cipher = getCipherText();
+    let cipher = getCipherText().trim();
     if (!cipher) {
       const t = await encryptClick();
       if (!t) return;
-      cipher = getCipherText();
+      cipher = getCipherText().trim();
       if (!cipher) return;
     }
 
-    const key = encodeURIComponent(await sha512ToBase64(pubkey));
+    const salt = G_Input.salt;
+    const key = encodeURIComponent(await generateKey(pubkey, salt));
     const emailSubjectEle = document.getElementById("emailsubject") as HTMLInputElement;
     const subject = emailSubjectEle.value.trim() || "备份";
 
-    let content = `
-备份时间:${beijingtime()}
-公钥:${getPublicKey()}
-网页地址: ${location.href}
+    // 对密文进行二次加密
+    const contentKey = await generateContentKey(pubkey, salt);
+    const b64type = getBase64Type();
+    const cipherBytes = ec.base64Decode(cipher, b64type === 'urlsafe' ? 1 : 0);
+    const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+    const e2 = ec.base64Encode(encryptedCipher); // 使用标准 base64 输出
+    const finalTxt = 'N.' + e2;
 
-数据base64:
-
-${cipher}
-`;
+    let content = finalTxt;
 
     const noe = encodeURIComponent(subject);
     const encodedContent = encodeURIComponent(content);
@@ -587,7 +728,14 @@ ${cipher}
       return;
     }
 
-    const key = encodeURIComponent(await sha512ToBase64(pubkey));
+    // 检查是否从书签入口进入（有 salt）
+    if (!G_Input?.salt) {
+      setErrMsg("请从书签入口进入后再恢复");
+      return;
+    }
+
+    const salt = G_Input.salt;
+    const key = encodeURIComponent(await generateKey(pubkey, salt));
     const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
     window.open(url, "_blank");
   };
@@ -604,6 +752,7 @@ ${cipher}
     options?: {
       phraseHint?: boolean;
       kdf?: { ver: string; hash: string; iterations: number };
+      type?: 'phrase' | 'pubkey';
     }
   ) {
     let s: InputData = { prefix, pubkey, toEmail, emailSubject };
@@ -614,6 +763,9 @@ ${cipher}
       s.ver = options.kdf.ver;
       s.kdfHash = options.kdf.hash;
       s.kdfIterations = options.kdf.iterations;
+    }
+    if (options?.type) {
+      s.type = options.type;
     }
 
     let jsonstring = JSON.stringify(s);
@@ -662,9 +814,10 @@ ${cipher}
     ) as HTMLInputElement;
     let subject = emailSubjectEle.value.trim();
 
-    await genbookmark(pubkey, toEmail, prefix, subject, getAvailableSalt(), {
+    await genbookmark(pubkey, toEmail, prefix, subject, getAvailableSalt() || generateRandomSalt(), {
       phraseHint: true,
       kdf: resolveKdfForBookmark(),
+      type: 'pubkey',
     });
   };
 
@@ -697,6 +850,7 @@ ${cipher}
 
     await genbookmark(pubkey, toEmail, prefix, subject, saltStr, {
       kdf: { ...KDF_V2 },
+      type: 'phrase',
     });
     showSaltInfo(saltStr);
   };
