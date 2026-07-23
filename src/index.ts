@@ -149,7 +149,9 @@ const App = (function () {
 
   function getPirvateKey() {
     let input = document.getElementById("private") as HTMLInputElement;
-    return input?.value.trim();
+    if (!input) return '';
+    const raw = input.getAttribute('data-raw');
+    return (raw || input.value).trim();
   }
   function getPublicKey() {
     let input = document.getElementById("public") as HTMLInputElement;
@@ -159,6 +161,8 @@ const App = (function () {
   function setPirvateKey(str: string) {
     let input = document.getElementById("private") as HTMLInputElement;
     input.value = str;
+    input.removeAttribute('data-raw');
+    input.dispatchEvent(new Event('blur'));
   }
   function setPublicKey(str: string) {
     let input = document.getElementById("public") as HTMLInputElement;
