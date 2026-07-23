@@ -100,6 +100,14 @@ const App = (function () {
   }
   let G_Input: InputData | undefined;
   let currentSalt: string | undefined;
+
+  function openUrl(url: string) {
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      location.href = url;
+    } else {
+      window.open(url, "_blank");
+    }
+  }
   let currentKdf: { ver: string; hash: string; iterations: number } | undefined;
 
   let ec = await ECC.initEC();
@@ -725,13 +733,7 @@ ${location.href}  ${newLine}
     console.log('encodedContent',encodedContent);
 
     const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&noe=${noe}&content=${encodedContent}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    openUrl(url);
   };
 
   // 从 CloudFlare 恢复
@@ -751,13 +753,7 @@ ${location.href}  ${newLine}
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
     const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    openUrl(url);
   };
 
   let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
