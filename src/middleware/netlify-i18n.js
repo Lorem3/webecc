@@ -33,10 +33,19 @@ function rewriteUrl(url, lang) {
 }
 
 export default async (request, context) => {
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const path = url.pathname;
+
   if (BLOCKED.some(b => path === '/' + b || path.startsWith('/' + b + '/'))) {
     return new Response('Not Found', { status: 404 });
   }
+
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
+    const newPath = '/' + parts.slice(1).join('/');
+    return Response.redirect(new URL(newPath, request.url).toString(), 302);
+  }
+
   const cookie = parseCookie(request.headers.get('cookie'), 'lang');
   let lang = null;
   if (cookie && LANGS[cookie]) {

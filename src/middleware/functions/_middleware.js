@@ -41,6 +41,12 @@ export async function onRequest(context) {
     return new Response('Not Found', { status: 404 });
   }
 
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
+    const newPath = '/' + parts.slice(1).join('/');
+    return Response.redirect(new URL(newPath, request.url).toString(), 302);
+  }
+
   const cookie = parseCookie(request.headers.get('Cookie'), 'lang');
   let lang = null;
   if (cookie && LANGS[cookie]) {
