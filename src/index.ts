@@ -7,19 +7,6 @@ const App = (function () {
 
   type Base64Type = 'standard' | 'urlsafe' | 'auto'
 
-  function getBase64Type(): Base64Type {
-    const checked = document.querySelector('input[name="base64Type"]:checked') as HTMLInputElement
-    return (checked?.value as Base64Type) || 'auto'
-  }
-
-  function setBase64Type(type: Base64Type) {
-    const radio = document.querySelector(`input[name="base64Type"][value="${type}"]`) as HTMLInputElement
-    if (radio) {
-      radio.checked = true
-      radio.dispatchEvent(new Event('change', { bubbles: true }))
-    }
-  }
-
   function detectBase64Type(str: string): Base64Type | null {
     const trimmed = str.replace(/\s/g, '')
     if (!trimmed) return null
@@ -205,8 +192,7 @@ const App = (function () {
     try {
       let te = new TextEncoder();
       let enc = await ec.encrypt(p, te.encode(text));
-      const b64type = getBase64Type()
-      setCipherText(ec.base64Encode(enc, b64type === 'urlsafe' ? 1 : 0));
+      setCipherText(ec.base64Encode(enc, 0));
       return true;
     } catch (error) {
       setErrMsg(error as string);
@@ -307,11 +293,9 @@ const App = (function () {
         const detected = detectBase64Type(base64)
         let urlsafe: 0 | 1
         if (detected !== null) {
-          setBase64Type(detected)
           urlsafe = detected === 'urlsafe' ? 1 : 0
         } else {
           const chosen = await showBase64TypeModal()
-          setBase64Type(chosen)
           urlsafe = chosen === 'urlsafe' ? 1 : 0
         }
         let arr = ec.base64Decode(base64, urlsafe);
@@ -710,14 +694,11 @@ ${messages.emailDataBase64}: ${newLine}
       return;
     }
 
-    // 先确保有加密数据
-    let cipher = getCipherText().trim();
-    if (!cipher) {
-      const t = await encryptClick();
-      if (!t) return;
-      cipher = getCipherText().trim();
-      if (!cipher) return;
-    }
+    // 从明文重新加密，确保使用最新内容
+    const t = await encryptClick();
+    if (!t) return;
+    const cipher = getCipherText().trim();
+    if (!cipher) return;
 
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
@@ -726,10 +707,9 @@ ${messages.emailDataBase64}: ${newLine}
 
     // 对密文进行二次加密
     const contentKey = await generateContentKey(pubkey, salt);
-    const b64type = getBase64Type();
-    const cipherBytes = ec.base64Decode(cipher, b64type === 'urlsafe' ? 1 : 0);
+    const cipherBytes = ec.base64Decode(cipher, 0);
     const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
-    const e2 = ec.base64Encode(encryptedCipher); // 使用标准 base64 输出
+    const e2 = ec.base64Encode(encryptedCipher, 0, 2); // firstLineLess=2 for "N." prefix alignment
     const finalTxt = 'N.' + e2;
 
     let content = finalTxt;

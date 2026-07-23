@@ -123,8 +123,8 @@ class EC{
         return new Uint8Array(await subtle.exportKey('raw',result))
     }
 
-    base64Encode(arr:Uint8Array,urlsafe = 0):string{
-        let r = base64js.fromByteArray(arr,76)
+    base64Encode(arr:Uint8Array,urlsafe = 0, firstLineLess = 0):string{
+        let r = base64js.fromByteArray(arr,76,firstLineLess)
         if (urlsafe) {
             r = r.replace(/\+/g, '-')
             r = r.replace(/\//g, '_')

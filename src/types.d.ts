@@ -1,7 +1,7 @@
 
 declare const base64js :{
     toByteArray :(b64:string)=>Uint8Array,
-    fromByteArray : (arr:Uint8Array,lineBreak ?:number )=>string
+    fromByteArray : (arr:Uint8Array,lineBreak?:number,firstLineLess?:number)=>string
 }
 
 
@@ -29,7 +29,7 @@ declare interface  EC{
     decrypt(privateKeyB64:string,data:Uint8Array):Promise<Uint8Array>
     generateNewKeyPair(seckey ?:string): Promise<{private:string,public:string}>
 
-    base64Encode(arr:Uint8Array,urlsafe ?:1|0):string
+    base64Encode(arr:Uint8Array,urlsafe?:1|0,firstLineLess?:number):string
     base64Decode(str:string,urlsafe ?:1|0):Uint8Array
   }
 
