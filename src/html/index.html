@@ -199,6 +199,8 @@ mysecret[31] |= 64;</pre>
       var currentLang = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
       var container = document.getElementById('langSwitcher');
       if (!container) return;
+      var hash = location.hash || '';
+      var rand = Math.floor(Math.random() * 90000) + 10000;
       var langs = [
         { code: 'zh-CN', label: '中文', dir: 'cn' },
         { code: 'en', label: 'English', dir: 'en' }
@@ -215,7 +217,7 @@ mysecret[31] |= 64;</pre>
         if (item.code === currentLang) {
           a.className = 'active';
         } else {
-          a.href = './' + item.dir + '/';
+          a.href = './' + item.dir + '/?_=' + rand + hash;
         }
         container.appendChild(a);
       });
