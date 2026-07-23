@@ -311,16 +311,6 @@ const App = (function () {
     }
   };
 
-  document.getElementById("generateNewKP")!.onclick = async () => {
-    if (G_Input) {
-      setErrMsg(`书签模式不能使用随机生成功能。如果要重新生成书签，请重新打开 ${location.origin}${location.pathname}`);
-      return;
-    }
-    let kp = await ec.generateNewKeyPair();
-    setPirvateKey(kp.private);
-    setPublicKey(kp.public);
-  };
-
   document.getElementById("genpubkey")!.onclick = async () => {
     let seckey = getPirvateKey();
     console.log(seckey);
@@ -812,32 +802,25 @@ ${location.href}  ${newLine}
         "如果你的公钥是通过密码短语派生的，请使用密码短语书签";
       holder?.appendChild(hint);
     }
-  }
 
-  document.getElementById("genbookmark")!.onclick = async () => {
-    let pubkey = getPublicKey();
-    if (!pubkey) {
-      setErrMsg("公钥为空");
-      return;
+    // 填充书签信息卡片
+    const bmPubkey = document.getElementById("bmPubkey");
+    const bmEmail = document.getElementById("bmEmail");
+    const bmSubject = document.getElementById("bmSubject");
+    const bmPrefix = document.getElementById("bmPrefix");
+    const bmSalt = document.getElementById("bmSalt");
+    const bmSaltRow = document.getElementById("bmSaltRow");
+    const bookmarkInfo = document.getElementById("bookmarkInfo");
+    if (bmPubkey) bmPubkey.textContent = pubkey;
+    if (bmEmail) bmEmail.textContent = toEmail;
+    if (bmSubject) bmSubject.textContent = emailSubject || "";
+    if (bmPrefix) bmPrefix.textContent = prefix;
+    if (bmSalt && salt) {
+      bmSalt.textContent = salt;
+      bmSaltRow!.style.display = "flex";
     }
-
-    let prefixE = document.getElementById("prefix") as HTMLInputElement;
-    let prefix = prefixE.value.trim();
-
-    let emailEle = document.getElementById("email") as HTMLInputElement;
-    let toEmail = emailEle.value.trim();
-
-    let emailSubjectEle = document.getElementById(
-      "emailsubject"
-    ) as HTMLInputElement;
-    let subject = emailSubjectEle.value.trim();
-
-    await genbookmark(pubkey, toEmail, prefix, subject, getAvailableSalt() || generateRandomSalt(), {
-      phraseHint: true,
-      kdf: resolveKdfForBookmark(),
-      type: 'pubkey',
-    });
-  };
+    if (bookmarkInfo) bookmarkInfo.style.display = "block";
+  }
 
   document.getElementById("genbookmark2")!.onclick = async () => {
     let input = document.getElementById("keyphrase") as HTMLInputElement;
@@ -873,20 +856,6 @@ ${location.href}  ${newLine}
     showSaltInfo(saltStr);
   };
 
-  // 默认隐藏“直接使用公钥”的书签入口，点击“更多展开”后显示
-  (function initMoreExpandBookmark() {
-    const moreExpand = document.getElementById("moreExpand") as HTMLElement | null;
-    const genbookmark = document.getElementById("genbookmark") as HTMLElement | null;
-    const explain = document.getElementById("genbookmarkExplain") as HTMLElement | null;
-    if (!moreExpand || !genbookmark) return;
-
-    moreExpand.onclick = () => {
-      genbookmark.style.display = "block";
-      if (explain) explain.style.display = "block";
-      moreExpand.style.display = "none";
-    };
-  })();
-
   let btime = document.getElementById("build") as HTMLElement;
   btime.innerText = "Package:" + __BUILD_MOD__ + "\n " + __BUILD_TIME__;
 
@@ -918,13 +887,9 @@ ${location.href}  ${newLine}
 
     if (jsonObj) {
       G_Input = jsonObj;
-      const genBtn = document.getElementById("generateNewKP");
-      if (genBtn) {
-        (genBtn as HTMLElement).style.opacity = "0.5";
-      }
       let inputDataElement = document.getElementById("inputData")!;
       inputDataElement.style.display = 'block'
-      inputDataElement.innerText = `从链接hash带入的参数:\n ${JSON.stringify(
+      inputDataElement.innerText = `从书签链接带入的信息:\n ${JSON.stringify(
         G_Input,
         null,
         "\t"
