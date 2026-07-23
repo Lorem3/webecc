@@ -725,7 +725,13 @@ ${location.href}  ${newLine}
     console.log('encodedContent',encodedContent);
 
     const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&noe=${noe}&content=${encodedContent}`;
-    window.open(url, "_blank");
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // 从 CloudFlare 恢复
@@ -745,7 +751,13 @@ ${location.href}  ${newLine}
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
     const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
-    window.open(url, "_blank");
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
