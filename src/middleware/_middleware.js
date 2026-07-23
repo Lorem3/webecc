@@ -33,11 +33,14 @@ function rewriteUrl(url, lang) {
 }
 
 export async function onRequest(context) {
-  const { request, next } = context;
-  const path = new URL(request.url).pathname;
+  const { request, next, env } = context;
+  const url = new URL(request.url);
+  const path = url.pathname;
+
   if (BLOCKED.some(b => path === '/' + b || path.startsWith('/' + b + '/'))) {
     return new Response('Not Found', { status: 404 });
   }
+
   const cookie = parseCookie(request.headers.get('Cookie'), 'lang');
   let lang = null;
   if (cookie && LANGS[cookie]) {
@@ -45,8 +48,19 @@ export async function onRequest(context) {
   } else {
     lang = getLangFromAcceptLanguage(request.headers.get('Accept-Language'));
   }
+
   if (!lang) return next();
-  const newUrl = rewriteUrl(request.url, lang);
-  if (!newUrl) return next();
-  return next(new Request(newUrl, request));
+
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) return next();
+
+  const newPath = '/' + lang + '/' + parts.join('/');
+  const newUrl = new URL(request.url);
+  newUrl.pathname = newPath;
+
+  const assetRequest = new Request(newUrl.toString(), request);
+  const assetResponse = await env.ASSETS.fetch(assetRequest);
+
+  if (assetResponse.status === 404) return next();
+  return assetResponse;
 }

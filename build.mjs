@@ -270,7 +270,6 @@ async function main() {
 
   // Copy middleware files for Cloudflare Pages
   cp('src/middleware/_middleware.js', 'www/_middleware.js');
-  cp('src/middleware/_routes.json', 'www/_routes.json');
 
   // Copy Edge Function files for Netlify
   mkdirp('www/netlify/edge-functions');
