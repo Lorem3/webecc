@@ -1,4 +1,5 @@
 const LANGS = { 'en': 'en', 'zh-CN': 'cn' };
+const LANG_DIRS = { 'cn': 'zh-CN', 'en': 'en' };
 const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify'];
 
 function parseCookie(cookieHeader, name) {
@@ -43,7 +44,15 @@ export default async (request, context) => {
   const parts = path.split('/').filter(Boolean);
   if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
     const newPath = '/' + parts.slice(1).join('/');
-    return Response.redirect(new URL(newPath, request.url).toString(), 302);
+    const redirectUrl = new URL(newPath, request.url).toString();
+    const langCookie = LANG_DIRS[parts[0]];
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': redirectUrl,
+        'Set-Cookie': `lang=${langCookie};path=/;max-age=31536000`
+      }
+    });
   }
 
   const cookie = parseCookie(request.headers.get('cookie'), 'lang');

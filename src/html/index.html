@@ -200,8 +200,8 @@ mysecret[31] |= 64;</pre>
       var container = document.getElementById('langSwitcher');
       if (!container) return;
       var langs = [
-        { code: 'zh-CN', label: '中文' },
-        { code: 'en', label: 'English' }
+        { code: 'zh-CN', label: '中文', dir: 'cn' },
+        { code: 'en', label: 'English', dir: 'en' }
       ];
       langs.forEach(function(item, i) {
         if (i > 0) {
@@ -215,11 +215,7 @@ mysecret[31] |= 64;</pre>
         if (item.code === currentLang) {
           a.className = 'active';
         } else {
-          a.href = 'javascript:void(0)';
-          a.onclick = function() {
-            document.cookie = 'lang=' + item.code + ';path=/;max-age=31536000';
-            location.reload();
-          };
+          a.href = './' + item.dir + '/';
         }
         container.appendChild(a);
       });

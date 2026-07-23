@@ -296,6 +296,21 @@ async function main() {
     inlineHtml(lang);
   }
 
+  // Copy cn files to root as GitHub Pages fallback (don't overwrite existing)
+  const cnFiles = fs.readdirSync('www/cn', { withFileTypes: true });
+  for (const file of cnFiles) {
+    const src = `www/cn/${file.name}`;
+    const dest = `www/${file.name}`;
+    if (!fs.existsSync(dest)) {
+      if (file.isDirectory()) {
+        fs.cpSync(src, dest, { recursive: true });
+      } else {
+        cp(src, dest);
+      }
+    }
+  }
+  console.log('  cn fallback files copied');
+
   console.log(`Build done in ${Date.now() - t0}ms`);
 }
 
