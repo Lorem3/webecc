@@ -57,9 +57,6 @@ export async function onRequest(context) {
 
   if (!lang) return next();
 
-  const parts = path.split('/').filter(Boolean);
-  if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) return next();
-
   const newPath = '/' + lang + '/' + parts.join('/');
   const newUrl = new URL(request.url);
   newUrl.pathname = newPath;
