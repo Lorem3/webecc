@@ -6,14 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{i18n:pageTitle}}</title>
   <style>
-    .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;border-radius:5px;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.downloadbtn{background-color:gray;display:flex;border-radius:5px;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;border-radius:5px;padding:5px 25px 5px 5px}#inputData{padding:1.5rem;background-color:#f5f5f5;color:#333;border:1px solid #ddd;border-radius:5px;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:960px;background-color:#eee;margin:auto}.contain{margin:auto;background-color:#fff;padding:2rem}
+    .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;border-radius:5px;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.downloadbtn{background-color:gray;display:flex;border-radius:5px;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;border-radius:5px;padding:5px 25px 5px 5px}#inputData{padding:1.5rem;background-color:#f5f5f5;color:#333;border:1px solid #ddd;border-radius:5px;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:960px;background-color:#eee;margin:auto}.contain{margin:auto;background-color:#fff;padding:2rem}.page-title{display:flex;align-items:center;justify-content:space-between}.lang-switcher{display:flex;gap:4px;font-size:14px}.lang-switcher a{text-decoration:none;cursor:pointer;color:#999}.lang-switcher a.active{color:#999;cursor:default}.lang-switcher a:not(.active){color:#2563eb}.lang-switcher a:not(.active):hover{text-decoration:underline}
     </style>
   <link rel="stylesheet" type="text/css" href="css/style.min.css" />
 </head>
 
 <body>
   <div class="contain">
-    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">{{i18n:pageTitle}}</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-weight:500;">{{i18n:pageSubtitle}}</span></h1>
+    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">{{i18n:pageTitle}}</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-weight:500;">{{i18n:pageSubtitle}}</span><div class="lang-switcher" id="langSwitcher"></div></h1>
 
     <section class="section-card section-muted usage-section">
       <h1>{{i18n:usageTitle}}</h1>
@@ -180,6 +180,37 @@ mysecret[31] |= 64;</pre>
         contain.removeChild(usageSection);
         contain.insertBefore(usageSection, browserSection);
       }
+    })();
+  </script>
+  <script>
+    (function() {
+      var currentLang = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+      var container = document.getElementById('langSwitcher');
+      if (!container) return;
+      var langs = [
+        { code: 'zh-CN', label: '中文' },
+        { code: 'en', label: 'English' }
+      ];
+      langs.forEach(function(item, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.textContent = '|';
+          sep.style.color = '#ccc';
+          container.appendChild(sep);
+        }
+        var a = document.createElement('a');
+        a.textContent = item.label;
+        if (item.code === currentLang) {
+          a.className = 'active';
+        } else {
+          a.href = 'javascript:void(0)';
+          a.onclick = function() {
+            document.cookie = 'lang=' + item.code + ';path=/;max-age=31536000';
+            location.reload();
+          };
+        }
+        container.appendChild(a);
+      });
     })();
   </script>
 </body>
