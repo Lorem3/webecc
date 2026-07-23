@@ -918,6 +918,10 @@ ${location.href}  ${newLine}
 
     if (jsonObj) {
       G_Input = jsonObj;
+      const genBtn = document.getElementById("generateNewKP");
+      if (genBtn) {
+        (genBtn as HTMLElement).style.opacity = "0.5";
+      }
       let inputDataElement = document.getElementById("inputData")!;
       inputDataElement.style.display = 'block'
       inputDataElement.innerText = `从链接hash带入的参数:\n ${JSON.stringify(

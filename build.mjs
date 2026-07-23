@@ -107,6 +107,7 @@ function cpTemplate() {
   mkdirp('www');
   cp('src/html/index.html', 'www/index.html');
   cp('src/html/fmt.html', 'www/fmt.html');
+  cp('src/html/d1.html', 'www/d1.html');
   console.log('  cpTemplate done');
 }
 

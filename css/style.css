@@ -336,6 +336,10 @@ pre {
   font-weight: 600;
 }
 
+#bookmark {
+  word-break: break-all;
+}
+
 .usage-list p, .about-intro {
   margin: 0.5rem 0;
   color: var(--text-muted);
