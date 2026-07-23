@@ -116,7 +116,8 @@ tr:nth-child(even) td {
 }
 
 input[type="text"],
-input[type="file"] {
+input[type="file"],
+input[type="password"] {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   padding: 0.5rem 0.75rem;
@@ -126,10 +127,39 @@ input[type="file"] {
 }
 input[type="text"]:focus,
 input[type="file"]:focus,
+input[type="password"]:focus,
 textarea:focus {
   outline: none;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.password-wrap {
+  position: relative;
+  flex: 1;
+  display: inline-flex;
+}
+.password-wrap input {
+  width: 100%;
+  padding-right: 2.5rem;
+  box-sizing: border-box;
+}
+.eye-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eye-btn:hover {
+  color: var(--text);
 }
 input::placeholder,
 textarea::placeholder {
@@ -313,6 +343,7 @@ pre {
   flex-wrap: wrap;
   gap: var(--space-sm);
   margin-bottom: var(--space);
+  align-items: center;
 }
 .bookmark-inputs input {
   flex: 1;
