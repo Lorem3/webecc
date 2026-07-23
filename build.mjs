@@ -268,8 +268,9 @@ async function main() {
   mkdirp('tmp');
   mkdirp('www');
 
-  // Copy middleware files for Cloudflare Pages
-  cp('src/middleware/_middleware.js', 'www/_middleware.js');
+  // Copy Functions for Cloudflare Pages
+  mkdirp('www/functions');
+  cp('src/middleware/functions/_middleware.js', 'www/functions/_middleware.js');
 
   // Copy Edge Function files for Netlify
   mkdirp('www/netlify/edge-functions');

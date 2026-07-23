@@ -1,5 +1,5 @@
 const LANGS = { 'en': 'en', 'zh-CN': 'cn' };
-const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify'];
+const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify', 'functions'];
 
 function parseCookie(cookieHeader, name) {
   if (!cookieHeader) return null;
