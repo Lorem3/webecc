@@ -1,4 +1,6 @@
 
+import { jsMessages as messages } from '@i18n/js-messages';
+
 const App = (function () {
 
   async function init() {
@@ -41,11 +43,11 @@ const App = (function () {
       box.style.cssText = 'background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)'
 
       const title = document.createElement('h3')
-      title.textContent = '无法自动识别密文类型'
+      title.textContent = messages.modalTitle
       title.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;font-weight:600'
 
       const desc = document.createElement('p')
-      desc.textContent = '请选择该密文的 Base64 类型：'
+      desc.textContent = messages.modalDesc
       desc.style.cssText = 'margin:0 0 1rem;font-size:0.9375rem;color:var(--text-muted,#666)'
 
       const btnRow = document.createElement('div')
@@ -61,8 +63,8 @@ const App = (function () {
         return btn
       }
 
-      btnRow.appendChild(makeBtn('标准 base64', 'standard'))
-      btnRow.appendChild(makeBtn('URL-safe base64', 'urlsafe', true))
+      btnRow.appendChild(makeBtn(messages.modalBtnStandard, 'standard'))
+      btnRow.appendChild(makeBtn(messages.modalBtnUrlsafe, 'urlsafe', true))
       box.appendChild(title)
       box.appendChild(desc)
       box.appendChild(btnRow)
@@ -193,7 +195,7 @@ const App = (function () {
     let p = getPublicKey();
     let text = getPlainText();
     if (!text) {
-      setErrMsg("请输入明文");
+      setErrMsg(messages.errEmptyPlain);
       return false;
     }
     try {
@@ -242,7 +244,7 @@ const App = (function () {
 
     let base64 = getCipherText().trim();
     if (!base64) {
-      setErrMsg("请输入秘文base64 或选择文件");
+      setErrMsg(messages.errEmptyCipher);
       return;
     }
     try {
@@ -254,7 +256,7 @@ const App = (function () {
         console.log('pubkey:', pubkey?.substring(0, 20) + '...');
         console.log('salt:', salt?.substring(0, 20) + '...');
         if (!pubkey || !salt) {
-          setErrMsg("解密 N. 格式需要公钥和 salt（请从书签入口进入）");
+          setErrMsg(messages.errDecryptNFormat);
           return;
         }
 
@@ -294,7 +296,7 @@ const App = (function () {
           setPlainText(te.decode(dec));
         } catch (e) {
           console.error('N. format decrypt error:', e);
-          setErrMsg("N. 格式解密失败: " + e);
+          setErrMsg(messages.errDecryptNFailed + ": " + e);
         }
       } else {
         // 普通密文解密
@@ -323,7 +325,7 @@ const App = (function () {
     let seckey = getPirvateKey();
     console.log(seckey);
     if (!seckey) {
-      setErrMsg("私钥为空");
+      setErrMsg(messages.errEmptyPrivkey);
       return;
     }
     try {
@@ -331,7 +333,7 @@ const App = (function () {
 
       // 书签模式下检查公钥是否匹配
       if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
-        setErrMsg("生成的公钥与书签中保存的公钥不匹配，请检查私钥是否正确");
+        setErrMsg(messages.errPubkeyMismatchPrivkey);
         return;
       }
 
@@ -447,7 +449,7 @@ const App = (function () {
     let input = document.getElementById("keyphrase") as HTMLInputElement;
     let phrase = input?.value.trim();
     if (!phrase) {
-      setErrMsg("请输入密码短语");
+      setErrMsg(messages.errEmptyPhrase);
       return;
     }
 
@@ -462,7 +464,7 @@ const App = (function () {
 
     // 书签模式下检查公钥是否匹配
     if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
-      setErrMsg("生成的公钥与书签中保存的公钥不匹配，请检查短语是否正确");
+      setErrMsg(messages.errPubkeyMismatchPhrase);
       return;
     }
 
@@ -474,7 +476,7 @@ const App = (function () {
   document.getElementById("downloadPlain")!.onclick = async () => {
     let s = getPlainText();
     if (!s) {
-      setErrMsg("文件内容为空");
+      setErrMsg(messages.errEmptyFile);
       return;
     }
     let te = new TextEncoder();
@@ -503,7 +505,7 @@ const App = (function () {
   document.getElementById("downloadCipher")!.onclick = async () => {
     let s = getCipherText().trim();
     if (!s) {
-      setErrMsg("文件内容为空");
+      setErrMsg(messages.errEmptyFile);
       return;
     }
     let cipher = ec.base64Decode(s);
@@ -541,20 +543,20 @@ const App = (function () {
 
  
 
-    let msg = `   
+    let msg = `
 ${G_Input?.prefix || ""} ${newLine}
-备份时间:${beijingtime()} ${newLine}
+${messages.emailBackupTime}:${beijingtime()} ${newLine}
 
-公钥:${getPublicKey()}    ${newLine}
+${messages.emailPubkey}:${getPublicKey()}    ${newLine}
 
-网页地址:     ${newLine}
+${messages.emailWebUrl}:     ${newLine}
    ${location.href}         ${newLine}
-数据base64:
+${messages.emailDataBase64}:
 
 
    `;
     let mailto = `mailto:${G_Input.toEmail}?subject=${encodeURIComponent(
-      G_Input.emailSubject || "备份"
+      G_Input.emailSubject || messages.emailSubjectDefault
     )}&body=${encodeURIComponent(msg)}`;
     console.log(mailto);
     window.open(mailto, "target", "");
@@ -580,14 +582,14 @@ ${G_Input?.prefix || ""} ${newLine}
 
     let msg = `
 ${G_Input?.prefix || ""}  ${newLine}
-备份时间:${beijingtime()} ${newLine}
+${messages.emailBackupTime}:${beijingtime()} ${newLine}
 
-公钥:${getPublicKey()} ${newLine}
+${messages.emailPubkey}:${getPublicKey()} ${newLine}
 
-网页地址: ${newLine}
+${messages.emailWebUrl}: ${newLine}
 ${location.href}  ${newLine}
 
-数据base64: ${newLine}
+${messages.emailDataBase64}: ${newLine}
 
    ${cipher}
 
@@ -595,7 +597,7 @@ ${location.href}  ${newLine}
 
    `;
     let mailto = `mailto:${G_Input.toEmail}?subject=${encodeURIComponent(
-      G_Input.emailSubject || "备份"
+      G_Input.emailSubject || messages.emailSubjectDefault
     )}&body=${encodeURIComponent(msg)}`;
     console.log('mailto',mailto);
     window.open(mailto, "target", "");
@@ -694,13 +696,13 @@ ${location.href}  ${newLine}
   document.getElementById("saveToCloudflare")!.onclick = async () => {
     const pubkey = getPublicKey();
     if (!pubkey) {
-      setErrMsg("公钥为空");
+      setErrMsg(messages.errEmptyPubkey);
       return;
     }
 
     // 检查是否从书签入口进入（有 salt）
     if (!G_Input?.salt) {
-      setErrMsg("请重新生成书签地址，从书签地址进入");
+      setErrMsg(messages.errNeedBookmark);
       return;
     }
 
@@ -716,7 +718,7 @@ ${location.href}  ${newLine}
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
     const emailSubjectEle = document.getElementById("emailsubject") as HTMLInputElement;
-    const subject = emailSubjectEle.value.trim() || "备份";
+    const subject = emailSubjectEle.value.trim() || messages.emailSubjectDefault;
 
     // 对密文进行二次加密
     const contentKey = await generateContentKey(pubkey, salt);
@@ -740,13 +742,13 @@ ${location.href}  ${newLine}
   document.getElementById("restoreFromCloudflare")!.onclick = async () => {
     const pubkey = getPublicKey();
     if (!pubkey) {
-      setErrMsg("公钥为空");
+      setErrMsg(messages.errEmptyPubkey);
       return;
     }
 
     // 检查是否从书签入口进入（有 salt）
     if (!G_Input?.salt) {
-      setErrMsg("请重新生成书签地址，从书签地址进入");
+      setErrMsg(messages.errNeedBookmark);
       return;
     }
 
@@ -806,8 +808,7 @@ ${location.href}  ${newLine}
     if (options?.phraseHint) {
       const hint = document.createElement("p");
       hint.className = "bookmark-hint";
-      hint.textContent =
-        "如果你的公钥是通过密码短语派生的，请使用密码短语书签";
+      hint.textContent = messages.bookmarkHint;
       holder?.appendChild(hint);
     }
 
@@ -834,7 +835,7 @@ ${location.href}  ${newLine}
     let input = document.getElementById("keyphrase") as HTMLInputElement;
     let phrase = input?.value.trim();
     if (!phrase) {
-      setErrMsg("密码短语为空");
+      setErrMsg(messages.errEmptyPhrase);
       return;
     }
 
@@ -897,7 +898,7 @@ ${location.href}  ${newLine}
       G_Input = jsonObj;
       let inputDataElement = document.getElementById("inputData")!;
       inputDataElement.style.display = 'block'
-      inputDataElement.innerText = `从书签链接带入的信息:\n ${JSON.stringify(
+      inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
         G_Input,
         null,
         "\t"

@@ -1,0 +1,26 @@
+import type { JsMessages } from '../types/messages';
+
+export const jsMessages: JsMessages = {
+  modalTitle: 'Unable to auto-detect cipher type',
+  modalDesc: 'Please select the Base64 type of this ciphertext:',
+  modalBtnStandard: 'Standard base64',
+  modalBtnUrlsafe: 'URL-safe base64',
+  errEmptyPlain: 'Please enter plaintext',
+  errEmptyCipher: 'Please enter ciphertext base64 or select a file',
+  errDecryptNFormat: 'Decrypting N. format requires a public key and salt (please enter from a bookmark)',
+  errDecryptNFailed: 'N. format decryption failed',
+  errEmptyPrivkey: 'Private key is empty',
+  errPubkeyMismatchPrivkey: 'Generated public key does not match the one saved in the bookmark. Please check your private key.',
+  errEmptyFile: 'File content is empty',
+  errEmptyPhrase: 'Please enter a passphrase',
+  errPubkeyMismatchPhrase: 'Generated public key does not match the one saved in the bookmark. Please check your passphrase.',
+  errEmptyPubkey: 'Public key is empty',
+  errNeedBookmark: 'Please regenerate the bookmark URL and enter from the bookmark',
+  bookmarkHint: 'If your public key was derived from a passphrase, please use the passphrase bookmark.',
+  emailSubjectDefault: 'Backup',
+  emailBackupTime: 'Backup time',
+  emailPubkey: 'Public key',
+  emailWebUrl: 'Page URL',
+  emailDataBase64: 'Data base64',
+  inputDataLabel: 'Information loaded from bookmark',
+};

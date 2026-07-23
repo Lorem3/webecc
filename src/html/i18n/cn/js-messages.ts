@@ -1,0 +1,26 @@
+import type { JsMessages } from '../types/messages';
+
+export const jsMessages: JsMessages = {
+  modalTitle: '无法自动识别密文类型',
+  modalDesc: '请选择该密文的 Base64 类型：',
+  modalBtnStandard: '标准 base64',
+  modalBtnUrlsafe: 'URL-safe base64',
+  errEmptyPlain: '请输入明文',
+  errEmptyCipher: '请输入秘文base64 或选择文件',
+  errDecryptNFormat: '解密 N. 格式需要公钥和 salt（请从书签入口进入）',
+  errDecryptNFailed: 'N. 格式解密失败',
+  errEmptyPrivkey: '私钥为空',
+  errPubkeyMismatchPrivkey: '生成的公钥与书签中保存的公钥不匹配，请检查私钥是否正确',
+  errEmptyFile: '文件内容为空',
+  errEmptyPhrase: '请输入密码短语',
+  errPubkeyMismatchPhrase: '生成的公钥与书签中保存的公钥不匹配，请检查短语是否正确',
+  errEmptyPubkey: '公钥为空',
+  errNeedBookmark: '请重新生成书签地址，从书签地址进入',
+  bookmarkHint: '如果你的公钥是通过密码短语派生的，请使用密码短语书签',
+  emailSubjectDefault: '备份',
+  emailBackupTime: '备份时间',
+  emailPubkey: '公钥',
+  emailWebUrl: '网页地址',
+  emailDataBase64: '数据base64',
+  inputDataLabel: '从书签链接带入的信息',
+};

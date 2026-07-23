@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{{i18n:htmlLang}}">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>便捷备份</title>
+  <title>{{i18n:pageTitle}}</title>
   <style>
     .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;border-radius:5px;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.downloadbtn{background-color:gray;display:flex;border-radius:5px;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;border-radius:5px;padding:5px 25px 5px 5px}#inputData{padding:1.5rem;background-color:#f5f5f5;color:#333;border:1px solid #ddd;border-radius:5px;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:960px;background-color:#eee;margin:auto}.contain{margin:auto;background-color:#fff;padding:2rem}
     </style>
@@ -13,140 +13,135 @@
 
 <body>
   <div class="contain">
-    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">便捷备份</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-weight:500;">E2EE, Only You Can Access Your Data</span></h1>
+    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">{{i18n:pageTitle}}</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-weight:500;">{{i18n:pageSubtitle}}</span></h1>
 
     <section class="section-card section-muted usage-section">
-      <h1>如何使用</h1>
-      <p><strong>本网页不进行任何网络操作，所有数据均在浏览器本地处理。</strong></p>
-      <p><strong>加密无需输入密码，只有解密时才需要密码短语。</strong></p>
-      <h2>备份</h2>
+      <h1>{{i18n:usageTitle}}</h1>
+      <p><strong>{{i18n:usageDescStrong}}</strong></p>
+      <p><strong>{{i18n:usageDescNote}}</strong></p>
+      <h2>{{i18n:backupTitle}}</h2>
       <div class="usage-list">
-        <p>1. 输入短语</p>
-        <p>2. 输入备份邮箱</p>
-        <p>3. 输入邮件标题</p>
-        <p>4. 短语前缀（可以是邮箱或任意文字）</p>
-        <p>5. 生成书签链接并保存</p>
-        <p>6. 从书签打开页面，在明文框输入内容后，点击下方「发送加密结果到邮件」</p>
-        <p><strong>后续使用只需从第 6 步开始，无需重复输入密码。</strong></p>
+        <p>{{i18n:backupStep1}}</p>
+        <p>{{i18n:backupStep2}}</p>
+        <p>{{i18n:backupStep3}}</p>
+        <p>{{i18n:backupStep4}}</p>
+        <p>{{i18n:backupStep5}}</p>
+        <p>{{i18n:backupStep6}}</p>
+        <p><strong>{{i18n:backupStep7}}</strong></p>
       </div>
-      <h2>还原</h2>
+      <h2>{{i18n:restoreTitle}}</h2>
       <div class="usage-list">
-        <p>1. 在下方密文输入框粘贴密文</p>
-        <p>2. 输入密码短语</p>
-        <p>3. 点击「根据短语生成」生成密钥</p>
-        <p>4. 点击解密</p>
+        <p>{{i18n:restoreStep1}}</p>
+        <p>{{i18n:restoreStep2}}</p>
+        <p>{{i18n:restoreStep3}}</p>
+        <p>{{i18n:restoreStep4}}</p>
       </div>
-      <h2>生成书签链接（不含私钥）</h2>
+      <h2>{{i18n:bmGenTitle}}</h2>
       <div class="bookmark-inputs">
-        <input id="keyphraseBookmark" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
-        <input id="email" type="text" autocomplete="off" placeholder="发送备份邮箱，如 aaabb@qq.com" />
-        <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
-        <input id="prefix" type="text" autocomplete="off" placeholder="密码短语前缀/用户名，如 aaabb@qq.com#" />
+        <input id="keyphraseBookmark" type="text" autocomplete="off" placeholder="{{i18n:bmGenPhrase}}" />
+        <input id="email" type="text" autocomplete="off" placeholder="{{i18n:bmGenEmail}}" />
+        <input id="emailsubject" type="text" autocomplete="off" placeholder="{{i18n:bmGenSubject}}" />
+        <input id="prefix" type="text" autocomplete="off" placeholder="{{i18n:bmGenPrefix}}" />
       </div>
       <div class="bookmark-actions">
-        <a id="genbookmark2" href="javascript:void(0)" class="action-link">生成书签链接（使用密码短语派生的公钥）</a>
+        <a id="genbookmark2" href="javascript:void(0)" class="action-link">{{i18n:bmGenAction}}</a>
       </div>
       <div id="bookmark"></div>
       <div id="bookmarkInfo" style="display:none;margin-top:1rem;padding:1rem;border:1px solid #ddd;border-radius:5px;">
-        <h2 style="margin-top:0">书签信息</h2>
-        <div class="row2"><span class="title">公钥</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
-        <div class="row2"><span class="title">邮箱</span><span id="bmEmail"></span></div>
-        <div class="row2"><span class="title">标题</span><span id="bmSubject"></span></div>
-        <div class="row2"><span class="title">前缀</span><span id="bmPrefix"></span></div>
-        <div class="row2" id="bmSaltRow" style="display:none"><span class="title">Salt</span><span id="bmSalt" style="word-break:break-all;"></span></div>
+        <h2 style="margin-top:0">{{i18n:bmInfoTitle}}</h2>
+        <div class="row2"><span class="title">{{i18n:bmInfoPubkey}}</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoEmail}}</span><span id="bmEmail"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoSubject}}</span><span id="bmSubject"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoPrefix}}</span><span id="bmPrefix"></span></div>
+        <div class="row2" id="bmSaltRow" style="display:none"><span class="title">{{i18n:bmInfoSalt}}</span><span id="bmSalt" style="word-break:break-all;"></span></div>
       </div>
     </section>
 
     <pre id="inputData"></pre>
 
     <section id="keySection" class="section-card" style="display:none">
-      <h2>密钥信息</h2>
+      <h2>{{i18n:keyTitle}}</h2>
       <div class="row2">
-        <span class="title">公钥</span>
-        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
+        <span class="title">{{i18n:keyPubkey}}</span>
+        <input id="public" type="text" autocomplete="off" placeholder="{{i18n:keyPubkey}}" />
       </div>
       <div class="row2">
-        <span class="title">私钥</span>
-        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" />
+        <span class="title">{{i18n:keyPrivate}}</span>
+        <input id="private" type="text" autocomplete="off" placeholder="{{i18n:keyPrivatePlaceholder}}" />
       </div>
       <div class="row2">
-        <span class="title">短语</span>
-        <input id="keyphrase" type="text" autocomplete="off" placeholder="密码短语（不能公开）" />
+        <span class="title">{{i18n:keyPhrase}}</span>
+        <input id="keyphrase" type="text" autocomplete="off" placeholder="{{i18n:keyPhrasePlaceholder}}" />
       </div>
       <div class="row2" id="saltRow" style="display:none">
-        <span class="title">Salt</span>
+        <span class="title">{{i18n:keySalt}}</span>
         <span id="salt" class="salt-text"></span>
       </div>
-      <p id="saltSaveHint" style="display:none">请<strong>生成书签保存</strong>，刷新页面后将无法复现同一密钥</p>
+      <p id="saltSaveHint" style="display:none">{{i18n:keySaltHint}}</p>
       <div class="row2 btnHolder btn-group">
-        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
-        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成密钥对</span></div>
+        <div id="genpubkey" class="btn"><span class="btnTitle">{{i18n:keyGenPubkey}}</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">{{i18n:keyGenFromPhrase}}</span></div>
       </div>
     </section>
 
     <section id="encryptSection" class="section-card" style="display:none">
-      <h2>加解密</h2>
+      <h2>{{i18n:encryptTitle}}</h2>
       <div class="row2 btnHolder btn-group">
-        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
-        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+        <div id="encrypt" class="btn"><span class="btnTitle">{{i18n:btnEncrypt}}</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">{{i18n:btnDecrypt}}</span></div>
         <div class="base64-type-group">
-          <span class="base64-type-label">密文类型</span>
+          <span class="base64-type-label">{{i18n:cipherType}}</span>
           <label class="radio-label"><input type="radio" name="base64Type" value="auto" checked /> auto</label>
-          <label class="radio-label"><input type="radio" name="base64Type" value="standard" /> 标准 base64</label>
-          <label class="radio-label"><input type="radio" name="base64Type" value="urlsafe" /> URL-safe base64</label>
+          <label class="radio-label"><input type="radio" name="base64Type" value="standard" /> {{i18n:cipherTypeStandard}}</label>
+          <label class="radio-label"><input type="radio" name="base64Type" value="urlsafe" /> {{i18n:cipherTypeUrlsafe}}</label>
         </div>
       </div>
       <div class="row2 btnHolder btn-group">
-        <div id="saveToCloudflare" class="btn"><span class="btnTitle">保存密文到 CloudFlare</span></div>
-        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">从 CloudFlare 恢复密文</span></div>
+        <div id="saveToCloudflare" class="btn"><span class="btnTitle">{{i18n:btnSaveCloudflare}}</span></div>
+        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">{{i18n:btnRestoreCloudflare}}</span></div>
       </div>
-      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">采用 Cloudflare D1 免费数据库存储，不保证可靠性。<br/>以公钥 + SALT 作为唯一标识，请妥善保管您的公钥/书签地址（包含SALT）。<br/><strong>安全性说明：存储内容经 AES-GCM 加密后上传，CloudFlare D1 持有者、管理员及任何第三方均无法解密查看明文。</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; 详情</a></p>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
 
       <div class="row plain-cipher-row">
         <div class="border content">
-          <div class="title">明文</div>
+          <div class="title">{{i18n:plaintextLabel}}</div>
           <div class="action-links">
-            <a id="downloadPlain" href="javascript:void(0)" class="action-link">下载解密文件</a>
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">{{i18n:downloadPlain}}</a>
           </div>
-          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="{{i18n:plaintextPlaceholder}}" autocomplete="off"></textarea>
         </div>
         <div class="flow-divider">↓</div>
         <div class="border content">
-          <div class="title">密文 Base64</div>
+          <div class="title">{{i18n:ciphertextLabel}}</div>
           <div class="row">
             <form id="clearfileform">
               <div class="row2">
                 <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
-                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">{{i18n:btnClearFile}}</span></div>
               </div>
             </form>
           </div>
           <div class="action-links">
-            <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
-            <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
-            <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">{{i18n:downloadCipher}}</a>
+            <a id="sendemail" href="javascript:void(0)" class="action-link">{{i18n:sendEmail}}</a>
+            <a id="sendemail2" href="javascript:void(0)" class="action-link">{{i18n:sendEmailManual}}</a>
           </div>
-          <p style="color:#101010;margin:0.5rem 0 0"><strong>请确保本页面链接也粘贴到邮件内容</strong></p>
+          <p style="color:#101010;margin:0.5rem 0 0"><strong>{{i18n:emailEnsureLink}}</strong></p>
           <label class="newline2">
-            br 换行
+            {{i18n:newlineLabel}}
             <input type="checkbox" name="newLine" id="newline" />
           </label>
-          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="{{i18n:ciphertextPlaceholder}}"></textarea>
         </div>
       </div>
     </section>
 
     <section class="section-card section-muted about-section">
-      <h1>关于</h1>
+      <h1>{{i18n:aboutTitle}}</h1>
       <pre id="build"></pre>
-      <p><a href="https://github.com/Lorem3/webecc/">项目地址 GitHub</a></p>
-      <h2><a href="fmt.html">格式说明</a></h2>
-      <pre class="about-intro">此网页利用 Curve25519 椭圆曲线进行加密，所有操作均在本地完成。
-
-由于 Curve25519 的格式要求，下面为 D. J. Bernstein 文章链接说明。例如：
-0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
-1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
-实际对应同一密钥。</pre>
+      <p><a href="https://github.com/Lorem3/webecc/">{{i18n:aboutProjectLink}}</a></p>
+      <h2><a href="fmt.html">{{i18n:aboutFormatLink}}</a></h2>
+      <pre class="about-intro">{{i18n:aboutIntro}}</pre>
       <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
       <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
       <pre>mysecret[0] &= 248;
@@ -155,9 +150,9 @@ mysecret[31] |= 64;</pre>
     </section>
 
     <section class="section-card browser-requirements-section">
-      <h2>浏览器要求</h2>
+      <h2>{{i18n:browserTitle}}</h2>
       <table>
-        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+        <thead><tr><th>{{i18n:browserThBrowser}}</th><th>{{i18n:browserThVersion}}</th></tr></thead>
         <tbody>
           <tr><td>Chrome</td><td>≥ 80</td></tr>
           <tr><td>Firefox</td><td>≥ 113</td></tr>
