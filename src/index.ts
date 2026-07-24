@@ -714,11 +714,25 @@ ${messages.emailDataBase64}: ${newLine}
 
     let content = finalTxt;
 
-    const noe = encodeURIComponent(subject);
+    const note = encodeURIComponent(subject);
     const encodedContent = encodeURIComponent(content);
     console.log('encodedContent',encodedContent);
 
-    const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&noe=${noe}&content=${encodedContent}`;
+    // 计算 phash = HMAC_sha512(plainTxt, "plainHash").slice(0, 32) 然后 base64url 编码
+    const plainTxt = getPlainText();
+    const encoder = new TextEncoder();
+    const phashKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode("plainHash"),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const phashBuffer = await crypto.subtle.sign("HMAC", phashKey, encoder.encode(plainTxt));
+    const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
+    const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
+
+    const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}`;
     openUrl(url);
   };
 
