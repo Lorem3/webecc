@@ -616,7 +616,7 @@ ${messages.emailDataBase64}: ${newLine}
     const keyBuffer = await crypto.subtle.sign("HMAC", keyKey, encoder.encode("cloudflare-d1-access"));
     const keyArray = new Uint8Array(keyBuffer).slice(0, 33);
 
-    return ec.base64Encode(keyArray);
+    return ec.base64Encode(keyArray, 1);
   }
 
   // HMAC-SHA512 两层派生，截取前32字节（用于内容加密）
