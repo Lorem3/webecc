@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secure Backup</title>
+  <style>
+    .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.downloadbtn{background-color:gray;display:flex;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;padding:5px 25px 5px 5px}#inputData{padding:1.5rem;background-color:#f5f5f5;color:#333;border:1px solid #ddd;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:960px;background-color:#eee;margin:auto}.contain{margin:auto;background-color:#fff;padding:2rem}.page-title{display:flex;align-items:center;justify-content:space-between}.lang-switcher{display:flex;gap:4px;font-size:14px}.lang-switcher a{text-decoration:none;cursor:pointer;color:#999}.lang-switcher a.active{color:#999;cursor:default}.lang-switcher a:not(.active){color:#2563eb}.lang-switcher a:not(.active):hover{text-decoration:underline}
+    </style>
+  <style>
+:root{--page-bg: #f0f2f5;--card-bg: #fff;--border: #e3e6ea;--border-focus: #2563eb;--text: #1a1a1d;--text-muted: #5c5c66;--accent: #2563eb;--accent-hover: #1d4ed8;--radius: 12px;--radius-sm: 16px;--space: 1.5rem;--space-sm: .75rem;--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;--shadow: 0 1px 2px rgba(0,0,0,.04);--shadow-hover: 0 4px 12px rgba(0,0,0,.08);--transition: .2s ease}@media(prefers-reduced-motion:reduce){:root{--transition: 0s}}body{background:var(--page-bg);color:var(--text);font-family:var(--font-sans);line-height:1.6;-webkit-font-smoothing:antialiased}.contain{background:var(--card-bg);box-shadow:var(--shadow);padding:2rem;max-width:720px;margin:0 auto}.page-title{font-size:1.75rem;font-weight:600;letter-spacing:-.02em;margin:0 0 var(--space);padding-bottom:var(--space-sm);border-bottom:2px solid var(--border)}.section-card{background:var(--card-bg);padding:var(--space);margin-bottom:var(--space);transition:box-shadow var(--transition)}.section-card:hover{filter:drop-shadow(0 4px 12px rgba(0,0,0,.08))}h1{font-size:1.375rem;font-weight:600;margin:0 0 var(--space-sm);letter-spacing:-.01em}h2{font-size:1rem;font-weight:600;color:var(--text);margin:0 0 var(--space-sm)}section{margin-bottom:var(--space)}hr{border:none;border-top:1px solid var(--border);margin:var(--space) 0}table{border-collapse:collapse;width:100%;font-size:.9375rem;overflow:hidden}th,td{padding:.625rem 1rem;text-align:left;border-bottom:1px solid var(--border)}th{font-weight:600;color:var(--text-muted);background:#f8f9fa}tr:last-child td{border-bottom:none}tr:nth-child(2n) td{background:#fafbfc}.row2{display:flex;align-items:center;gap:var(--space-sm)}.row2 .title{min-width:4.5em;color:var(--text-muted);font-size:.9375rem}input[type=text],input[type=file],input[type=password]{padding:.5rem .75rem;font-family:inherit;font-size:.9375rem;height:2.5rem;flex:1;box-sizing:border-box;background:var(--card-bg);transition:border-color var(--transition),box-shadow var(--transition)}input[type=text]:focus,input[type=file]:focus,input[type=password]:focus,textarea:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px #2563eb26}.password-wrap{position:relative;flex:1;display:inline-flex}.password-wrap input{width:100%;padding-right:2.5rem;box-sizing:border-box}.eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);display:flex;align-items:center;justify-content:center}.eye-btn:hover{color:var(--text)}input::placeholder,textarea::placeholder{color:var(--text-muted);opacity:.9}.btn{display:flex;background:var(--text);border:none;cursor:pointer;min-width:140px;padding:.3rem 1.25rem;align-items:center;justify-content:center;transition:background var(--transition),transform var(--transition),box-shadow var(--transition)}.btn:hover{background:#333;box-shadow:var(--shadow)}.btn:active{transform:scale(.98)}.btn:focus-visible{outline:none;box-shadow:0 0 0 3px #0003}.clearbtn{background:var(--text-muted)}.clearbtn:hover{background:#555}.btn-group{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-sm);margin-top:var(--space-sm)}.btnHolder{margin-left:0}.base64-type-group{display:inline-flex;align-items:center;gap:.5rem;margin-left:var(--space-sm);padding:.375rem .75rem;background:#f8f9fa}.base64-type-label{font-size:.875rem;color:var(--text-muted);white-space:nowrap}.radio-label{display:inline-flex;align-items:center;gap:.25rem;font-size:.875rem;color:var(--text);cursor:pointer;white-space:nowrap}.radio-label input[type=radio]{accent-color:var(--accent);cursor:pointer}.content{padding:var(--space-sm);transition:border-color var(--transition)}.content:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 2px #2563eb1a}.bigTxtArea{font-family:inherit;font-size:.875rem;padding:.75rem;resize:vertical;min-height:120px}.action-link{display:inline-flex;align-items:center;color:var(--accent);text-decoration:none;font-size:.9375rem;padding:.25rem 0;margin-right:1rem;margin-bottom:.25rem;transition:color var(--transition)}.action-link:hover{color:var(--accent-hover);text-decoration:underline}.action-link:focus-visible{outline:none;text-decoration:underline}.action-links{margin:var(--space-sm) 0}.plain-cipher-row{display:flex;flex-direction:column;gap:0}.plain-cipher-row .border.content{width:100%;height:auto;min-height:200px;box-sizing:border-box}.plain-cipher-row .bigTxtArea{width:100%;min-height:160px;box-sizing:border-box}.flow-divider{display:flex;align-items:center;justify-content:center;padding:.5rem 0;color:var(--text-muted);font-size:.875rem}label.newline2{display:inline-flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--text-muted)}#newline{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}pre{font-size:.8125rem;color:var(--text-muted)}#build,.contain pre{background:#f8f9fa;padding:1rem}.bookmark-inputs{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space);align-items:center}.bookmark-inputs input{flex:1;min-width:200px}.bookmark-actions{margin-top:var(--space-sm)}.bookmark-actions a{display:block;margin-bottom:.5rem}.bookmark-hint{display:block;margin-top:.2rem;margin-bottom:.5rem;color:#dc2626;font-size:.875rem;line-height:1.5;font-weight:600}#bookmark{word-break:break-all}.usage-list p,.about-intro{margin:.5rem 0;color:var(--text-muted);font-size:.9375rem}.section-muted{background:#f8f9fa;border-color:var(--border)}.text-card{background:var(--card-bg);border:1px solid var(--border);padding:var(--space-sm);transition:border-color var(--transition)}.text-card:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 2px #2563eb1a}textarea.bigTxtArea{background:#f8f9fa;border:none;padding:.75rem;font-family:inherit;font-size:.875rem;resize:vertical;min-height:160px;width:100%;box-sizing:border-box;transition:box-shadow .2s ease}textarea.bigTxtArea:focus{outline:none;box-shadow:0 0 0 2px #2563eb4d}#saltRow{min-height:50px;align-items:flex-start}#saltRow .title{min-height:50px;display:flex;align-items:center}.salt-text{min-height:50px;display:flex;align-items:center;flex:1;color:var(--text-muted);font-size:.875rem;word-break:break-all;line-height:1.5}body:hover{border-image:url(https://webecc.goatcounter.com/count?p=/webECC)}
+
+</style>
+</head>
+
+<body>
+  <div class="contain">
+    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">Secure Backup</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;font-weight:500;">E2EE, Only You Can Access Your Data</span><div class="lang-switcher" id="langSwitcher"></div></h1>
+
+    <section class="section-card section-muted usage-section">
+      <h1>How to Use</h1>
+      <p><strong>This page performs no network operations. All data is processed locally in your browser.</strong></p>
+      <p><strong>Encryption does not require a password. Only a passphrase is needed for decryption.</strong></p>
+      <h2>Backup</h2>
+      <div class="usage-list">
+        <p>1. Enter passphrase</p>
+        <p>2. Enter backup email</p>
+        <p>3. Enter email subject</p>
+        <p>4. Passphrase prefix (can be an email or any text)</p>
+        <p>5. Generate bookmark link and save it</p>
+        <p>6. Open the page from the bookmark, enter content in the plaintext box, then click "Send encrypted result to email" below</p>
+        <p><strong>For subsequent use, start from step 6 only. No need to re-enter the password.</strong></p>
+      </div>
+      <h2>Restore</h2>
+      <div class="usage-list">
+        <p>1. Paste ciphertext in the input box below</p>
+        <p>2. Enter passphrase</p>
+        <p>3. Click "Generate from passphrase" to generate keys</p>
+        <p>4. Click Decrypt</p>
+      </div>
+      <h2>Generate bookmark link (without private key)</h2>
+      <div class="section-card">
+        <div class="row2">
+          <span class="title">Passphrase</span>
+          <div class="password-wrap">
+            <input id="keyphraseBookmark" type="password" autocomplete="off" placeholder="Passphrase (do not share)" />
+            <button type="button" class="eye-btn" id="eyeBtnBookmark" tabindex="-1">
+              <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+              <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <p style="margin:0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Optional fields for email sending</p>
+        <div class="row2">
+          <span class="title">Backup email</span>
+          <input id="email" type="text" autocomplete="off" placeholder="e.g. aaabb@qq.com" />
+        </div>
+        <div class="row2">
+          <span class="title">Email subject</span>
+          <input id="emailsubject" type="text" autocomplete="off" placeholder="Email subject (optional)" />
+        </div>
+        <div class="row2">
+          <span class="title">Hint</span>
+          <input id="prefix" type="text" autocomplete="off" placeholder="A hint, or anything you like" />
+        </div>
+      </div>
+      <div class="bookmark-actions">
+        <div id="genbookmark2" class="btn"><span class="btnTitle">Generate bookmark link (using public key derived from passphrase)</span></div>
+      </div>
+      <div id="bookmark"></div>
+      <div id="bookmarkInfo" style="display:none;margin-top:1rem;padding:1rem;border:1px solid #ddd;">
+        <h2 style="margin-top:0">Bookmark Info</h2>
+        <div class="row2"><span class="title">Public Key</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
+        <div class="row2"><span class="title">Email</span><span id="bmEmail"></span></div>
+        <div class="row2"><span class="title">Subject</span><span id="bmSubject"></span></div>
+        <div class="row2"><span class="title">Prefix</span><span id="bmPrefix"></span></div>
+        <div class="row2" id="bmSaltRow" style="display:none"><span class="title">Salt</span><span id="bmSalt" style="word-break:break-all;"></span></div>
+      </div>
+    </section>
+
+    <pre id="inputData"></pre>
+
+    <section id="keySection" class="section-card" style="display:none">
+      <h2>Key Info</h2>
+      <div class="row2">
+        <span class="title">Public Key</span>
+        <input id="public" type="text" autocomplete="off" placeholder="Public Key" />
+      </div>
+      <div class="row2">
+        <span class="title">Private Key</span>
+        <input id="private" type="text" autocomplete="off" placeholder="Private key (do not share)" data-raw="" />
+      </div>
+      <div class="row2">
+        <span class="title">Passphrase</span>
+        <div class="password-wrap">
+          <input id="keyphrase" type="password" autocomplete="off" placeholder="Passphrase (do not share)" />
+          <button type="button" class="eye-btn" id="eyeBtn" tabindex="-1">
+            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+            <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="row2" id="saltRow" style="display:none">
+        <span class="title">Salt</span>
+        <span id="salt" class="salt-text"></span>
+      </div>
+      <p id="saltSaveHint" style="display:none">Please <strong>generate a bookmark to save</strong>. The same key cannot be reproduced after refreshing the page.</p>
+      <div class="row2 btnHolder btn-group">
+        <div id="genpubkey" class="btn"><span class="btnTitle">Generate public key from private key</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">Generate key pair from passphrase</span></div>
+      </div>
+    </section>
+
+    <section id="encryptSection" class="section-card" style="display:none">
+      <h2>Encrypt / Decrypt</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">Encrypt</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">Decrypt</span></div>
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToCloudflare" class="btn"><span class="btnTitle">Save ciphertext to CloudFlare</span></div>
+        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">Restore ciphertext from CloudFlare</span></div>
+      </div>
+      <div class="action-links" style="margin-top:0.5rem">
+        <a id="sendemail" href="javascript:void(0)" class="action-link">Send encrypted result to email</a>
+        <a id="sendemail2" href="javascript:void(0)" class="action-link">Send encrypted result to email (paste encrypted data manually)</a>
+      </div>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">Stored using Cloudflare D1 free database. Reliability is not guaranteed.<br/>Identified by public key + SALT. Please keep your public key / bookmark URL (which contains SALT) safe.<br/><strong>Security note: Stored content is encrypted with AES-GCM before upload. The CloudFlare D1 owner, administrators, and any third party cannot decrypt or view the plaintext.</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; Details</a></p>
+
+      <div class="row plain-cipher-row">
+        <div class="text-card">
+          <div class="title">Plaintext</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">Download decrypted file</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="Enter plaintext" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="text-card">
+          <div class="title">Ciphertext Base64</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">Clear file</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">Download encrypted file</a>
+          </div>
+          <p style="color:#101010;margin:0.5rem 0 0"><strong>Make sure to also paste this page link into the email content</strong></p>
+          <label class="newline2">
+            br newline
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="Enter ciphertext or select an encrypted file (.ec)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card section-muted about-section">
+      <h1>About</h1>
+      <pre id="build"></pre>
+      <p><a href="https://github.com/Lorem3/webecc/">Project on GitHub</a></p>
+      <h2><a href="fmt.html">Format specification</a></h2>
+      <pre class="about-intro">This page uses Curve25519 elliptic curve for encryption. All operations are performed locally.
+
+Due to Curve25519 format requirements, see D. J. Bernstein's article for details. For example:
+0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+These actually correspond to the same key.</pre>
+      <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
+      <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
+      <pre>mysecret[0] &= 248;
+mysecret[31] &= 127;
+mysecret[31] |= 64;</pre>
+    </section>
+
+    <section class="section-card browser-requirements-section">
+      <h2>Browser Requirements</h2>
+      <table>
+        <thead><tr><th>Browser</th><th>Version</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <script>
+(function () {
+"use strict";var Base64=(function(){function e(){}return e.prototype.byte2Char=function(e2){return(e2&=63)<26?String.fromCharCode(e2+65):e2<52?String.fromCharCode(e2-26+97):e2<62?String.fromCharCode(e2-52+48):62==e2?"+":"/"},e.prototype.char2byte=function(e2){return e2>=65&&e2<=90?e2-65:e2>=97&&e2<=122?e2-97+26:e2>=48&&e2<=57?e2-48+52:43==e2?62:47==e2?63:64},e.prototype.encode=function(e2,r,firstLineLess){void 0===r&&(r=0);void 0===firstLineLess&&(firstLineLess=0);for(var t="",o=0,n=e2.length,a=0,s=0;s<n;s++){var i=e2[s];switch(s%3){case 0:t+=this.byte2Char(i>>2),o=i<<4&63,++a&&r&&a%r==0&&(t+="\r\n");break;case 1:t+=this.byte2Char(i>>4|o),o=i<<2&63,++a&&r&&a%r==0&&(t+="\r\n");break;case 2:t+=this.byte2Char(i>>6|o),++a&&r&&a%r==0&&(t+="\r\n"),t+=this.byte2Char(i),++a&&r&&a%r==0&&(t+="\r\n")}}var c=n%3;if(0!=c){t+=this.byte2Char(o);t+=1==c?"==":"="}if(r>0&&firstLineLess>0){var raw=t.replace(/\r\n/g,"");var firstLineLen=r-firstLineLess;if(firstLineLen>0&&raw.length>firstLineLen){var parts=[];for(var pos=0;pos<raw.length;pos+=r){parts.push(raw.substring(pos,pos+r))}if(parts.length>0){parts[0]=raw.substring(0,firstLineLen);var rebuild=[parts[0]];var remaining=raw.substring(firstLineLen);for(var pos2=0;pos2<remaining.length;pos2+=r){rebuild.push(remaining.substring(pos2,pos2+r))}t=rebuild.join("\r\n")}}}return t},e.prototype.decode=function(e2){for(var r=new TextEncoder().encode(e2),t=new Uint8Array(r.length),o=r.length,n=0,a=0,s=0,i=0,c=64;n<o;){c=64;do{c=this.char2byte(r[n]),n++}while(64==c&&n<o);if(!(c<64))break;switch(3&i){case 0:s=c<<2;break;case 1:var h=s|c>>4;s=c<<4,t[a++]=h;break;case 2:var y=s|c>>2;s=c<<6,t[a++]=y;break;case 3:t[a++]=s|c}i++}return t.slice(0,a)},e.prototype.toByteArray=function(e2){return this.decode(e2)},e.prototype.fromByteArray=function(e2,r,firstLineLess){return void 0===r&&(r=0),void 0===firstLineLess&&(firstLineLess=0),this.encode(e2,r,firstLineLess)},e})(),base64js=new Base64;
+
+"use strict";const util=(function(){const ERROR_MSG_INPUT="Input must be an string, Buffer or Uint8Array";function normalizeInput(input){let ret;if(input instanceof Uint8Array){ret=input}else if(typeof input==="string"){const encoder=new TextEncoder;ret=encoder.encode(input)}else{throw new Error(ERROR_MSG_INPUT)}return ret}function toHex(bytes){return Array.prototype.map.call(bytes,function(n){return(n<16?"0":"")+n.toString(16)}).join("")}function uint32ToHex(val){return(4294967296+val).toString(16).substring(1)}function debugPrint(label,arr,size){let msg="\n"+label+" = ";for(let i=0;i<arr.length;i+=2){if(size===32){msg+=uint32ToHex(arr[i]).toUpperCase();msg+=" ";msg+=uint32ToHex(arr[i+1]).toUpperCase()}else if(size===64){msg+=uint32ToHex(arr[i+1]).toUpperCase();msg+=uint32ToHex(arr[i]).toUpperCase()}else throw new Error("Invalid size "+size);if(i%6===4){msg+="\n"+new Array(label.length+4).join(" ")}else if(i<arr.length-2){msg+=" "}}}function testSpeed(hashFn,N,M){let startMs=new Date().getTime();const input=new Uint8Array(N);for(let i=0;i<N;i++){input[i]=i%256}const genMs=new Date().getTime();startMs=genMs;for(let i=0;i<M;i++){const hashHex=hashFn(input);const hashMs=new Date().getTime();const ms=hashMs-startMs;startMs=hashMs}}return{normalizeInput,toHex,debugPrint,testSpeed}})();const blake2b=(function(){function ADD64AA(v2,a,b){const o0=v2[a]+v2[b];let o1=v2[a+1]+v2[b+1];if(o0>=4294967296){o1++}v2[a]=o0;v2[a+1]=o1}function ADD64AC(v2,a,b0,b1){let o0=v2[a]+b0;if(b0<0){o0+=4294967296}let o1=v2[a+1]+b1;if(o0>=4294967296){o1++}v2[a]=o0;v2[a+1]=o1}function B2B_GET32(arr,i){return arr[i]^arr[i+1]<<8^arr[i+2]<<16^arr[i+3]<<24}function B2B_G(a,b,c,d,ix,iy){const x0=m[ix];const x1=m[ix+1];const y0=m[iy];const y1=m[iy+1];ADD64AA(v,a,b);ADD64AC(v,a,x0,x1);let xor0=v[d]^v[a];let xor1=v[d+1]^v[a+1];v[d]=xor1;v[d+1]=xor0;ADD64AA(v,c,d);xor0=v[b]^v[c];xor1=v[b+1]^v[c+1];v[b]=xor0>>>24^xor1<<8;v[b+1]=xor1>>>24^xor0<<8;ADD64AA(v,a,b);ADD64AC(v,a,y0,y1);xor0=v[d]^v[a];xor1=v[d+1]^v[a+1];v[d]=xor0>>>16^xor1<<16;v[d+1]=xor1>>>16^xor0<<16;ADD64AA(v,c,d);xor0=v[b]^v[c];xor1=v[b+1]^v[c+1];v[b]=xor1>>>31^xor0<<1;v[b+1]=xor0>>>31^xor1<<1}const BLAKE2B_IV32=new Uint32Array([4089235720,1779033703,2227873595,3144134277,4271175723,1013904242,1595750129,2773480762,2917565137,1359893119,725511199,2600822924,4215389547,528734635,327033209,1541459225]);const SIGMA8=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,14,10,4,8,9,15,13,6,1,12,0,2,11,7,5,3,11,8,12,0,5,2,15,13,10,14,3,6,7,1,9,4,7,9,3,1,13,12,11,14,2,6,5,10,4,0,15,8,9,0,5,7,2,4,10,15,14,1,11,12,6,8,3,13,2,12,6,10,0,11,8,3,4,13,7,5,15,14,1,9,12,5,1,15,14,13,4,10,0,7,6,3,9,2,8,11,13,11,7,14,12,1,3,9,5,0,15,4,8,6,2,10,6,15,14,9,11,3,0,8,12,2,13,7,1,4,10,5,10,2,8,4,7,6,1,5,15,11,9,14,3,12,13,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,14,10,4,8,9,15,13,6,1,12,0,2,11,7,5,3];const SIGMA82=new Uint8Array(SIGMA8.map(function(x){return x*2}));const v=new Uint32Array(32);const m=new Uint32Array(32);function blake2bCompress(ctx,last){let i=0;for(i=0;i<16;i++){v[i]=ctx.h[i];v[i+16]=BLAKE2B_IV32[i]}v[24]=v[24]^ctx.t;v[25]=v[25]^ctx.t/4294967296;if(last){v[28]=~v[28];v[29]=~v[29]}for(i=0;i<32;i++){m[i]=B2B_GET32(ctx.b,4*i)}for(i=0;i<12;i++){B2B_G(0,8,16,24,SIGMA82[i*16+0],SIGMA82[i*16+1]);B2B_G(2,10,18,26,SIGMA82[i*16+2],SIGMA82[i*16+3]);B2B_G(4,12,20,28,SIGMA82[i*16+4],SIGMA82[i*16+5]);B2B_G(6,14,22,30,SIGMA82[i*16+6],SIGMA82[i*16+7]);B2B_G(0,10,20,30,SIGMA82[i*16+8],SIGMA82[i*16+9]);B2B_G(2,12,22,24,SIGMA82[i*16+10],SIGMA82[i*16+11]);B2B_G(4,14,16,26,SIGMA82[i*16+12],SIGMA82[i*16+13]);B2B_G(6,8,18,28,SIGMA82[i*16+14],SIGMA82[i*16+15])}for(i=0;i<16;i++){ctx.h[i]=ctx.h[i]^v[i]^v[i+16]}}const parameterBlock=new Uint8Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);function blake2bInit(outlen,key,salt,personal){if(outlen===0||outlen>64){throw new Error("Illegal output length, expected 0 < length <= 64")}if(key&&key.length>64){throw new Error("Illegal key, expected Uint8Array with 0 < length <= 64")}if(salt&&salt.length!==16){throw new Error("Illegal salt, expected Uint8Array with length is 16")}if(personal&&personal.length!==16){throw new Error("Illegal personal, expected Uint8Array with length is 16")}const ctx={b:new Uint8Array(128),h:new Uint32Array(16),t:0,c:0,outlen};parameterBlock.fill(0);parameterBlock[0]=outlen;if(key)parameterBlock[1]=key.length;parameterBlock[2]=1;parameterBlock[3]=1;if(salt)parameterBlock.set(salt,32);if(personal)parameterBlock.set(personal,48);for(let i=0;i<16;i++){ctx.h[i]=BLAKE2B_IV32[i]^B2B_GET32(parameterBlock,i*4)}if(key){blake2bUpdate(ctx,key);ctx.c=128}return ctx}function blake2bUpdate(ctx,input){for(let i=0;i<input.length;i++){if(ctx.c===128){ctx.t+=ctx.c;blake2bCompress(ctx,false);ctx.c=0}ctx.b[ctx.c++]=input[i]}}function blake2bFinal(ctx){ctx.t+=ctx.c;while(ctx.c<128){ctx.b[ctx.c++]=0}blake2bCompress(ctx,true);const out=new Uint8Array(ctx.outlen);for(let i=0;i<ctx.outlen;i++){out[i]=ctx.h[i>>2]>>8*(i&3)}return out}function blake2b2(input,key,outlen,salt,personal){outlen=outlen||64;input=util.normalizeInput(input);if(salt){salt=util.normalizeInput(salt)}if(personal){personal=util.normalizeInput(personal)}const ctx=blake2bInit(outlen,key,salt,personal);blake2bUpdate(ctx,input);return blake2bFinal(ctx)}function blake2bHex(input,key,outlen,salt,personal){const output=blake2b2(input,key,outlen,salt,personal);return util.toHex(output)}return{blake2b:blake2b2,blake2bHex,blake2bInit,blake2bUpdate,blake2bFinal}})();
+
+"use strict";const Squircle={path:function(w,h,r,n,steps){n=n||5;steps=steps||24;r=Math.min(r,w/2,h/2);function corner(cx,cy,sx,sy,reverse){const pts=[];for(let i=0;i<=steps;i++){const t=Math.PI/2*(i/steps);const px=cx+sx*r*Math.pow(Math.sin(t),2/n);const py=cy+sy*r*Math.pow(Math.cos(t),2/n);pts.push([px,py])}return reverse?pts.reverse():pts}const tl=corner(r,r,-1,-1,true);const tr=corner(w-r,r,1,-1,false);const br=corner(w-r,h-r,1,1,true);const bl=corner(r,h-r,-1,1,false);const all=[...tl,...tr,...br,...bl];let d="M "+all[0][0].toFixed(2)+" "+all[0][1].toFixed(2)+" ";for(let i=1;i<all.length;i++){d+="L "+all[i][0].toFixed(2)+" "+all[i][1].toFixed(2)+" "}d+="Z";return d},svg:function(w,h,r,n,color,border){const d=this.path(w,h,r,n||5);const fill=color||"white";let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">';svg+='<path d="'+d+'" fill="'+fill+'"';if(border){svg+=' stroke="'+border.color+'" stroke-width="'+border.width+'"'}svg+="/></svg>";return svg},url:function(w,h,r,n,color,border){return'url("data:image/svg+xml,'+encodeURIComponent(this.svg(w,h,r,n,color,border))+'")'},apply:function(el,r,n,border){const rect=el.getBoundingClientRect();const w=Math.max(rect.width,1);const h=Math.max(rect.height,1);const bgColor=getComputedStyle(el).backgroundColor||"#000000";const bgUrl=this.url(w,h,r,n,bgColor,border);el.style.backgroundImage=bgUrl;el.style.backgroundSize="100% 100%";el.style.backgroundColor="transparent";el.style.borderRadius="0";el.style.border="none"},applyAll:function(selector,r,n,border){const elements=document.querySelectorAll(selector);elements.forEach(el=>this.apply(el,r,n,border))}};document.addEventListener("DOMContentLoaded",function(){Squircle.applyAll(".btn",30,5);Squircle.applyAll(".section-card",60,5,{color:"#e3e6ea",width:1});Squircle.applyAll(".text-card",40,5,{color:"#e3e6ea",width:1});Squircle.applyAll(".contain",90,5,{color:"#e3e6ea",width:1});Squircle.applyAll('input[type="text"]',30,5,{color:"#e3e6ea",width:1});Squircle.applyAll('input[type="password"]',30,5,{color:"#e3e6ea",width:1});Squircle.applyAll("textarea.bigTxtArea",20,5)});
+
+"use strict";const X25519=(function(){const subtle=crypto.subtle;function b64ToBytes(b64){const s=b64.replace(/-/g,"+").replace(/_/g,"/");const binary=atob(s);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i)}return bytes}function pkcs8Wrap(privKey){if(privKey.length!==32)throw"x25519 private key must be 32 bytes";const pkcs8=new Uint8Array(48);pkcs8[0]=48;pkcs8[1]=46;pkcs8[2]=2;pkcs8[3]=1;pkcs8[4]=0;pkcs8[5]=48;pkcs8[6]=5;pkcs8[7]=6;pkcs8[8]=3;pkcs8[9]=43;pkcs8[10]=101;pkcs8[11]=110;pkcs8[12]=4;pkcs8[13]=34;pkcs8[14]=4;pkcs8[15]=32;pkcs8.set(privKey,16);return pkcs8.buffer}function clamp(seed){const priv=new Uint8Array(seed);priv[0]&=248;priv[31]&=127;priv[31]|=64;return priv}async function generateKeyPair(seed){const priv=clamp(seed);const privKey=await subtle.importKey("pkcs8",pkcs8Wrap(priv),{name:"X25519"},true,["deriveBits"]);const jwk=await subtle.exportKey("jwk",privKey);const pubBytes=b64ToBytes(jwk.x);return{public:pubBytes,private:priv}}async function sharedKey(privateKey,publicKey){const privKey=await subtle.importKey("pkcs8",pkcs8Wrap(clamp(privateKey)),{name:"X25519"},false,["deriveBits"]);const pubKey=await subtle.importKey("raw",publicKey,{name:"X25519"},true,[]);const bits=await subtle.deriveBits({name:"X25519",public:pubKey},privKey,256);return new Uint8Array(bits)}return{generateKeyPair,sharedKey}})();
+
+"use strict";const ECC=(function(){var subtle=crypto.subtle;class GZip{async gzip(inputarr){const inputStream=new ReadableStream({start(controller){controller.enqueue(inputarr);controller.close()}});const gzs=new CompressionStream("gzip");const compressedStream=inputStream.pipeThrough(gzs);const reader=compressedStream.getReader();let chunks=[];while(true){try{const{done,value}=await reader.read();if(done)break;if(value!==void 0)chunks.push(value)}catch(error){break}}let len=chunks.reduce((s,t)=>s+t.length,0);var gzip=new Uint8Array(len);var idx=0;chunks.forEach(bytes=>{bytes.forEach(v=>{gzip[idx++]=v})});return gzip}async ungzip(inputarr){const inputStream=new ReadableStream({start(controller){controller.enqueue(inputarr);controller.close()}});const gzs=new DecompressionStream("gzip");const compressedStream=inputStream.pipeThrough(gzs);const reader=compressedStream.getReader();let chunks=[];while(true){try{const{done,value}=await reader.read();if(done)break;if(value!==void 0)chunks.push(value)}catch(error){break}}let len=chunks.reduce((s,t)=>s+t.length,0);var plain=new Uint8Array(len);var idx=0;chunks.forEach(bytes=>{bytes.forEach(v=>{plain[idx++]=v})});return plain}}class EC{constructor(){this.zlib=new GZip}toHex(arr){let strArr=[];arr.forEach(e=>{let s=e.toString(16);strArr.push(s.length==1?"0"+s:s)});return strArr.join("")}async genRandomKeyBuffer(length=32){let p={name:"HMAC",hash:"SHA-512",length:256};let keyObj=await subtle.generateKey(p,true,["sign"]);let keyBf=await subtle.exportKey("raw",keyObj);keyObj=await subtle.importKey("raw",keyBf,"PBKDF2",false,["deriveKey"]);let salt=crypto.getRandomValues(new Uint8Array(64));let pbkdf2={name:"PBKDF2",hash:"SHA-512",iterations:10,salt:salt.buffer};let dk={name:"HMAC",hash:"SHA-512",length:length*8};let result=await subtle.deriveKey(pbkdf2,keyObj,dk,true,["sign"]);return new Uint8Array(await subtle.exportKey("raw",result))}base64Encode(arr,urlsafe=0,firstLineLess=0){let r=base64js.fromByteArray(arr,76,firstLineLess);if(urlsafe){r=r.replace(/\+/g,"-");r=r.replace(/\//g,"_");r=r.replace(/=/g,"")}return r}base64Decode(str,urlsafe=0){if(urlsafe){str=str.replace(/-/g,"+");str=str.replace(/_/g,"/");str=str.replace(/=/g,"")}return base64js.toByteArray(str)}async generateNewKeyPair(seckey){let a=null;if(seckey){a=this.base64Decode(seckey);if(a?.length!=32){throw"private key length must be 32"}}else{a=await this.genRandomKeyBuffer()}let kp=await X25519.generateKeyPair(a);let kp2={public:base64js.fromByteArray(kp.public),private:base64js.fromByteArray(kp.private)};return kp2}async decrypt(privateKeyB64,data){let byte0=data[0];let useSha=(byte0&8)!==0;let isNew=useSha||byte0!==4&&byte0!==5;if(isNew&&(byte0&6)!==4){throw"data format not support"}let isZip=useSha?(byte0&1)===0:byte0===4;let format=useSha?1:0;let type=isNew?isZip?4:5:byte0;if(data.length<88){throw"data too short"}let privateKey=base64js.toByteArray(privateKeyB64);if(privateKey.length!=32){throw"privateKey length must be 32"}let iv=data.subarray(8,24);let mac=data.subarray(24,56);let tmpPub=data.subarray(56,88);let enc=data.subarray(88);let dh=await X25519.sharedKey(privateKey,tmpPub);let kp=await X25519.generateKeyPair(privateKey);let hash64=new Uint8Array(64);await this.hashDH(dh,kp.public,tmpPub,hash64,format);let macData=new Uint8Array(iv.length+tmpPub.length+enc.length);macData.set(iv,0);macData.set(tmpPub,iv.length);macData.set(enc,iv.length+tmpPub.length);let mac2;if(format==1){mac2=await this.hmacSha512(hash64.subarray(32,64),macData)}else{let b2b=blake2b.blake2bInit(32,hash64.subarray(32,64));blake2b.blake2bUpdate(b2b,macData);mac2=blake2b.blake2bFinal(b2b)}for(let i=0;i<32;i++){if(mac[i]!=mac2[i]){throw"MAC NOT FIT"}}let dec=await this.aesDecrypt(hash64.subarray(0,32),iv,enc);if(type==4){return await this.zlib.ungzip(dec)}return dec}async hashDH(dh,pub1,pub2,dh64,format=0){let shared96=new Uint8Array(96);dh.forEach((e,i)=>{shared96[i]=e});let flag=0;for(let i=31;i>=0;--i){const element=pub1[i];const element2=pub2[i];if(element<element2){flag=-1;break}else if(element>element2){flag=1;break}}if(flag==-1){pub1.forEach((e,i)=>{shared96[i+32]=e});pub2.forEach((e,i)=>{shared96[i+64]=e})}else{pub2.forEach((e,i)=>{shared96[i+32]=e});pub1.forEach((e,i)=>{shared96[i+64]=e})}let r;if(format==1){r=await this.sha512(shared96)}else{let b2b=blake2b.blake2bInit(64);blake2b.blake2bUpdate(b2b,shared96);r=blake2b.blake2bFinal(b2b)}r.forEach((e,i)=>{dh64[i]=e});shared96.fill(0);r.fill(0)}async encrypt(pubBase64,data,zipFirst=true,format=1){if(zipFirst){let zipdata=await this.zlib.gzip(data);return this._encrypt(pubBase64,zipdata,true,format)}else{return this._encrypt(pubBase64,data,false,format)}}async _encrypt(pubBase64,data,isZipData=true,format=1){let pubKey=base64js.toByteArray(pubBase64);if(pubKey.length!=32){throw"pubkey length error"}let a=await this.genRandomKeyBuffer(32);let kp=await X25519.generateKeyPair(a);let dh=await X25519.sharedKey(kp.private,pubKey);let hash2=new Uint8Array(64);await this.hashDH(dh,pubKey,kp.public,hash2,format);kp.private.fill(0);let key=hash2.subarray(0,32);let iv=await crypto.getRandomValues(new Uint8Array(16));let enc=await this.aesEncrypt(key,iv,data);var tmpPub=kp.public;let macData=new Uint8Array(iv.length+tmpPub.length+enc.length);macData.set(iv,0);macData.set(tmpPub,iv.length);macData.set(enc,iv.length+tmpPub.length);let mac;if(format==1){mac=await this.hmacSha512(hash2.subarray(32,64),macData)}else{let b2b=blake2b.blake2bInit(32,hash2.subarray(32,64));blake2b.blake2bUpdate(b2b,macData);mac=blake2b.blake2bFinal(b2b)}let result=new Uint8Array(8+mac.length+iv.length+tmpPub.length+enc.length);result[0]=format?4|(isZipData?0:1)|8:isZipData?4:5;result[1]=0;result[2]=16;result[3]=0;result[4]=32;result[5]=0;result[6]=32;result[7]=0;let start=8;result.set(iv,start);start+=iv.length;result.set(mac,start);start+=mac.length;result.set(tmpPub,start);start+=tmpPub.length;result.set(enc,start);return result}async aesDecrypt(key,iv,data){let p={name:"AES-CBC",iv};let keyObj=await subtle.importKey("raw",key,"AES-CBC",false,["decrypt"]);return new Uint8Array(await subtle.decrypt(p,keyObj,data))}async aesEncrypt(key,iv,data){let p={name:"AES-CBC",iv,length:256};let keyObj=await subtle.importKey("raw",key,p,false,["encrypt"]);return new Uint8Array(await subtle.encrypt(p,keyObj,data))}async hmacSha512(key,data){let keyObj=await subtle.importKey("raw",key,{name:"HMAC",hash:"SHA-512"},false,["sign"]);let sig=await subtle.sign("HMAC",keyObj,data);return new Uint8Array(sig).subarray(0,32)}async sha512(data){let hash=await subtle.digest("SHA-512",data);return new Uint8Array(hash)}}async function initEC(){return new EC}return{initEC}})();
+
+"use strict";(()=>{var jsMessages={modalTitle:"Unable to auto-detect cipher type",modalDesc:"Please select the Base64 type of this ciphertext:",modalBtnStandard:"Standard base64",modalBtnUrlsafe:"URL-safe base64",errEmptyPlain:"Please enter plaintext",errEmptyCipher:"Please enter ciphertext base64 or select a file",errDecryptNFormat:"Decrypting N. format requires a public key and salt (please enter from a bookmark)",errDecryptNFailed:"N. format decryption failed",errEmptyPrivkey:"Private key is empty",errPubkeyMismatchPrivkey:"Generated public key does not match the one saved in the bookmark. Please check your private key.",errEmptyFile:"File content is empty",errEmptyPhrase:"Please enter a passphrase",errPubkeyMismatchPhrase:"Generated public key does not match the one saved in the bookmark. Please check your passphrase.",errEmptyPubkey:"Public key is empty",errNeedBookmark:"Please regenerate the bookmark URL and enter from the bookmark",bookmarkHint:"If your public key was derived from a passphrase, please use the passphrase bookmark.",emailSubjectDefault:"Backup",emailBackupTime:"Backup time",emailPubkey:"Public key",emailWebUrl:"Page URL",emailDataBase64:"Data base64",inputDataLabel:"Information loaded from bookmark"};var App=(function(){async function init(){function detectBase64Type(str){const trimmed=str.replace(/\s/g,"");if(!trimmed)return null;const hasUrlSafe=/[-_]/.test(trimmed);const hasStandard=/[+/]/.test(trimmed);if(hasUrlSafe&&!hasStandard)return"urlsafe";if(hasStandard&&!hasUrlSafe)return"standard";if(!hasUrlSafe&&!hasStandard){if(trimmed.endsWith("="))return"standard";return null}return"standard"}function showBase64TypeModal(){return new Promise(resolve=>{const overlay=document.createElement("div");overlay.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999";const box=document.createElement("div");box.style.cssText="background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)";const title=document.createElement("h3");title.textContent=jsMessages.modalTitle;title.style.cssText="margin:0 0 0.75rem;font-size:1rem;font-weight:600";const desc=document.createElement("p");desc.textContent=jsMessages.modalDesc;desc.style.cssText="margin:0 0 1rem;font-size:0.9375rem;color:var(--text-muted,#666)";const btnRow=document.createElement("div");btnRow.style.cssText="display:flex;gap:0.75rem;justify-content:flex-end";const makeBtn=(label,type,primary=false)=>{const btn=document.createElement("button");btn.textContent=label;btn.style.cssText=primary?"padding:0.5rem 1.25rem;border:none;border-radius:8px;background:#000;color:#fff;font-size:0.9375rem;cursor:pointer":"padding:0.5rem 1.25rem;border:1px solid #ccc;border-radius:8px;background:#fff;font-size:0.9375rem;cursor:pointer";btn.onclick=()=>{document.body.removeChild(overlay);resolve(type)};return btn};btnRow.appendChild(makeBtn(jsMessages.modalBtnStandard,"standard"));btnRow.appendChild(makeBtn(jsMessages.modalBtnUrlsafe,"urlsafe",true));box.appendChild(title);box.appendChild(desc);box.appendChild(btnRow);overlay.appendChild(box);overlay.onclick=e=>{if(e.target===overlay){document.body.removeChild(overlay);resolve("standard")}};document.body.appendChild(overlay)})}const FIXED_SALT="The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]";const KDF_V1={ver:"1.0",hash:"SHA-256",iterations:123456};const KDF_V2={ver:"2.0",hash:"SHA-512",iterations:21e4};let G_Input;let currentSalt;function openUrl(url){if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){location.href=url}else{window.open(url,"_blank")}}let currentKdf;let ec=await ECC.initEC();function syncKeyphraseInputs(){const keyphraseBookmark=document.getElementById("keyphraseBookmark");const keyphrase=document.getElementById("keyphrase");if(!keyphraseBookmark||!keyphrase)return;let isSyncing=false;const syncFromBookmark=()=>{if(isSyncing)return;isSyncing=true;keyphrase.value=keyphraseBookmark.value;isSyncing=false};const syncFromKeyphrase=()=>{if(isSyncing)return;isSyncing=true;keyphraseBookmark.value=keyphrase.value;isSyncing=false};keyphraseBookmark.addEventListener("input",syncFromBookmark);keyphrase.addEventListener("input",syncFromKeyphrase)}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",syncKeyphraseInputs)}else{syncKeyphraseInputs()}function getPirvateKey(){let input=document.getElementById("private");if(!input)return"";const raw=input.getAttribute("data-raw");return(raw||input.value).trim()}function getPublicKey(){let input=document.getElementById("public");return input?.value.trim()}function setPirvateKey(str){let input=document.getElementById("private");input.value=str;input.removeAttribute("data-raw");input.dispatchEvent(new Event("blur"))}function setPublicKey(str){let input=document.getElementById("public");input.value=str}function setPlainText(str){let input=document.getElementById("plaintext");return input.value=str}function setCipherText(str){let input=document.getElementById("ciphertext");return input.value=str}function getCipherText(){let input=document.getElementById("ciphertext");return input.value}function getPlainText(){let input=document.getElementById("plaintext");return input?.value}function setErrMsg(str){alert(str)}async function encryptClick(){let p=getPublicKey();let text=getPlainText();if(!text){setErrMsg(jsMessages.errEmptyPlain);return false}try{let te=new TextEncoder;let enc=await ec.encrypt(p,te.encode(text));setCipherText(ec.base64Encode(enc,0));return true}catch(error){setErrMsg(error);return false}}document.getElementById("encrypt").onclick=async()=>{await encryptClick()};document.getElementById("decrypt").onclick=async()=>{let p=getPirvateKey();let fileInput=document.getElementById("cipherfile");let file=fileInput.files?.item(0);if(file){try{let reader=new FileReader;reader.readAsArrayBuffer(file);reader.onload=async()=>{try{let aaa=new Uint8Array(reader.result);let dec=await ec.decrypt(p,aaa);let te=new TextDecoder;setPlainText(te.decode(dec))}catch(error){setErrMsg(error)}}}catch(error){setErrMsg(error)}return}let base64=getCipherText().trim();if(!base64){setErrMsg(jsMessages.errEmptyCipher);return}try{if(base64.startsWith("N.")){const pubkey=getPublicKey();const salt=G_Input?.salt;if(!pubkey||!salt){setErrMsg(jsMessages.errDecryptNFormat);return}try{const contentKey=await generateContentKey(pubkey,salt);const nBase64=base64.slice(2);const encryptedData=ec.base64Decode(nBase64);const iv=encryptedData.slice(0,12);const ciphertext=encryptedData.slice(12);const decryptedBuffer=await crypto.subtle.decrypt({name:"AES-GCM",iv},contentKey,ciphertext);const decryptedCipher=new Uint8Array(decryptedBuffer);let dec=await ec.decrypt(p,decryptedCipher);let te=new TextDecoder;setPlainText(te.decode(dec))}catch(e){setErrMsg(jsMessages.errDecryptNFailed+": "+e)}}else{const detected=detectBase64Type(base64);let urlsafe;if(detected!==null){urlsafe=detected==="urlsafe"?1:0}else{const chosen=await showBase64TypeModal();urlsafe=chosen==="urlsafe"?1:0}let arr=ec.base64Decode(base64,urlsafe);let dec=await ec.decrypt(p,arr);let te=new TextDecoder;setPlainText(te.decode(dec))}}catch(error){setErrMsg(error)}};document.getElementById("genpubkey").onclick=async()=>{let seckey=getPirvateKey();if(!seckey){setErrMsg(jsMessages.errEmptyPrivkey);return}try{let kp=await ec.generateNewKeyPair(seckey);if(G_Input?.pubkey&&kp.public!==G_Input.pubkey){setErrMsg(jsMessages.errPubkeyMismatchPrivkey);return}setPirvateKey(kp.private);setPublicKey(kp.public)}catch(error){setErrMsg(error.toString())}};function generateRandomSalt(){const bytes=crypto.getRandomValues(new Uint8Array(33));return ec.base64Encode(bytes)}function resolveSalt(){if(G_Input?.salt){return G_Input.salt}if(G_Input){return FIXED_SALT}if(currentSalt)return currentSalt;currentSalt=generateRandomSalt();return currentSalt}function kdfFromInput(input){if(!input)return void 0;if(input.kdfHash&&input.kdfIterations){return{ver:input.ver??KDF_V1.ver,hash:input.kdfHash,iterations:input.kdfIterations}}if(input.ver===KDF_V2.ver)return{...KDF_V2};if(input.ver===KDF_V1.ver)return{...KDF_V1};return void 0}function resolveKdfParams(){const fromBookmark=kdfFromInput(G_Input);if(fromBookmark)return fromBookmark;if(!G_Input)return{...KDF_V2};return{...KDF_V1}}function resolveKdfForBookmark(){const fromBookmark=kdfFromInput(G_Input);if(fromBookmark)return fromBookmark;if(G_Input)return{...KDF_V1};if(currentKdf)return{...currentKdf};return{...KDF_V2}}function getAvailableSalt(){return G_Input?.salt??currentSalt}function showSaltInfo(salt){currentSalt=salt;const row=document.getElementById("saltRow");const el=document.getElementById("salt");if(!row||!el)return;el.textContent=salt;row.style.display="flex";const hint=document.getElementById("saltSaveHint");if(hint){hint.style.display=G_Input?"none":"block"}}async function pbkdf2(phrase,saltStr,kdf){var substl=crypto.subtle;let keyRaw=new TextEncoder().encode(phrase);let key=await substl.importKey("raw",keyRaw,"PBKDF2",false,["deriveBits"]);let salt=saltStr??FIXED_SALT;let iterations=kdf?.iterations??KDF_V1.iterations;let hash=kdf?.hash??KDF_V1.hash;let pbkdf22={name:"PBKDF2",hash,iterations,salt:new TextEncoder().encode(salt)};let af=await substl.deriveBits(pbkdf22,key,256);let arrPri=new Uint8Array(af);let bf64=ec.base64Encode(arrPri);let kp=await ec.generateNewKeyPair(bf64);return kp}document.getElementById("genkeyfrompharse").onclick=async()=>{let input=document.getElementById("keyphrase");let phrase=input?.value.trim();if(!phrase){setErrMsg(jsMessages.errEmptyPhrase);return}const salt=resolveSalt();if(G_Input?.prefix&&!G_Input.salt){phrase=`${G_Input.prefix}${phrase}`}const kdf=resolveKdfParams();currentKdf=kdf;let kp=await pbkdf2(phrase,salt,{hash:kdf.hash,iterations:kdf.iterations});if(G_Input?.pubkey&&kp.public!==G_Input.pubkey){setErrMsg(jsMessages.errPubkeyMismatchPhrase);return}setPirvateKey(kp.private);setPublicKey(kp.public);showSaltInfo(salt)};document.getElementById("downloadPlain").onclick=async()=>{let s=getPlainText();if(!s){setErrMsg(jsMessages.errEmptyFile);return}let te=new TextEncoder;let blob=new Blob([te.encode(s)]);const fileName=`dec_${filename()}.txt`;const link=document.createElement("a");link.href=window.URL.createObjectURL(blob);link.download=fileName;link.click();window.URL.revokeObjectURL(link.href)};function beijingtime(){return new Date(Date.now()+8*36e5).toISOString().replace("T"," ").replace("Z","")+" +0800"}function filename(){return beijingtime().replace(/:/g,"_").substring(0,19)}document.getElementById("downloadCipher").onclick=async()=>{let s=getCipherText().trim();if(!s){setErrMsg(jsMessages.errEmptyFile);return}let cipher=ec.base64Decode(s);let blob=new Blob([cipher]);const fileName=`enc_${filename()}.txt.ec`;const link=document.createElement("a");link.href=window.URL.createObjectURL(blob);link.download=fileName;link.click();window.URL.revokeObjectURL(link.href)};document.getElementById("clearfile").onclick=async()=>{let obj=document.getElementById("clearfileform");obj.reset()};document.getElementById("sendemail2").onclick=async()=>{let cipher=getCipherText().trim();if(!cipher){let t=await encryptClick();if(!t){return}cipher=getCipherText().trim();if(!cipher){return}}let checkbox=document.getElementById("newline");let newLine=checkbox.checked?"          <br><br>        ":"\n";let log=console.log;log("newLine "+newLine+"--");let msg=`
+${G_Input?.prefix||""} ${newLine}
+${jsMessages.emailBackupTime}:${beijingtime()} ${newLine}
+
+${jsMessages.emailPubkey}:${getPublicKey()}    ${newLine}
+
+${jsMessages.emailWebUrl}:     ${newLine}
+   ${location.href}         ${newLine}
+${jsMessages.emailDataBase64}:
+
+
+   `;let mailto=`mailto:${G_Input.toEmail}?subject=${encodeURIComponent(G_Input.emailSubject||jsMessages.emailSubjectDefault)}&body=${encodeURIComponent(msg)}`;window.open(mailto,"target","")};document.getElementById("sendemail").onclick=async()=>{let cipher=getCipherText().trim();if(!cipher){let t=await encryptClick();if(!t){return}cipher=getCipherText().trim();if(!cipher){return}}let checkbox=document.getElementById("newline");let newLine=checkbox.checked?"          <br><br>        ":"\n";let log=console.log;log("newLine "+newLine+"--");let msg=`
+${G_Input?.prefix||""}  ${newLine}
+${jsMessages.emailBackupTime}:${beijingtime()} ${newLine}
+
+${jsMessages.emailPubkey}:${getPublicKey()} ${newLine}
+
+${jsMessages.emailWebUrl}: ${newLine}
+${location.href}  ${newLine}
+
+${jsMessages.emailDataBase64}: ${newLine}
+
+   ${cipher}
+
+
+
+   `;let mailto=`mailto:${G_Input.toEmail}?subject=${encodeURIComponent(G_Input.emailSubject||jsMessages.emailSubjectDefault)}&body=${encodeURIComponent(msg)}`;window.open(mailto,"target","")};async function generateKey(pubkey,salt){const encoder=new TextEncoder;const prkKey=await crypto.subtle.importKey("raw",encoder.encode(pubkey),{name:"HMAC",hash:"SHA-512"},false,["sign"]);const prk=await crypto.subtle.sign("HMAC",prkKey,encoder.encode(salt));const keyKey=await crypto.subtle.importKey("raw",new Uint8Array(prk),{name:"HMAC",hash:"SHA-512"},false,["sign"]);const keyBuffer=await crypto.subtle.sign("HMAC",keyKey,encoder.encode("cloudflare-d1-access"));const keyArray=new Uint8Array(keyBuffer).slice(0,33);return ec.base64Encode(keyArray,1)}async function generateContentKey(pubkey,salt){const encoder=new TextEncoder;const prkKey=await crypto.subtle.importKey("raw",encoder.encode(pubkey),{name:"HMAC",hash:"SHA-512"},false,["sign"]);const prk=await crypto.subtle.sign("HMAC",prkKey,encoder.encode(salt));const keyKey=await crypto.subtle.importKey("raw",new Uint8Array(prk),{name:"HMAC",hash:"SHA-512"},false,["sign"]);const keyBuffer=await crypto.subtle.sign("HMAC",keyKey,encoder.encode("d1_content"));const keyArray=new Uint8Array(keyBuffer).slice(0,32);return crypto.subtle.importKey("raw",keyArray,{name:"AES-GCM"},false,["encrypt","decrypt"])}async function aesGcmEncrypt(data,key){const iv=crypto.getRandomValues(new Uint8Array(12));const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,data);const result=new Uint8Array(iv.length+encrypted.byteLength);result.set(iv,0);result.set(new Uint8Array(encrypted),iv.length);return result}async function aesGcmDecrypt(data,key){const iv=data.slice(0,12);const ciphertext=data.slice(12);return crypto.subtle.decrypt({name:"AES-GCM",iv},key,ciphertext)}document.getElementById("saveToCloudflare").onclick=async()=>{const pubkey=getPublicKey();if(!pubkey){setErrMsg(jsMessages.errEmptyPubkey);return}if(!G_Input?.salt){setErrMsg(jsMessages.errNeedBookmark);return}const t=await encryptClick();if(!t)return;const cipher=getCipherText().trim();if(!cipher)return;const salt=G_Input.salt;const key=encodeURIComponent(await generateKey(pubkey,salt));const emailSubjectEle=document.getElementById("emailsubject");const subject=emailSubjectEle.value.trim()||jsMessages.emailSubjectDefault;const contentKey=await generateContentKey(pubkey,salt);const cipherBytes=ec.base64Decode(cipher,0);const encryptedCipher=await aesGcmEncrypt(cipherBytes,contentKey);const e2=ec.base64Encode(encryptedCipher,0,2);const finalTxt="N."+e2;let content=finalTxt;const note=encodeURIComponent(subject);const encodedContent=encodeURIComponent(content);const plainTxt=getPlainText();const encoder=new TextEncoder;const phashKeyData=encoder.encode("phash"+salt);const phashKey=await crypto.subtle.importKey("raw",phashKeyData,{name:"HMAC",hash:"SHA-512"},false,["sign"]);const phashBuffer=await crypto.subtle.sign("HMAC",phashKey,encoder.encode(plainTxt));const phashArray=new Uint8Array(phashBuffer).slice(0,32);const phash=encodeURIComponent(ec.base64Encode(phashArray,1));const url=`https://ecd1data.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}`;openUrl(url)};document.getElementById("restoreFromCloudflare").onclick=async()=>{const pubkey=getPublicKey();if(!pubkey){setErrMsg(jsMessages.errEmptyPubkey);return}if(!G_Input?.salt){setErrMsg(jsMessages.errNeedBookmark);return}const salt=G_Input.salt;const key=encodeURIComponent(await generateKey(pubkey,salt));const url=`https://ecd1data.kr7y.workers.dev/list#key=${key}`;openUrl(url)};let webPrivate="yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";let webPublic="dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=";async function genbookmark(pubkey,toEmail,prefix,emailSubject,salt,options){let s={prefix,pubkey,toEmail,emailSubject};if(salt){s.salt=salt}if(options?.kdf){s.ver=options.kdf.ver;s.kdfHash=options.kdf.hash;s.kdfIterations=options.kdf.iterations}if(options?.type){s.type=options.type}let jsonstring=JSON.stringify(s);let arr=new TextEncoder().encode(jsonstring);let dataBuff=await ec.encrypt(webPublic,arr);let data=ec.base64Encode(dataBuff,1).replace(/[\r\n]/g,"");let bookmark=`${location.origin}${location.pathname}?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data)}`;let a=document.createElement("a");a.innerText=bookmark;a.href=bookmark;let holder=document.getElementById("bookmark");holder?.replaceChildren(a);if(options?.phraseHint){const hint=document.createElement("p");hint.className="bookmark-hint";hint.textContent=jsMessages.bookmarkHint;holder?.appendChild(hint)}const bmPubkey=document.getElementById("bmPubkey");const bmEmail=document.getElementById("bmEmail");const bmSubject=document.getElementById("bmSubject");const bmPrefix=document.getElementById("bmPrefix");const bmSalt=document.getElementById("bmSalt");const bmSaltRow=document.getElementById("bmSaltRow");const bookmarkInfo=document.getElementById("bookmarkInfo");if(bmPubkey)bmPubkey.textContent=pubkey;if(bmEmail)bmEmail.textContent=toEmail;if(bmSubject)bmSubject.textContent=emailSubject||"";if(bmPrefix)bmPrefix.textContent=prefix;if(bmSalt&&salt){bmSalt.textContent=salt;bmSaltRow.style.display="flex"}if(bookmarkInfo)bookmarkInfo.style.display="block"}document.getElementById("genbookmark2").onclick=async()=>{let input=document.getElementById("keyphrase");let phrase=input?.value.trim();if(!phrase){setErrMsg(jsMessages.errEmptyPhrase);return}let prefixE=document.getElementById("prefix");let prefix=prefixE.value.trim();const saltStr=generateRandomSalt();let pubkey=(await pbkdf2(phrase,saltStr,{hash:KDF_V2.hash,iterations:KDF_V2.iterations})).public;let emailEle=document.getElementById("email");let toEmail=emailEle.value.trim();let emailSubjectEle=document.getElementById("emailsubject");let subject=emailSubjectEle.value.trim();await genbookmark(pubkey,toEmail,prefix,subject,saltStr,{kdf:{...KDF_V2},type:"phrase"});showSaltInfo(saltStr)};let btime=document.getElementById("build");btime.innerText="Package:Release  cmt: a8cfb66\n 2026-07-24 20:03:18.568 +0800";(async function initDefaultValues(){let search=new URLSearchParams(location.hash);let data=search.get("data");let data2=search.get("data2");if(data2){data=data2}if(!data){return}let ttlog=console.log;ttlog({webPrivate,webPublic});let plainBf=await ec.decrypt(webPrivate,ec.base64Decode(data,data2?1:0));let plain=new TextDecoder().decode(plainBf);ttlog(plain);let jsonObj=JSON.parse(plain);if(jsonObj){G_Input=jsonObj;let inputDataElement=document.getElementById("inputData");inputDataElement.style.display="block";inputDataElement.innerText=`${jsMessages.inputDataLabel}:
+ ${JSON.stringify(G_Input,null,"	")}`;setPublicKey(jsonObj.pubkey);const kdf=kdfFromInput(jsonObj);if(kdf){currentKdf=kdf}if(jsonObj.salt){showSaltInfo(jsonObj.salt)}}else{}})()}return{init}})();App.init();})();
+
+})();
+</script>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && browserSection) {
+        var keySection = document.getElementById('keySection');
+        var encryptSection = document.getElementById('encryptSection');
+        if (keySection) keySection.style.display = '';
+        if (encryptSection) encryptSection.style.display = '';
+        usageSection.style.display = 'none';
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      var currentLang = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+      var container = document.getElementById('langSwitcher');
+      if (!container) return;
+      var hash = location.hash || '';
+      var rand = Math.floor(Math.random() * 90000) + 10000;
+      var langs = [
+        { code: 'zh-CN', label: '中文', dir: 'cn' },
+        { code: 'en', label: 'English', dir: 'en' }
+      ];
+      langs.forEach(function(item, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.textContent = '|';
+          sep.style.color = '#ccc';
+          container.appendChild(sep);
+        }
+        var a = document.createElement('a');
+        a.textContent = item.label;
+        if (item.code === currentLang) {
+          a.className = 'active';
+        } else {
+          a.href = './' + item.dir + '/?_=' + rand + hash;
+        }
+        container.appendChild(a);
+      });
+    })();
+  </script>
+  <script>
+    (function() {
+      var eyeBtn = document.getElementById('eyeBtn');
+      var keyphrase = document.getElementById('keyphrase');
+      if (eyeBtn && keyphrase) {
+        var eyeOpen = eyeBtn.querySelector('.eye-open');
+        var eyeClosed = eyeBtn.querySelector('.eye-closed');
+        eyeBtn.addEventListener('click', function() {
+          var isPassword = keyphrase.type === 'password';
+          keyphrase.type = isPassword ? 'text' : 'password';
+          eyeOpen.style.display = isPassword ? 'none' : '';
+          eyeClosed.style.display = isPassword ? '' : 'none';
+        });
+      }
+      var eyeBtnBm = document.getElementById('eyeBtnBookmark');
+      var keyphraseBm = document.getElementById('keyphraseBookmark');
+      if (eyeBtnBm && keyphraseBm) {
+        var eyeOpenBm = eyeBtnBm.querySelector('.eye-open');
+        var eyeClosedBm = eyeBtnBm.querySelector('.eye-closed');
+        eyeBtnBm.addEventListener('click', function() {
+          var isPassword = keyphraseBm.type === 'password';
+          keyphraseBm.type = isPassword ? 'text' : 'password';
+          eyeOpenBm.style.display = isPassword ? 'none' : '';
+          eyeClosedBm.style.display = isPassword ? '' : 'none';
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      function maskValue(val) {
+        if (!val || val.length <= 6) return val;
+        return val.slice(0, 3) + '-'.repeat(val.length - 6) + val.slice(-3);
+      }
+      var privateInput = document.getElementById('private');
+      if (privateInput) {
+        privateInput.addEventListener('blur', function() {
+          var raw = this.value;
+          if (!raw) return;
+          this.setAttribute('data-raw', raw);
+          this.value = maskValue(raw);
+        });
+        privateInput.addEventListener('focus', function() {
+          var raw = this.getAttribute('data-raw');
+          if (raw) this.value = raw;
+        });
+        if (privateInput.value && !privateInput.getAttribute('data-raw')) {
+          privateInput.setAttribute('data-raw', privateInput.value);
+          privateInput.value = maskValue(privateInput.value);
+        }
+      }
+    })();
+  </script>
+
+</html>

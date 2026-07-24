@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CloudFlare D1 备份说明</title>
+  <link rel="stylesheet" href="css/readme.min.css">
+  <style lang="">
+
+  body{
+        background-color: #efefef;
+        max-width: 960px;
+        margin:auto;
+    }
+    .main{
+        background-color: white;
+        padding: 2em;
+    }
+    tr:nth-child(even){
+        background-color: #efefef;
+    }
+
+    pre{
+        background-color: #efefef;
+        padding: 2em;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+  </style>
+</head>
+<div class="main">
+<h1 id="-">CloudFlare D1 备份说明</h1>
+<p>将加密后的密文存储到 Cloudflare D1 免费数据库，可通过书签地址随时恢复。<br><strong>所有加密操作在浏览器本地进行，CloudFlare 端只存储密文，无法获取明文。</strong></p>
+
+<h1 id="-">安全性</h1>
+<ul>
+<li>存储内容经过 <strong>Curve25519 + AES-GCM-256 双层加密</strong>后上传</li>
+<li>CloudFlare D1 持有者、管理员及任何第三方均无法解密查看明文</li>
+<li>解密需要 <strong>私钥/密码短语</strong> 和 <strong>SALT</strong>，二者缺一不可</li>
+<li>CloudFlare 仅作为密文存储介质，不参与加密/解密过程</li>
+</ul>
+
+<h1 id="-">加密流程</h1>
+<p>保存到 D1 时，明文经过两层加密：</p>
+<h2 id="-">第一层：Curve25519 加密</h2>
+<p>使用用户的公钥对明文进行 Curve25519 加密，生成密文。<br>解密此层需要对应的<strong>私钥</strong>（由密码短语通过 PBKDF2 派生）。</p>
+<blockquote>
+<p><strong>注意：</strong>私钥和密码短语不会保存在本地，也不会包含在书签地址中。请您自行妥善保管。一旦遗忘，已存储的数据将<strong>永久丢失，无法恢复</strong>。</p>
+</blockquote>
+<h2 id="-">第二层：AES-GCM-256 加密</h2>
+<p>使用由公钥和 SALT 派生的内容密钥对第一层密文进行 AES-GCM-256 加密。</p>
+
+<h2 id="-">密钥派生</h2>
+<p>内容加密密钥通过 HMAC-SHA512 两层派生生成：</p>
+<pre><code>PRK = HMAC-SHA512(key=pubkey, data=salt)
+ContentKey = HMAC-SHA512(key=PRK, info="d1_content")[0..31]
+</code></pre>
+<p>最终 ContentKey 截取前 32 字节，作为 AES-GCM-256 的加密密钥。</p>
+
+<h2 id="-">D1 存储 Key 派生</h2>
+<p>D1 记录的唯一标识 key 同样由 HMAC-SHA512 派生：</p>
+<pre><code>PRK = HMAC-SHA512(key=pubkey, data=salt)
+D1Key = HMAC-SHA512(key=PRK, info="cloudflare-d1-access")[0..32]
+</code></pre>
+<p>最终 D1Key 截取前 33 字节，转为 Base64 编码后作为 D1 记录的 key。</p>
+
+<h2 id="-">AES-GCM 加密细节</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>算法</td>
+<td>AES-GCM</td>
+</tr>
+<tr>
+<td>密钥长度</td>
+<td>256 bit (32 字节)</td>
+</tr>
+<tr>
+<td>IV 长度</td>
+<td>12 字节，随机生成</td>
+</tr>
+<tr>
+<td>存储格式</td>
+<td>IV(12字节) + 密文</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="-">存储格式</h1>
+<p>D1 中存储的密文以 <code>N.</code> 为前缀标识，整体结构如下：</p>
+<pre><code>N. + Base64Encode(IV + AES-GCM-Ciphertext)
+</code></pre>
+<p>其中 AES-GCM-Ciphertext 的明文是 Curve25519 加密后的结果。</p>
+
+<h1 id="-">解密流程</h1>
+<ol>
+<li>从 D1 获取密文，识别 <code>N.</code> 前缀</li>
+<li>Base64 解码，分离 IV（前12字节）和密文</li>
+<li>使用公钥 + SALT 派生 ContentKey（同加密流程）</li>
+<li>使用 ContentKey + IV 进行 AES-GCM-256 解密，得到 Curve25519 密文</li>
+<li>使用用户私钥进行 Curve25519 解密，得到明文</li>
+</ol>
+
+<h1 id="-">书签地址</h1>
+<p>书签地址中包含公钥和 SALT，是恢复数据的唯一凭证：</p>
+<pre><code>https://example.com/?t=2026-07-23T01:14:30.454Z#&amp;data2=DAAQACAAIABceG8pL9GtzHPWdMPlq5Gu3RutHpSGd_rYcDrTjabBwd6y1_z_MQevVrlUup0N5vdY7-XYGVqbpMv1ceo04dwdqULRaSyD2saGjmUeW1EbUdSeUjwkEvjjk6BDHYnp_aKtKLnVQEeR4OgBGAe13pa_GpoEfMf1SGCLIk4SVg0pHF3aUdvAwoxmNc_6E5GlDOXiHzIHhny8RPIHTbUwLFZ35c0BTI5kSR-6stze0pAiG2MM3iF6Nu_RXkg70ZG3GWE2R2MS8uf7qKGTBN2YBNiICvy37OeH8DcDCyzAv-CTKYxHcMCz9gKrt5NH1HT8Kow7w1zZxatEAM_yIKVIKjOM8gCmuD1awZjJK4jtV7_RzqiC3snKXLBuGj2tX0VsPW_amt6jNWsNSSA9ADZpA7CazSSAwoGnnJiZoP_jcGSuNZw95sgZMTLW7-zSc5kjYzkHXwiZ1pTVEMS2CLJZY0Vv
+</code></pre>
+<ul>
+<li><strong>公钥</strong>：用于 Curve25519 解密和密钥派生</li>
+<li><strong>SALT</strong>：用于 HMAC-SHA512 密钥派生</li>
+</ul>
+<blockquote>
+<p><strong>隐私说明：</strong>公钥和 SALT 存储在 URL 的 <code>#</code> 片段（fragment）中。根据 HTTP 规范，<code>#</code> 及其后的内容不会随请求发送到服务器，网页提供者无法获取您的公钥和 SALT。</p>
+</blockquote>
+<blockquote>
+<p><strong>重要：</strong>请妥善保管书签地址。丢失书签地址（公钥 + SALT）将无法恢复已存储的数据。</p>
+</blockquote>
+
+<h1 id="-">注意事项</h1>
+<ul>
+<li>采用 Cloudflare D1 免费数据库，<strong>不保证可靠性</strong></li>
+<li>同一公钥 + SALT 下可保存多条记录，但受免费 D1 容量限制，后期可能会删除部分早期数据，恕不另行通知</li>
+<li>请定期导出备份，不要仅依赖 D1 存储</li>
+</ul>
+</div>
+</body>
+</html>
