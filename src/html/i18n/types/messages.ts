@@ -20,9 +20,14 @@ export interface HtmlMessages {
   restoreStep4: string;
   bmGenTitle: string;
   bmGenPhrase: string;
+  bmGenPhrasePlaceholder: string;
   bmGenEmail: string;
+  bmGenEmailPlaceholder: string;
   bmGenSubject: string;
+  bmGenSubjectPlaceholder: string;
   bmGenPrefix: string;
+  bmGenPrefixPlaceholder: string;
+  bmGenOptional: string;
   bmGenAction: string;
   bmInfoTitle: string;
   bmInfoPubkey: string;

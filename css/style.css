@@ -107,6 +107,8 @@ tr:nth-child(even) td {
 }
 
 .row2 {
+  display: flex;
+  align-items: center;
   gap: var(--space-sm);
 }
 .row2 .title {
@@ -123,6 +125,9 @@ input[type="password"] {
   padding: 0.5rem 0.75rem;
   font-family: inherit;
   font-size: 0.9375rem;
+  height: 2.5rem;
+  flex: 1;
+  box-sizing: border-box;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 input[type="text"]:focus,
