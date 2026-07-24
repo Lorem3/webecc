@@ -49,7 +49,7 @@
           </div>
         </div>
       </div>
-      <div class="section-card section-muted">
+      <div class="section-card">
         <p style="margin:0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">{{i18n:bmGenOptional}}</p>
         <div class="row2">
           <span class="title">{{i18n:bmGenEmail}}</span>
@@ -128,7 +128,7 @@
       <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
 
       <div class="row plain-cipher-row">
-        <div class="border content">
+        <div class="text-card">
           <div class="title">{{i18n:plaintextLabel}}</div>
           <div class="action-links">
             <a id="downloadPlain" href="javascript:void(0)" class="action-link">{{i18n:downloadPlain}}</a>
@@ -136,7 +136,7 @@
           <textarea id="plaintext" class="bigTxtArea" placeholder="{{i18n:plaintextPlaceholder}}" autocomplete="off"></textarea>
         </div>
         <div class="flow-divider">↓</div>
-        <div class="border content">
+        <div class="text-card">
           <div class="title">{{i18n:ciphertextLabel}}</div>
           <div class="row">
             <form id="clearfileform">
@@ -154,7 +154,7 @@
             {{i18n:newlineLabel}}
             <input type="checkbox" name="newLine" id="newline" />
           </label>
-          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" placeholder="{{i18n:ciphertextPlaceholder}}"></textarea>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="{{i18n:ciphertextPlaceholder}}"></textarea>
         </div>
       </div>
     </section>
@@ -200,8 +200,7 @@ mysecret[31] |= 64;</pre>
         var encryptSection = document.getElementById('encryptSection');
         if (keySection) keySection.style.display = '';
         if (encryptSection) encryptSection.style.display = '';
-        contain.removeChild(usageSection);
-        contain.insertBefore(usageSection, browserSection);
+        usageSection.style.display = 'none';
       }
     })();
   </script>
