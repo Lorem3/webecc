@@ -95,12 +95,13 @@ async function buildIndex(lang) {
   console.log(`  buildIndex(${lang}) done`);
 }
 
-// Compile base64js.js and blake2b.js into libs.js (defines globals)
+// Compile base64js.js, blake2b.js, and squircle.js into libs.js (defines globals)
 async function buildLibs() {
   mkdirp('tmp');
   const srcFiles = [
     'src/common/base64js.js',
     'src/common/blake2b.js',
+    'src/common/squircle.js',
   ];
   const compiled = [];
   for (const file of srcFiles) {
