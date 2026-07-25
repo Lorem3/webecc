@@ -18,6 +18,7 @@ export interface HtmlMessages {
   syncPlaceholder: string;
   btnSave: string;
   btnLoad: string;
+  btnEncrypt: string;
   btnDecrypt: string;
   decryptPhrase: string;
   decryptPhrasePlaceholder: string;
@@ -27,6 +28,7 @@ export interface HtmlMessages {
   syncStatusLoaded: string;
   syncStatusEmpty: string;
   syncStatusError: string;
+  resultLabel: string;
   aboutTitle: string;
   aboutIntro: string;
   aboutProjectLink: string;

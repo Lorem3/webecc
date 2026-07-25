@@ -47,6 +47,16 @@ const App = (function () {
       if (el) el.textContent = str;
     }
 
+    function setResultText(str: string) {
+      const el = document.getElementById("resultText") as HTMLTextAreaElement;
+      const copyBtn = document.getElementById("resultCopyBtn");
+      if (el) {
+        el.value = str;
+        el.style.display = str ? '' : 'none';
+      }
+      if (copyBtn) copyBtn.style.display = str ? '' : 'none';
+    }
+
     function setErrMsg(str: string) {
       console.log(str);
       alert(str);
@@ -211,7 +221,7 @@ const App = (function () {
 
             let dec = await ec.decrypt(kp.private, decryptedCipher);
             let te = new TextDecoder();
-            setPlainText(te.decode(dec));
+            setResultText(te.decode(dec));
             setSyncStatus(messages.loadSuccess);
           } else {
             setErrMsg(messages.errEmptyContent);
@@ -251,6 +261,7 @@ const App = (function () {
         const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
         const e2 = ec.base64Encode(encryptedCipher, 0, 2);
         const finalTxt = 'N.' + e2;
+        setResultText(finalTxt);
         const content = encodeURIComponent(finalTxt);
 
         const subject = encodeURIComponent(messages.emailSubjectDefault);
@@ -275,6 +286,35 @@ const App = (function () {
         const key = encodeURIComponent(await generateKey(pubkey, salt));
         const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
         location.href = url;
+      };
+    }
+
+    function bindEncryptBtn() {
+      const btn = document.getElementById("encryptBtn");
+      if (!btn) return;
+      btn.onclick = async () => {
+        const pubkey = G_Input?.pubkey;
+        if (!pubkey) {
+          setErrMsg(messages.errEmptyPubkey);
+          return;
+        }
+
+        const plainText = getPlainText();
+        if (!plainText) {
+          setErrMsg(messages.errEmptyContent);
+          return;
+        }
+
+        const salt = G_Input!.salt!;
+        let te = new TextEncoder();
+        let enc = await ec.encrypt(pubkey, te.encode(plainText));
+        let cipher = ec.base64Encode(enc, 0);
+
+        const contentKey = await generateContentKey(pubkey, salt);
+        const cipherBytes = ec.base64Decode(cipher, 0);
+        const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+        const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+        setResultText('N.' + e2);
       };
     }
 
@@ -305,19 +345,37 @@ const App = (function () {
       };
     }
 
+    function bindCopyResultBtn() {
+      const copyBtn = document.getElementById("resultCopyBtn");
+      if (!copyBtn) return;
+      copyBtn.onclick = () => {
+        const el = document.getElementById("resultText") as HTMLTextAreaElement;
+        if (el && el.value) {
+          navigator.clipboard.writeText(el.value).then(() => {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+          });
+        }
+      };
+    }
+
     // Bind all event handlers after DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         bindGenBookmarkBtn();
         bindDecryptBtn();
+        bindEncryptBtn();
         bindSaveBtn();
         bindRestoreBtn();
+        bindCopyResultBtn();
       });
     } else {
       bindGenBookmarkBtn();
       bindDecryptBtn();
+      bindEncryptBtn();
       bindSaveBtn();
       bindRestoreBtn();
+      bindCopyResultBtn();
     }
 
     let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
