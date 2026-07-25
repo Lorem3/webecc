@@ -131,7 +131,10 @@ async function buildTest() {
 
 // Load i18n messages for HTML replacement (compile TS first, then eval)
 async function loadHtmlMessages(lang) {
-  const msgPath = path.resolve(`src/html/i18n/${lang}/html-messages.ts`);
+  return loadHtmlMessagesForPath(`src/html/i18n/${lang}/html-messages.ts`);
+}
+
+async function loadHtmlMessagesForPath(msgPath) {
   const result = await build({
     entryPoints: [msgPath],
     bundle: false,
@@ -260,6 +263,60 @@ function buildTestHtml() {
   console.log('  buildTestHtml done');
 }
 
+// --- ipaste ---
+
+async function buildIPasteIndex(lang) {
+  mkdirp('tmp');
+  const i18nPath = path.resolve(`src/ipaste/i18n/${lang}/js-messages.ts`);
+  const result = await build({
+    entryPoints: ['src/ipaste/index.ts'],
+    bundle: true,
+    write: false,
+    alias: {
+      '@i18n/js-messages': i18nPath,
+    },
+    ...esbuildOpts,
+  });
+  fs.writeFileSync(`tmp/ipaste.${lang}.js`, result.outputFiles[0].text);
+  console.log(`  buildIPasteIndex(${lang}) done`);
+}
+
+async function buildIPastePages(lang) {
+  const outDir = `www/ipaste/${lang}`;
+  mkdirp(outDir);
+  const messages = await loadHtmlMessagesForPath(`src/ipaste/i18n/${lang}/html-messages.ts`);
+
+  let html = fs.readFileSync('src/ipaste/index.html', 'utf8');
+  html = replaceI18n(html, messages);
+  fs.writeFileSync(path.join(outDir, 'index.html'), html);
+  console.log(`  buildIPastePages(${lang}) done`);
+}
+
+function inlineIPasteHtml(lang) {
+  const htmlPath = `www/ipaste/${lang}/index.html`;
+  const cssPath = `www/${lang}/css/style.min.css`;
+  const libsPath = 'tmp/libs.js';
+  const comJsPath = 'tmp/com.js';
+  const ipasteJsPath = `tmp/ipaste.${lang}.js`;
+
+  const css = fs.readFileSync(cssPath, 'utf8');
+  const libs = fs.readFileSync(libsPath, 'utf8');
+  const comJs = fs.readFileSync(comJsPath, 'utf8');
+  const ipasteJs = fs.readFileSync(ipasteJsPath, 'utf8');
+
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = html.replace(
+    /<link\s+rel="stylesheet"\s+type="text\/css"\s+href="css\/style\.min\.css"\s*\/>/,
+    `<style>\n${css}\n</style>`
+  );
+  html = html.replace(
+    /<script\s+src="js\/app\.js"><\/script>/,
+    `<script>\n${wrapIIFE(libs, comJs, ipasteJs)}\n</script>`
+  );
+  fs.writeFileSync(htmlPath, html);
+  console.log(`  inlineIPasteHtml(${lang}) done`);
+}
+
 // --- main ---
 
 async function main() {
@@ -272,6 +329,10 @@ async function main() {
   // Copy Functions for Cloudflare Pages
   mkdirp('www/functions');
   cp('src/middleware/functions/_middleware.js', 'www/functions/_middleware.js');
+
+  // Copy ipaste Functions for Cloudflare Pages
+  mkdirp('www/ipaste/functions');
+  cp('src/ipaste/middleware/functions/_middleware.js', 'www/ipaste/functions/_middleware.js');
 
   // Copy Edge Function files for Netlify
   mkdirp('www/netlify/edge-functions');
@@ -295,6 +356,33 @@ async function main() {
 
   for (const lang of LANGS) {
     inlineHtml(lang);
+  }
+
+  // Build ipaste pages
+  for (const lang of LANGS) {
+    await buildIPasteIndex(lang);
+    await buildIPastePages(lang);
+  }
+  for (const lang of LANGS) {
+    inlineIPasteHtml(lang);
+  }
+
+  // Copy ipaste cn files to ipaste root as GitHub Pages fallback
+  const ipasteCnDir = 'www/ipaste/cn';
+  if (fs.existsSync(ipasteCnDir)) {
+    const ipasteCnFiles = fs.readdirSync(ipasteCnDir, { withFileTypes: true });
+    for (const file of ipasteCnFiles) {
+      const src = `${ipasteCnDir}/${file.name}`;
+      const dest = `www/ipaste/${file.name}`;
+      if (!fs.existsSync(dest)) {
+        if (file.isDirectory()) {
+          fs.cpSync(src, dest, { recursive: true });
+        } else {
+          cp(src, dest);
+        }
+      }
+    }
+    console.log('  ipaste cn fallback files copied');
   }
 
   // Copy cn files to root as GitHub Pages fallback (don't overwrite existing)

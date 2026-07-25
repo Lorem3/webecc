@@ -1,6 +1,6 @@
 const LANGS = { 'en': 'en', 'zh-CN': 'cn' };
 const LANG_DIRS = { 'cn': 'zh-CN', 'en': 'en' };
-const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify', 'functions'];
+const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify', 'functions', 'ipaste'];
 
 function parseCookie(cookieHeader, name) {
   if (!cookieHeader) return null;
