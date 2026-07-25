@@ -289,6 +289,15 @@ async function buildIPastePages(lang) {
   let html = fs.readFileSync('src/ipaste/index.html', 'utf8');
   html = replaceI18n(html, messages);
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
+
+  // Copy fmt.html from language directory (or fallback to cn)
+  for (const file of ['fmt.html']) {
+    const langPath = `src/html/${lang}/${file}`;
+    const cnPath = `src/html/cn/${file}`;
+    const src = fs.existsSync(langPath) ? langPath : cnPath;
+    cp(src, path.join(outDir, file));
+  }
+
   console.log(`  buildIPastePages(${lang}) done`);
 }
 
