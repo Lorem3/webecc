@@ -284,8 +284,6 @@ const App = (function () {
         setResultText(finalTxt);
         const content = encodeURIComponent(finalTxt);
 
-        const subject = encodeURIComponent(messages.emailSubjectDefault);
-
         // phash = HMAC_sha512(plainTxt, "phash" + salt).slice(0, 32)
         // 目的：防止重复提交（相同盐+相同明文 → 相同 phash），服务器据此去重
         // 注意：不作为完整性校验——content 是明文出现在 URL 中，phash 无法防止篡改
@@ -303,7 +301,7 @@ const App = (function () {
         const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
         const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
 
-        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${subject}&phash=${phash}&content=${content}`;
+        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&phash=${phash}&content=${content}`;
         openUrl(url);
         setSyncStatus(messages.saveSuccess);
       };
