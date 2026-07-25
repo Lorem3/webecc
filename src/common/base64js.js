@@ -35,18 +35,18 @@ var Base64 = (function () {
             case 0:
               ((t += this.byte2Char(i >> 2)),
                 (o = (i << 4) & 63),
-                ++a && r && a % r == 0 && (t += "\r\n"));
+                ++a && r && a % r == 0 && (t += "\n"));
               break;
             case 1:
               ((t += this.byte2Char((i >> 4) | o)),
                 (o = (i << 2) & 63),
-                ++a && r && a % r == 0 && (t += "\r\n"));
+                ++a && r && a % r == 0 && (t += "\n"));
               break;
             case 2:
               ((t += this.byte2Char((i >> 6) | o)),
-                ++a && r && a % r == 0 && (t += "\r\n"),
+                ++a && r && a % r == 0 && (t += "\n"),
                 (t += this.byte2Char(i)),
-                ++a && r && a % r == 0 && (t += "\r\n"));
+                ++a && r && a % r == 0 && (t += "\n"));
           }
         }
         var c = n % 3;
@@ -55,7 +55,7 @@ var Base64 = (function () {
           t += 1 == c ? "==" : "=";
         }
         if (r > 0 && firstLineLess > 0) {
-          var raw = t.replace(/\r\n/g, "");
+          var raw = t.replace(/\n/g, "");
           var firstLineLen = r - firstLineLess;
           if (firstLineLen > 0 && raw.length > firstLineLen) {
             var parts = [];
@@ -69,7 +69,7 @@ var Base64 = (function () {
               for (var pos2 = 0; pos2 < remaining.length; pos2 += r) {
                 rebuild.push(remaining.substring(pos2, pos2 + r));
               }
-              t = rebuild.join("\r\n");
+              t = rebuild.join("\n");
             }
           }
         }

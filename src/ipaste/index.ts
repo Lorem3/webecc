@@ -286,7 +286,24 @@ const App = (function () {
 
         const subject = encodeURIComponent(messages.emailSubjectDefault);
 
-        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${subject}&content=${content}`;
+        // phash = HMAC_sha512(plainTxt, "phash" + salt).slice(0, 32)
+        // 目的：防止重复提交（相同盐+相同明文 → 相同 phash），服务器据此去重
+        // 注意：不作为完整性校验——content 是明文出现在 URL 中，phash 无法防止篡改
+        const plainTxt = getPlainText();
+        const encoder = new TextEncoder();
+        const phashKeyData = encoder.encode("phash" + salt);
+        const phashKey = await crypto.subtle.importKey(
+          "raw",
+          phashKeyData,
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const phashBuffer = await crypto.subtle.sign("HMAC", phashKey, encoder.encode(plainTxt));
+        const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
+        const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
+
+        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${subject}&phash=${phash}&content=${content}`;
         openUrl(url);
         setSyncStatus(messages.saveSuccess);
       };
