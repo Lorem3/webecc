@@ -37,6 +37,11 @@
           </div>
         </div>
       </div>
+      <div class="row2" style="margin-top:0.5rem;">
+        <input id="savePrivkeyToggle" type="checkbox" style="width:16px;height:16px;margin:0;" />
+        <span style="margin-left:8px;font-size:0.875rem;color:#666;">{{i18n:bmSavePrivkey}}</span>
+      </div>
+      <p style="font-size:0.75rem;color:#999;margin:0.25rem 0 0;">{{i18n:bmSavePrivkeyHint}}</p>
       <div class="bookmark-actions">
         <div id="genbookmark2" class="btn"><span class="btnTitle">{{i18n:bmGenAction}}</span></div>
       </div>
@@ -45,6 +50,7 @@
         <h2 style="margin-top:0">{{i18n:bmInfoTitle}}</h2>
         <div class="row2"><span class="title">{{i18n:bmInfoPubkey}}</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
         <div class="row2" id="bmSaltRow" style="display:none"><span class="title">{{i18n:bmInfoSalt}}</span><span id="bmSalt" style="word-break:break-all;"></span></div>
+        <div class="row2" id="bmPrivkeyRow" style="display:none"><span class="title">{{i18n:bmInfoPrivkey}}</span><span id="bmPrivkey" style="word-break:break-all;font-family:monospace;"></span></div>
       </div>
     </section>
 
@@ -69,7 +75,7 @@
         <div id="encryptBtn" class="btn"><span class="btnTitle">{{i18n:btnEncrypt}}</span></div>
         <div id="decryptBtn" class="btn"><span class="btnTitle">{{i18n:btnDecrypt}}</span></div>
       </div>
-      <div class="row2" style="margin-top:1rem;align-items:flex-start;">
+      <div id="passphraseRow" class="row2" style="margin-top:1rem;align-items:flex-start;">
         <span class="title" style="min-width:4.5em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:decryptPhrase}}</span>
         <div class="password-wrap">
           <input id="keyphrase" type="password" autocomplete="off" placeholder="{{i18n:decryptPhrasePlaceholder}}" />

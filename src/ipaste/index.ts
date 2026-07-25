@@ -19,6 +19,7 @@ const App = (function () {
       kdfHash?: string;
       kdfIterations?: number;
       type?: 'phrase' | 'pubkey';
+      private?: string;
     }
     let G_Input: InputData | undefined;
     let currentSalt: string | undefined;
@@ -73,6 +74,19 @@ const App = (function () {
       const el = document.getElementById("salt");
       if (!row || !el) return;
       el.textContent = salt;
+      row.style.display = "flex";
+    }
+
+    function maskKey(key: string): string {
+      if (key.length <= 6) return key;
+      return key.slice(0, 3) + '*'.repeat(key.length - 6) + key.slice(-3);
+    }
+
+    function showMaskedPrivkey(privkey: string) {
+      const row = document.getElementById("bmPrivkeyRow");
+      const el = document.getElementById("bmPrivkey");
+      if (!row || !el) return;
+      el.textContent = maskKey(privkey);
       row.style.display = "flex";
     }
 
@@ -189,20 +203,26 @@ const App = (function () {
           return;
         }
 
-        let input = document.getElementById("keyphrase") as HTMLInputElement;
-        let phrase = input?.value.trim();
-        if (!phrase) {
-          setErrMsg(messages.errEmptyPhrase);
-          return;
-        }
+        let privkey: string;
+        if (G_Input.private) {
+          privkey = G_Input.private;
+        } else {
+          let input = document.getElementById("keyphrase") as HTMLInputElement;
+          let phrase = input?.value.trim();
+          if (!phrase) {
+            setErrMsg(messages.errEmptyPhrase);
+            return;
+          }
 
-        const salt = G_Input.salt || FIXED_SALT;
-        const kdf = { ver: G_Input.ver || KDF_V2.ver, hash: G_Input.kdfHash || KDF_V2.hash, iterations: G_Input.kdfIterations || KDF_V2.iterations };
-        let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
+          const salt = G_Input.salt || FIXED_SALT;
+          const kdf = { ver: G_Input.ver || KDF_V2.ver, hash: G_Input.kdfHash || KDF_V2.hash, iterations: G_Input.kdfIterations || KDF_V2.iterations };
+          let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
 
-        if (kp.public !== G_Input.pubkey) {
-          setErrMsg(messages.errPubkeyMismatchPhrase);
-          return;
+          if (kp.public !== G_Input.pubkey) {
+            setErrMsg(messages.errPubkeyMismatchPhrase);
+            return;
+          }
+          privkey = kp.private;
         }
 
         let base64 = getPlainText()?.trim();
@@ -219,7 +239,7 @@ const App = (function () {
             const decryptedBuffer = await aesGcmDecrypt(encryptedData, contentKey);
             const decryptedCipher = new Uint8Array(decryptedBuffer);
 
-            let dec = await ec.decrypt(kp.private, decryptedCipher);
+            let dec = await ec.decrypt(privkey, decryptedCipher);
             let te = new TextDecoder();
             setResultText(te.decode(dec));
             setSyncStatus(messages.loadSuccess);
@@ -285,7 +305,7 @@ const App = (function () {
         const salt = G_Input!.salt!;
         const key = encodeURIComponent(await generateKey(pubkey, salt));
         const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
-        location.href = url;
+        openUrl(url);
       };
     }
 
@@ -329,17 +349,17 @@ const App = (function () {
           return;
         }
 
+        const savePrivkey = (document.getElementById("savePrivkeyToggle") as HTMLInputElement)?.checked;
         const saltStr = generateRandomSalt();
-        let pubkey = (
-          await pbkdf2(phrase, saltStr, {
-            hash: KDF_V2.hash,
-            iterations: KDF_V2.iterations,
-          })
-        ).public;
+        let kp = await pbkdf2(phrase, saltStr, {
+          hash: KDF_V2.hash,
+          iterations: KDF_V2.iterations,
+        });
 
-        await genbookmark(pubkey, saltStr, {
+        await genbookmark(kp.public, saltStr, {
           kdf: { ...KDF_V2 },
           type: 'phrase',
+          private: savePrivkey ? kp.private : undefined,
         });
         showSaltInfo(saltStr);
       };
@@ -359,6 +379,16 @@ const App = (function () {
       };
     }
 
+    function bindSavePrivkeyToggle() {
+      const toggle = document.getElementById("savePrivkeyToggle") as HTMLInputElement;
+      if (!toggle) return;
+      toggle.addEventListener('change', () => {
+        if (toggle.checked && !confirm(messages.bmSavePrivkeyConfirm)) {
+          toggle.checked = false;
+        }
+      });
+    }
+
     // Bind all event handlers after DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
@@ -368,6 +398,7 @@ const App = (function () {
         bindSaveBtn();
         bindRestoreBtn();
         bindCopyResultBtn();
+        bindSavePrivkeyToggle();
       });
     } else {
       bindGenBookmarkBtn();
@@ -376,6 +407,7 @@ const App = (function () {
       bindSaveBtn();
       bindRestoreBtn();
       bindCopyResultBtn();
+      bindSavePrivkeyToggle();
     }
 
     let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
@@ -387,6 +419,7 @@ const App = (function () {
       options?: {
         kdf?: { ver: string; hash: string; iterations: number };
         type?: 'phrase' | 'pubkey';
+        private?: string;
       }
     ) {
       let s: InputData = { pubkey };
@@ -400,6 +433,9 @@ const App = (function () {
       }
       if (options?.type) {
         s.type = options.type;
+      }
+      if (options?.private) {
+        s.private = options.private;
       }
 
       let jsonstring = JSON.stringify(s);
@@ -437,6 +473,9 @@ const App = (function () {
         bmSalt.textContent = salt;
         bmSaltRow!.style.display = "flex";
       }
+      if (options?.private) {
+        showMaskedPrivkey(options.private);
+      }
       if (bookmarkInfo) bookmarkInfo.style.display = "block";
     }
 
@@ -468,13 +507,22 @@ const App = (function () {
         G_Input = jsonObj;
         let inputDataElement = document.getElementById("inputData")!;
         inputDataElement.style.display = 'block'
+        const displayData = { ...G_Input };
+        if (displayData.private) displayData.private = maskKey(displayData.private);
         inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
-          G_Input,
+          displayData,
           null,
           "\t"
         )}`;
         if (jsonObj.salt) {
           showSaltInfo(jsonObj.salt);
+        }
+        if (jsonObj.private) {
+          showMaskedPrivkey(jsonObj.private);
+          const passphraseRow = document.getElementById("passphraseRow");
+          const passphraseNote = passphraseRow?.nextElementSibling as HTMLElement;
+          if (passphraseRow) passphraseRow.style.display = 'none';
+          if (passphraseNote) passphraseNote.style.display = 'none';
         }
       }
     })();

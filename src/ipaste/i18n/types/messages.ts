@@ -11,9 +11,13 @@ export interface HtmlMessages {
   bmGenPhrase: string;
   bmGenPhrasePlaceholder: string;
   bmGenAction: string;
+  bmSavePrivkey: string;
+  bmSavePrivkeyHint: string;
+  bmSavePrivkeyConfirm: string;
   bmInfoTitle: string;
   bmInfoPubkey: string;
   bmInfoSalt: string;
+  bmInfoPrivkey: string;
   syncTitle: string;
   syncPlaceholder: string;
   btnSave: string;
@@ -50,4 +54,5 @@ export interface JsMessages {
   saveSuccess: string;
   loadSuccess: string;
   loadEmpty: string;
+  bmSavePrivkeyConfirm: string;
 }

@@ -12,4 +12,5 @@ export const jsMessages: JsMessages = {
   saveSuccess: 'Saved to cloud',
   loadSuccess: 'Loaded from cloud',
   loadEmpty: 'No data on cloud',
+  bmSavePrivkeyConfirm: 'Warning: With the private key saved, anyone who has this bookmark link can decrypt all history without a passphrase. Please keep your bookmark safe. Continue?',
 };

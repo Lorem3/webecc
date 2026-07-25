@@ -12,4 +12,5 @@ export const jsMessages: JsMessages = {
   saveSuccess: '已保存到云端',
   loadSuccess: '已从云端加载',
   loadEmpty: '云端暂无数据',
+  bmSavePrivkeyConfirm: '警告：保存私钥后，任何持有此书签链接的人无需密码短语即可解密全部历史内容。请确保妥善保管书签链接。是否继续？',
 };
