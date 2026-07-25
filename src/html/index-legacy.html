@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="{{i18n:htmlLang}}">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{i18n:pageTitle}} [Legacy]</title>
+  <style>
+    .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.downloadbtn{background-color:gray;display:flex;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;padding:5px 25px 5px 5px}#inputData{padding:1.5rem;background-color:#f5f5f5;color:#333;border:1px solid #ddd;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:960px;background-color:#eee;margin:auto}.contain{margin:auto;background-color:#fff;padding:2rem}.page-title{display:flex;align-items:center;justify-content:space-between}.lang-switcher{display:flex;gap:4px;font-size:14px}.lang-switcher a{text-decoration:none;cursor:pointer;color:#999}.lang-switcher a.active{color:#999;cursor:default}.lang-switcher a:not(.active){color:#2563eb}.lang-switcher a:not(.active):hover{text-decoration:underline}
+    </style>
+  <link rel="stylesheet" type="text/css" href="css/style.min.css" />
+</head>
+
+<body>
+  <div class="contain">
+    <h1 class="page-title">
+      <a href="./index.html" style="text-decoration:none;color:inherit;">{{i18n:pageTitle}}</a>
+      <span style="font-size:0.5em;vertical-align:middle;background:#fff3cd;color:#856404;padding:2px 8px;font-weight:500;border:1px solid #ffc107;border-radius:4px;">[Legacy]</span>
+      <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;font-weight:500;">{{i18n:pageSubtitle}}</span>
+      <div class="lang-switcher" id="langSwitcher"></div>
+    </h1>
+
+    <section class="section-card section-muted usage-section">
+      <h1>{{i18n:usageTitle}}</h1>
+      <p><strong>{{i18n:usageDescStrong}}</strong></p>
+      <p><strong>{{i18n:usageDescNote}}</strong></p>
+      <h2>{{i18n:backupTitle}}</h2>
+      <div class="usage-list">
+        <p>{{i18n:backupStep1}}</p>
+        <p>{{i18n:backupStep2}}</p>
+        <p>{{i18n:backupStep3}}</p>
+        <p>{{i18n:backupStep4}}</p>
+        <p>{{i18n:backupStep5}}</p>
+        <p>{{i18n:backupStep6}}</p>
+        <p><strong>{{i18n:backupStep7}}</strong></p>
+      </div>
+      <h2>{{i18n:restoreTitle}}</h2>
+      <div class="usage-list">
+        <p>{{i18n:restoreStep1}}</p>
+        <p>{{i18n:restoreStep2}}</p>
+        <p>{{i18n:restoreStep3}}</p>
+        <p>{{i18n:restoreStep4}}</p>
+      </div>
+      <h2>{{i18n:bmGenTitle}}</h2>
+      <div class="section-card">
+        <div class="row2">
+          <span class="title">{{i18n:bmGenPhrase}}</span>
+          <div class="password-wrap">
+            <input id="keyphraseBookmark" type="password" autocomplete="off" placeholder="{{i18n:bmGenPhrasePlaceholder}}" />
+            <button type="button" class="eye-btn" id="eyeBtnBookmark" tabindex="-1">
+              <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+              <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <p style="margin:0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">{{i18n:bmGenOptional}}</p>
+        <div class="row2">
+          <span class="title">{{i18n:bmGenEmail}}</span>
+          <input id="email" type="text" autocomplete="off" placeholder="{{i18n:bmGenEmailPlaceholder}}" />
+        </div>
+        <div class="row2">
+          <span class="title">{{i18n:bmGenSubject}}</span>
+          <input id="emailsubject" type="text" autocomplete="off" placeholder="{{i18n:bmGenSubjectPlaceholder}}" />
+        </div>
+        <div class="row2">
+          <span class="title">{{i18n:bmGenPrefix}}</span>
+          <input id="prefix" type="text" autocomplete="off" placeholder="{{i18n:bmGenPrefixPlaceholder}}" />
+        </div>
+      </div>
+      <div class="bookmark-actions">
+        <div id="genbookmark2" class="btn"><span class="btnTitle">{{i18n:bmGenAction}}</span></div>
+      </div>
+      <div id="bookmark"></div>
+      <div id="bookmarkInfo" style="display:none;margin-top:1rem;padding:1rem;border:1px solid #ddd;">
+        <h2 style="margin-top:0">{{i18n:bmInfoTitle}}</h2>
+        <div class="row2"><span class="title">{{i18n:bmInfoPubkey}}</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoEmail}}</span><span id="bmEmail"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoSubject}}</span><span id="bmSubject"></span></div>
+        <div class="row2"><span class="title">{{i18n:bmInfoPrefix}}</span><span id="bmPrefix"></span></div>
+        <div class="row2" id="bmSaltRow" style="display:none"><span class="title">{{i18n:bmInfoSalt}}</span><span id="bmSalt" style="word-break:break-all;"></span></div>
+      </div>
+    </section>
+
+    <pre id="inputData"></pre>
+
+    <section id="keySection" class="section-card" style="display:none">
+      <h2>{{i18n:keyTitle}}</h2>
+      <div class="row2">
+        <span class="title">{{i18n:keyPubkey}}</span>
+        <input id="public" type="text" autocomplete="off" placeholder="{{i18n:keyPubkey}}" />
+      </div>
+      <div class="row2">
+        <span class="title">{{i18n:keyPrivate}}</span>
+        <input id="private" type="text" autocomplete="off" placeholder="{{i18n:keyPrivatePlaceholder}}" data-raw="" />
+      </div>
+      <div class="row2">
+        <span class="title">{{i18n:keyPhrase}}</span>
+        <div class="password-wrap">
+          <input id="keyphrase" type="password" autocomplete="off" placeholder="{{i18n:keyPhrasePlaceholder}}" />
+          <button type="button" class="eye-btn" id="eyeBtn" tabindex="-1">
+            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+            <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="row2" id="saltRow" style="display:none">
+        <span class="title">{{i18n:keySalt}}</span>
+        <span id="salt" class="salt-text"></span>
+      </div>
+      <p id="saltSaveHint" style="display:none">{{i18n:keySaltHint}}</p>
+      <div class="row2 btnHolder btn-group">
+        <div id="genpubkey" class="btn"><span class="btnTitle">{{i18n:keyGenPubkey}}</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">{{i18n:keyGenFromPhrase}}</span></div>
+      </div>
+    </section>
+
+    <section id="encryptSection" class="section-card" style="display:none">
+      <h2>{{i18n:encryptTitle}}</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">{{i18n:btnEncrypt}}</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">{{i18n:btnDecrypt}}</span></div>
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToCloudflare" class="btn"><span class="btnTitle">{{i18n:btnSaveCloudflare}}</span></div>
+        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">{{i18n:btnRestoreCloudflare}}</span></div>
+      </div>
+      <div class="action-links" style="margin-top:0.5rem">
+        <a id="sendemail" href="javascript:void(0)" class="action-link">{{i18n:sendEmail}}</a>
+        <a id="sendemail2" href="javascript:void(0)" class="action-link">{{i18n:sendEmailManual}}</a>
+      </div>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
+
+      <div class="row plain-cipher-row">
+        <div class="text-card">
+          <div class="title">{{i18n:plaintextLabel}}</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">{{i18n:downloadPlain}}</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="{{i18n:plaintextPlaceholder}}" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="text-card">
+          <div class="title">{{i18n:ciphertextLabel}}</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">{{i18n:btnClearFile}}</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">{{i18n:downloadCipher}}</a>
+          </div>
+          <p style="color:#101010;margin:0.5rem 0 0"><strong>{{i18n:emailEnsureLink}}</strong></p>
+          <label class="newline2">
+            {{i18n:newlineLabel}}
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="{{i18n:ciphertextPlaceholder}}"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card section-muted about-section">
+      <h1>{{i18n:aboutTitle}}</h1>
+      <pre id="build"></pre>
+      <p><a href="https://github.com/Lorem3/webecc/">{{i18n:aboutProjectLink}}</a></p>
+      <h2><a href="fmt.html">{{i18n:aboutFormatLink}}</a></h2>
+      <pre class="about-intro">{{i18n:aboutIntro}}</pre>
+      <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
+      <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
+      <pre>mysecret[0] &= 248;
+mysecret[31] &= 127;
+mysecret[31] |= 64;</pre>
+    </section>
+
+    <section class="section-card browser-requirements-section">
+      <h2>{{i18n:browserTitle}}</h2>
+      <table>
+        <thead><tr><th>{{i18n:browserThBrowser}}</th><th>{{i18n:browserThVersion}}</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && browserSection) {
+        var keySection = document.getElementById('keySection');
+        var encryptSection = document.getElementById('encryptSection');
+        if (keySection) keySection.style.display = '';
+        if (encryptSection) encryptSection.style.display = '';
+        usageSection.style.display = 'none';
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      var currentLang = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+      var container = document.getElementById('langSwitcher');
+      if (!container) return;
+      var hash = location.hash || '';
+      var rand = Math.floor(Math.random() * 90000) + 10000;
+      var langs = [
+        { code: 'zh-CN', label: '中文', dir: 'cn' },
+        { code: 'en', label: 'English', dir: 'en' }
+      ];
+      langs.forEach(function(item, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.textContent = '|';
+          sep.style.color = '#ccc';
+          container.appendChild(sep);
+        }
+        var a = document.createElement('a');
+        a.textContent = item.label;
+        if (item.code === currentLang) {
+          a.className = 'active';
+        } else {
+          a.href = './' + item.dir + '/?_=' + rand + hash;
+        }
+        container.appendChild(a);
+      });
+    })();
+  </script>
+  <script>
+    (function() {
+      var eyeBtn = document.getElementById('eyeBtn');
+      var keyphrase = document.getElementById('keyphrase');
+      if (eyeBtn && keyphrase) {
+        var eyeOpen = eyeBtn.querySelector('.eye-open');
+        var eyeClosed = eyeBtn.querySelector('.eye-closed');
+        eyeBtn.addEventListener('click', function() {
+          var isPassword = keyphrase.type === 'password';
+          keyphrase.type = isPassword ? 'text' : 'password';
+          eyeOpen.style.display = isPassword ? 'none' : '';
+          eyeClosed.style.display = isPassword ? '' : 'none';
+        });
+      }
+      var eyeBtnBm = document.getElementById('eyeBtnBookmark');
+      var keyphraseBm = document.getElementById('keyphraseBookmark');
+      if (eyeBtnBm && keyphraseBm) {
+        var eyeOpenBm = eyeBtnBm.querySelector('.eye-open');
+        var eyeClosedBm = eyeBtnBm.querySelector('.eye-closed');
+        eyeBtnBm.addEventListener('click', function() {
+          var isPassword = keyphraseBm.type === 'password';
+          keyphraseBm.type = isPassword ? 'text' : 'password';
+          eyeOpenBm.style.display = isPassword ? 'none' : '';
+          eyeClosedBm.style.display = isPassword ? '' : 'none';
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      function maskValue(val) {
+        if (!val || val.length <= 6) return val;
+        return val.slice(0, 3) + '-'.repeat(val.length - 6) + val.slice(-3);
+      }
+      var privateInput = document.getElementById('private');
+      if (privateInput) {
+        privateInput.addEventListener('blur', function() {
+          var raw = this.value;
+          if (!raw) return;
+          this.setAttribute('data-raw', raw);
+          this.value = maskValue(raw);
+        });
+        privateInput.addEventListener('focus', function() {
+          var raw = this.getAttribute('data-raw');
+          if (raw) this.value = raw;
+        });
+        if (privateInput.value && !privateInput.getAttribute('data-raw')) {
+          privateInput.setAttribute('data-raw', privateInput.value);
+          privateInput.value = maskValue(privateInput.value);
+        }
+      }
+    })();
+  </script>
+
+</html>

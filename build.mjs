@@ -58,7 +58,29 @@ const esbuildOpts = {
 // --- tasks ---
 
 // Compile each TS file to JS individually (no bundling), then concatenate into com.js
-async function buildTS() {
+// 使用 ec-new.ts（精简版，不包含 blake2b）
+async function buildTSCore() {
+  mkdirp('tmp');
+  const srcFiles = [
+    'src/common/x25519.ts',
+    'src/common/ec-new.ts',
+  ];
+  const compiled = [];
+  for (const file of srcFiles) {
+    const result = await build({
+      entryPoints: [file],
+      bundle: false,
+      write: false,
+      ...esbuildOpts,
+    });
+    compiled.push(result.outputFiles[0].text);
+  }
+  fs.writeFileSync('tmp/com.js', compiled.join('\n'));
+  console.log('  buildTSCore done');
+}
+
+// 使用 ec.ts 完整版（包含 blake2b，用于 legacy 页面）
+async function buildTSLegacy() {
   mkdirp('tmp');
   const srcFiles = [
     'src/common/x25519.ts',
@@ -74,8 +96,8 @@ async function buildTS() {
     });
     compiled.push(result.outputFiles[0].text);
   }
-  fs.writeFileSync('tmp/com.js', compiled.join('\n'));
-  console.log('  buildTS done');
+  fs.writeFileSync('tmp/com-legacy.js', compiled.join('\n'));
+  console.log('  buildTSLegacy done');
 }
 
 // Bundle index.ts with i18n alias for a specific language
@@ -95,8 +117,31 @@ async function buildIndex(lang) {
   console.log(`  buildIndex(${lang}) done`);
 }
 
-// Compile base64js.js, blake2b.js, and squircle.js into libs.js (defines globals)
+// Compile base64js.js and squircle.js into libs.js (defines globals)
+// 不包含 blake2b，用于 ipaste 和 index
 async function buildLibs() {
+  mkdirp('tmp');
+  const srcFiles = [
+    'src/common/base64js.js',
+    'src/common/squircle.js',
+  ];
+  const compiled = [];
+  for (const file of srcFiles) {
+    const result = await build({
+      entryPoints: [file],
+      bundle: false,
+      write: false,
+      ...esbuildOpts,
+    });
+    compiled.push(result.outputFiles[0].text);
+  }
+  fs.writeFileSync('tmp/libs.js', compiled.join('\n'));
+  console.log('  buildLibs done');
+}
+
+// 编译 base64js.js, blake2b.js, 和 squircle.js 到 libs-legacy.js（包含 blake2b）
+// 用于 legacy 页面
+async function buildLibsLegacy() {
   mkdirp('tmp');
   const srcFiles = [
     'src/common/base64js.js',
@@ -113,8 +158,8 @@ async function buildLibs() {
     });
     compiled.push(result.outputFiles[0].text);
   }
-  fs.writeFileSync('tmp/libs.js', compiled.join('\n'));
-  console.log('  buildLibs done');
+  fs.writeFileSync('tmp/libs-legacy.js', compiled.join('\n'));
+  console.log('  buildLibsLegacy done');
 }
 
 async function buildTest() {
@@ -263,6 +308,88 @@ function buildTestHtml() {
   console.log('  buildTestHtml done');
 }
 
+// --- index-legacy ---
+
+async function buildIndexLegacy() {
+  mkdirp('tmp');
+  const i18nPath = path.resolve(`src/html/i18n/cn/js-messages.ts`);
+  const result = await build({
+    entryPoints: ['src/index-legacy.ts'],
+    bundle: true,
+    write: false,
+    alias: {
+      '@i18n/js-messages': i18nPath,
+    },
+    ...esbuildOpts,
+  });
+  fs.writeFileSync('tmp/index-legacy.js', result.outputFiles[0].text);
+  console.log('  buildIndexLegacy done');
+}
+
+async function buildLegacyLangPages(lang) {
+  const outDir = `www/${lang}`;
+  mkdirp(outDir);
+
+  // 复制 index-legacy.html 到每个语言目录
+  const legacySrc = 'src/html/index-legacy.html';
+  const legacyDest = path.join(outDir, 'index-legacy.html');
+
+  // 读取消息用于 i18n 替换
+  const messagesPath = `src/html/i18n/${lang}/html-messages.ts`;
+  let messages = {};
+  try {
+    const result = await build({
+      entryPoints: [messagesPath],
+      bundle: false,
+      write: false,
+      target: 'es2020',
+      format: 'esm',
+    });
+    const js = result.outputFiles[0].text
+      .replace(/^import\s+.*$/gm, '')
+      .replace(/^export\s+/gm, '');
+    const fn = new Function(js + '; return htmlMessages;');
+    messages = fn();
+  } catch (e) {
+    console.warn(`  [WARN] Could not load messages for ${lang}:`, e.message);
+  }
+
+  let html = fs.readFileSync(legacySrc, 'utf8');
+  html = replaceI18n(html, messages);
+  fs.writeFileSync(legacyDest, html);
+  console.log(`  buildLegacyLangPages(${lang}) done`);
+}
+
+function inlineLegacyHtml(lang) {
+  const htmlPath = `www/${lang}/index-legacy.html`;
+  const cssPath = `www/${lang}/css/style.min.css`;
+  const libsPath = 'tmp/libs-legacy.js';
+  const comJsPath = 'tmp/com-legacy.js';
+  const indexLegacyJsPath = 'tmp/index-legacy.js';
+
+  if (!fs.existsSync(htmlPath)) {
+    console.log(`  inlineLegacyHtml(${lang}) skipped (file not found)`);
+    return;
+  }
+
+  const css = fs.readFileSync(cssPath, 'utf8');
+  const libs = fs.readFileSync(libsPath, 'utf8');
+  const comJs = fs.readFileSync(comJsPath, 'utf8');
+  const indexLegacyJs = fs.readFileSync(indexLegacyJsPath, 'utf8');
+
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = html.replace(
+    /<link\s+rel="stylesheet"\s+type="text\/css"\s+href="css\/style\.min\.css"\s*\/>/,
+    `<style>\n${css}\n</style>`
+  );
+  html = html.replace(
+    /<script\s+src="js\/app\.js"><\/script>/,
+    `<script>\n${wrapIIFE(libs, comJs, indexLegacyJs)}\n</script>`
+  );
+  fs.writeFileSync(htmlPath, html);
+  console.log(`  inlineLegacyHtml(${lang}) done`);
+}
+
 // --- ipaste ---
 
 async function buildIPasteIndex(lang) {
@@ -351,7 +478,8 @@ async function main() {
   cp('src/middleware/netlify.toml', 'www/netlify.toml');
   console.log('  middleware files copied');
 
-  await buildTS();
+  // 构建 ipaste 和 index 使用 ec-new（不包含 blake2b）
+  await buildTSCore();
   await buildLibs();
   await buildTest();
   cssMin('cn');
@@ -367,6 +495,21 @@ async function main() {
 
   for (const lang of LANGS) {
     inlineHtml(lang);
+  }
+
+  // 构建 legacy 版本
+  await buildTSLegacy();
+  await buildLibsLegacy();
+  await buildIndexLegacy();
+
+  // 构建 legacy 页面
+  for (const lang of LANGS) {
+    await buildLegacyLangPages(lang);
+  }
+
+  // 内联 legacy HTML
+  for (const lang of LANGS) {
+    inlineLegacyHtml(lang);
   }
 
   // Build ipaste pages

@@ -248,7 +248,13 @@ const App = (function () {
             setErrMsg(messages.errEmptyContent);
           }
         } catch (error) {
-          setErrMsg(error as string);
+          const errMsg = error as string;
+          // 友好提示老格式不支持
+          if (errMsg.includes('老格式不支持')) {
+            setErrMsg('此内容使用老格式加密，请使用 Legacy 版本解密');
+          } else {
+            setErrMsg(errMsg);
+          }
           console.log(error);
         }
       };

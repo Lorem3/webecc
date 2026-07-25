@@ -99,6 +99,7 @@ const App = (function () {
   }
   let currentKdf: { ver: string; hash: string; iterations: number } | undefined;
 
+  // 使用完整版 ec，支持所有格式
   let ec = await ECC.initEC();
 
   // 同步两个短语输入框的内容
@@ -345,7 +346,7 @@ const App = (function () {
       return FIXED_SALT;
     }
     // 没有从书签带入 salt 的情况下，只在页面生命周期内生成一次并复用，
-    // 避免用户多次点击“根据短语生成”导致每次派生结果不同。
+    // 避免用户多次点击"根据短语生成"导致每次派生结果不同。
     if (currentSalt) return currentSalt;
     currentSalt = generateRandomSalt();
     return currentSalt;
@@ -529,7 +530,7 @@ const App = (function () {
     let log = console.log;
     log('newLine ' + newLine + "--")
 
- 
+
 
     let msg = `
 ${G_Input?.prefix || ""} ${newLine}
@@ -886,42 +887,32 @@ ${messages.emailDataBase64}: ${newLine}
       return; // No data to process
     }
 
-    // 解密数据以检测格式
-    try {
-      let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data, data2 ? 1 : 0));
-      let plain = new TextDecoder().decode(plainBf);
 
-      let jsonObj = JSON.parse(plain) as InputData;
 
-      // 检测老格式：JSON 中不包含 salt 字段
-      if (jsonObj && !jsonObj.salt) {
-        // 老格式，跳转到 legacy 页面
-        console.log("检测到老格式书签，跳转到 legacy 页面");
-        window.location.href = `./index-legacy.html${location.hash}`;
-        return;
+    let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data, data2 ? 1 : 0));
+    let plain = new TextDecoder().decode(plainBf);
+
+
+    let jsonObj = JSON.parse(plain) as InputData;
+
+    if (jsonObj) {
+      G_Input = jsonObj;
+      let inputDataElement = document.getElementById("inputData")!;
+      inputDataElement.style.display = 'block'
+      inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
+        G_Input,
+        null,
+        "\t"
+      )}`;
+      setPublicKey(jsonObj.pubkey);
+      const kdf = kdfFromInput(jsonObj);
+      if (kdf) {
+        currentKdf = kdf;
       }
-
-      // 新格式，继续正常流程
-      if (jsonObj) {
-        G_Input = jsonObj;
-        let inputDataElement = document.getElementById("inputData")!;
-        inputDataElement.style.display = 'block'
-        inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
-          G_Input,
-          null,
-          "\t"
-        )}`;
-        setPublicKey(jsonObj.pubkey);
-        const kdf = kdfFromInput(jsonObj);
-        if (kdf) {
-          currentKdf = kdf;
-        }
-        if (jsonObj.salt) {
-          showSaltInfo(jsonObj.salt);
-        }
+      if (jsonObj.salt) {
+        showSaltInfo(jsonObj.salt);
       }
-    } catch (error) {
-      console.error("解密失败:", error);
+    } else {
     }
   })();
 
@@ -949,5 +940,3 @@ App.init();
 })();
 
 
-
- 
