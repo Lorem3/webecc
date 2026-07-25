@@ -478,7 +478,10 @@ const App = (function () {
       if (options?.private) {
         showMaskedPrivkey(options.private);
       }
-      if (bookmarkInfo) bookmarkInfo.style.display = "block";
+      if (bookmarkInfo) {
+        bookmarkInfo.style.display = "block";
+        Squircle.apply(bookmarkInfo, 60, 5, { color: '#e3e6ea', width: 1 });
+      }
     }
 
     (async function initDefaultValues() {
@@ -509,6 +512,9 @@ const App = (function () {
         G_Input = jsonObj;
         let inputDataElement = document.getElementById("inputData")!;
         inputDataElement.style.display = 'block'
+        requestAnimationFrame(() => {
+          Squircle.apply(inputDataElement, 60, 5, { color: '#e3e6ea', width: 1 });
+        });
         const displayData = { ...G_Input };
         if (displayData.salt) displayData.salt = maskKey(displayData.salt);
         if (displayData.private) displayData.private = maskKey(displayData.private);
