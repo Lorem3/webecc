@@ -43,9 +43,13 @@ a { word-break: break-all; }
 Public key dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
 </code></pre><p>JSON structure</p>
 <pre><code>{
-    prefix:string
-    pubkey:string
-    toEmail:string
+    pubkey: string
+    salt?: string
+    ver?: string
+    kdfHash?: string
+    kdfIterations?: number
+    type?: 'phrase' | 'pubkey'
+    private?: string
 }
 </code></pre><table>
 <thead>
@@ -57,21 +61,38 @@ Public key dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
 </thead>
 <tbody>
 <tr>
-<td>prefix</td>
-<td>Prefix for the passphrase (recommended: email followed by <code>#</code>), used together with the passphrase to generate a key pair</td>
-<td>Can be empty</td>
-</tr>
-<tr>
 <td>pubkey</td>
-<td>Default public key passed in, used for encryption</td>
+<td>Public key, used for encryption and verification</td>
 </tr>
 <tr>
-<td>toEmail</td>
-<td>Generates a mailto link, sending the encrypted result as a backup</td>
+<td>salt</td>
+<td>Random salt for PBKDF2 key derivation</td>
+<td>Optional</td>
 </tr>
 <tr>
-<td>emailSubject</td>
-<td>Email subject</td>
+<td>ver</td>
+<td>KDF version, e.g. "2.0"</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>kdfHash</td>
+<td>PBKDF2 hash algorithm, e.g. "SHA-512"</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>kdfIterations</td>
+<td>PBKDF2 iteration count, e.g. 210000</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>type</td>
+<td>Key type: 'phrase' (derived from passphrase) or 'pubkey' (direct public key)</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>private</td>
+<td>Private key (Base64), allows passphrase-free decryption when saved</td>
+<td>Optional, requires user confirmation</td>
 </tr>
 </tbody>
 </table>
@@ -204,7 +225,7 @@ mac = hmac_sha512(HKEY, IV + tmpPubKey + EncryptData)[0..31]
 <tbody>
 <tr>
 <td>salt</td>
-<td>The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]</td>
+<td>New bookmarks: A random 33-byte Base64-encoded salt generated each time a bookmark is created, stored in the bookmark link hash.<br>Old bookmarks: Fixed value (The California sea lion ...)</td>
 </tr>
 <tr>
 <td>ver=1.0 (old bookmark) iteration / hash</td>

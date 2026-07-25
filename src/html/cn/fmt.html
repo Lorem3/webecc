@@ -43,9 +43,13 @@ a { word-break: break-all; }
 公钥 dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
 </code></pre><p>json结构</p>
 <pre><code>{
-    prefix:string  
-    pubkey:string
-    toEmail:string
+    pubkey: string
+    salt?: string
+    ver?: string
+    kdfHash?: string
+    kdfIterations?: number
+    type?: 'phrase' | 'pubkey'
+    private?: string
 }
 </code></pre><table>
 <thead>
@@ -57,21 +61,38 @@ a { word-break: break-all; }
 </thead>
 <tbody>
 <tr>
-<td>prefix</td>
-<td>密码短语的前缀(建议邮箱后面加上<code>#</code>)，和密码短语一起生成密钥对</td>
-<td>可为空</td>
-</tr>
-<tr>
 <td>pubkey</td>
-<td>传入的默认公钥，用来加密</td>
+<td>公钥，用于加密和验证</td>
 </tr>
 <tr>
-<td>toEmail</td>
-<td>生成mailto链接，发送加密的结果作为备份</td>
+<td>salt</td>
+<td>随机 salt，用于 PBKDF2 派生密钥</td>
+<td>可选</td>
 </tr>
 <tr>
-<td>emailSubject</td>
-<td>邮件主题</td>
+<td>ver</td>
+<td>KDF 版本，如 "2.0"</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>kdfHash</td>
+<td>PBKDF2 哈希算法，如 "SHA-512"</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>kdfIterations</td>
+<td>PBKDF2 迭代次数，如 210000</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>type</td>
+<td>密钥类型：'phrase'（密码短语派生）或 'pubkey'（直接公钥）</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>private</td>
+<td>私钥（Base64），保存后可免密码短语解密</td>
+<td>可选，需用户确认</td>
 </tr>
 </tbody>
 </table>
@@ -204,7 +225,7 @@ mac = hmac_sha512(HKEY, IV + tmpPubKey + EncryptData)[0..31]
 <tbody>
 <tr>
 <td>salt</td>
-<td>The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]</td>
+<td>新书签：每次生成书签时随机生成 33 字节 Base64 编码的 salt，存储在书签链接 hash 中。<br>旧书签：固定值（The California sea lion ...）</td>
 </tr>
 <tr>
 <td>ver=1.0（旧书签）iteration / hash</td>

@@ -189,6 +189,13 @@ function wrapIIFE(...parts) {
   return `(function () {\n${parts.join('\n')}\n})();`;
 }
 
+function stripDebug(code) {
+  if (isDev) return code;
+  return code
+    .replace(/let\s+ttlog\s*=\s*console\.log\s*;\s*/g, '')
+    .replace(/\bttlog\s*\([^)]*\)\s*;?\s*/g, '');
+}
+
 function inlineHtml(lang) {
   const htmlPath = `www/${lang}/index.html`;
   const cssPath = `www/${lang}/css/style.min.css`;
@@ -277,7 +284,7 @@ async function buildIPasteIndex(lang) {
     },
     ...esbuildOpts,
   });
-  fs.writeFileSync(`tmp/ipaste.${lang}.js`, result.outputFiles[0].text);
+  fs.writeFileSync(`tmp/ipaste.${lang}.js`, stripDebug(result.outputFiles[0].text));
   console.log(`  buildIPasteIndex(${lang}) done`);
 }
 
