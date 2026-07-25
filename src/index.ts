@@ -886,12 +886,11 @@ ${messages.emailDataBase64}: ${newLine}
       return; // No data to process
     }
 
-    let ttlog = console.log;
-    ttlog({ webPrivate, webPublic });
+ 
 
     let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data, data2 ? 1 : 0));
     let plain = new TextDecoder().decode(plainBf);
-    ttlog(plain);
+ 
 
     let jsonObj = JSON.parse(plain) as InputData;
 
