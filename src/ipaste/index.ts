@@ -467,12 +467,14 @@ const App = (function () {
       const bmPubkey = document.getElementById("bmPubkey");
       const bmSalt = document.getElementById("bmSalt");
       const bmSaltRow = document.getElementById("bmSaltRow");
+      const bmPrivkeyRow = document.getElementById("bmPrivkeyRow");
       const bookmarkInfo = document.getElementById("bookmarkInfo");
       if (bmPubkey) bmPubkey.textContent = pubkey;
       if (bmSalt && salt) {
-        bmSalt.textContent = salt;
+        bmSalt.textContent = maskKey(salt);
         bmSaltRow!.style.display = "flex";
       }
+      if (bmPrivkeyRow) bmPrivkeyRow.style.display = "none";
       if (options?.private) {
         showMaskedPrivkey(options.private);
       }
@@ -508,6 +510,7 @@ const App = (function () {
         let inputDataElement = document.getElementById("inputData")!;
         inputDataElement.style.display = 'block'
         const displayData = { ...G_Input };
+        if (displayData.salt) displayData.salt = maskKey(displayData.salt);
         if (displayData.private) displayData.private = maskKey(displayData.private);
         inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
           displayData,
