@@ -8,6 +8,7 @@ export interface HtmlMessages {
   usageStep2: string;
   usageStep3: string;
   bmGenTitle: string;
+  bmGenTitlePrivkey: string;
   bmGenPhrase: string;
   bmGenPhrasePlaceholder: string;
   bmGenAction: string;

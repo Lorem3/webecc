@@ -10,6 +10,7 @@ export const htmlMessages: HtmlMessages = {
   usageStep2: '2. 在任何设备上打开书签，在文本框输入内容，点击「保存到云端」',
   usageStep3: '3. 在其他设备打开同一书签，点击「从云端加载」即可获取内容',
   bmGenTitle: '生成书签链接（不含私钥）',
+  bmGenTitlePrivkey: '⚠ 生成书签链接（含私钥）',
   bmGenPhrase: '密码短语',
   bmGenPhrasePlaceholder: '密码短语（不能公开）',
   bmGenAction: '生成书签链接',

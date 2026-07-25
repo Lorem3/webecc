@@ -1,4 +1,5 @@
 import { jsMessages as messages } from '@i18n/js-messages';
+import { htmlMessages } from '@i18n/html-messages';
 
 const App = (function () {
 
@@ -397,10 +398,24 @@ const App = (function () {
     function bindSavePrivkeyToggle() {
       const toggle = document.getElementById("savePrivkeyToggle") as HTMLInputElement;
       if (!toggle) return;
+
+      function updateBookmarkUI() {
+        const checked = toggle.checked;
+        const bmGenTitleEl = document.getElementById("bmGenTitle");
+        const btn = document.getElementById("genbookmark2");
+        if (bmGenTitleEl) {
+          bmGenTitleEl.textContent = checked ? htmlMessages.bmGenTitlePrivkey : htmlMessages.bmGenTitle;
+        }
+        if (btn) {
+          btn.style.backgroundColor = checked ? '#e74c3c' : '#1a1a1d';
+        }
+      }
+
       toggle.addEventListener('change', () => {
         if (toggle.checked && !confirm(messages.bmSavePrivkeyConfirm)) {
           toggle.checked = false;
         }
+        updateBookmarkUI();
       });
     }
 
@@ -569,7 +584,7 @@ App.init();
 
 (function initSquircle() {
   function applySquircle() {
-    Squircle.applyAll('.btn', 30, 5);
+    Squircle.applyMaskAll('.btn', 30, 5);
     Squircle.applyAll('.section-card', 60, 5, { color: '#e3e6ea', width: 1 });
     Squircle.applyAll('.text-card', 40, 5, { color: '#e3e6ea', width: 1 });
     Squircle.applyAll('.contain', 90, 5, { color: '#e3e6ea', width: 1 });

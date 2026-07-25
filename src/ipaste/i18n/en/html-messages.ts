@@ -10,6 +10,7 @@ export const htmlMessages: HtmlMessages = {
   usageStep2: '2. Open the bookmark on any device, enter content in the text box, and click "Save to Cloud"',
   usageStep3: '3. Open the same bookmark on another device and click "Load from Cloud" to retrieve the content',
   bmGenTitle: 'Generate bookmark link (without private key)',
+  bmGenTitlePrivkey: '⚠ Generate bookmark link (with private key)',
   bmGenPhrase: 'Passphrase',
   bmGenPhrasePlaceholder: 'Passphrase (do not share)',
   bmGenAction: 'Generate Bookmark Link',

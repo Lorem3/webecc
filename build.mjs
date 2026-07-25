@@ -42,7 +42,7 @@ function getHash() {
 const esbuildOpts = {
   target: 'es2020',
   charset: 'utf8',
-  minifyWhitespace: !isDev,
+  minifyWhitespace: false,
   minifyIdentifiers: false,
   minifySyntax: false,
   drop: isDev ? [] : ['console'],
@@ -267,13 +267,15 @@ function buildTestHtml() {
 
 async function buildIPasteIndex(lang) {
   mkdirp('tmp');
-  const i18nPath = path.resolve(`src/ipaste/i18n/${lang}/js-messages.ts`);
+  const i18nJsPath = path.resolve(`src/ipaste/i18n/${lang}/js-messages.ts`);
+  const i18nHtmlPath = path.resolve(`src/ipaste/i18n/${lang}/html-messages.ts`);
   const result = await build({
     entryPoints: ['src/ipaste/index.ts'],
     bundle: true,
     write: false,
     alias: {
-      '@i18n/js-messages': i18nPath,
+      '@i18n/js-messages': i18nJsPath,
+      '@i18n/html-messages': i18nHtmlPath,
     },
     ...esbuildOpts,
   });

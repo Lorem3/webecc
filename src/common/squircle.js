@@ -59,8 +59,26 @@ const Squircle = {
     el.style.border = 'none';
   },
 
+  applyMask: function(el, r, n, border) {
+    const rect = el.getBoundingClientRect();
+    const w = Math.max(rect.width, 1);
+    const h = Math.max(rect.height, 1);
+    const maskUrl = this.url(w, h, r, n, 'black', border);
+    el.style.maskImage = maskUrl;
+    el.style.webkitMaskImage = maskUrl;
+    el.style.maskSize = '100% 100%';
+    el.style.webkitMaskSize = '100% 100%';
+    el.style.borderRadius = '0';
+    el.style.border = 'none';
+  },
+
   applyAll: function(selector, r, n, border) {
     const elements = document.querySelectorAll(selector);
     elements.forEach(el => this.apply(el, r, n, border));
+  },
+
+  applyMaskAll: function(selector, r, n, border) {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(el => this.applyMask(el, r, n, border));
   }
 };
