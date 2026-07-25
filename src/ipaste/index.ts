@@ -22,8 +22,6 @@ const App = (function () {
     }
     let G_Input: InputData | undefined;
     let currentSalt: string | undefined;
-    let derivedPrivateKey: string | undefined;
-
     let ec = await ECC.initEC();
 
     function openUrl(url: string) {
@@ -172,123 +170,158 @@ const App = (function () {
     }
 
     // 派生私钥（用于解密）
-    document.getElementById("genkeyfrompharse")!.onclick = async () => {
-      let input = document.getElementById("keyphrase") as HTMLInputElement;
-      let phrase = input?.value.trim();
-      if (!phrase) {
-        setErrMsg(messages.errEmptyPhrase);
-        return;
-      }
-
-      if (!G_Input?.pubkey) {
-        setErrMsg(messages.errNeedBookmark);
-        return;
-      }
-
-      const salt = G_Input.salt || FIXED_SALT;
-      const kdf = { ver: G_Input.ver || KDF_V2.ver, hash: G_Input.kdfHash || KDF_V2.hash, iterations: G_Input.kdfIterations || KDF_V2.iterations };
-      let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
-
-      if (kp.public !== G_Input.pubkey) {
-        setErrMsg(messages.errPubkeyMismatchPhrase);
-        return;
-      }
-
-      derivedPrivateKey = kp.private;
-      setSyncStatus(messages.loadSuccess);
-    };
-
-    // 解密按钮
-    document.getElementById("decryptBtn")!.onclick = async () => {
-      if (!derivedPrivateKey) {
-        setErrMsg(messages.errNeedBookmark);
-        return;
-      }
-
-      let base64 = getPlainText()?.trim();
-      if (!base64) {
-        setErrMsg(messages.errEmptyContent);
-        return;
-      }
-
-      if (!G_Input?.pubkey || !G_Input?.salt) {
-        setErrMsg(messages.errNeedBookmark);
-        return;
-      }
-
-      try {
-        if (base64.startsWith('N.')) {
-          const nBase64 = base64.slice(2);
-          const contentKey = await generateContentKey(G_Input.pubkey, G_Input.salt);
-          const encryptedData = ec.base64Decode(nBase64);
-          const decryptedBuffer = await aesGcmDecrypt(encryptedData, contentKey);
-          const decryptedCipher = new Uint8Array(decryptedBuffer);
-
-          let dec = await ec.decrypt(derivedPrivateKey, decryptedCipher);
-          let te = new TextDecoder();
-          setPlainText(te.decode(dec));
-          setSyncStatus(messages.loadSuccess);
-        } else {
-          setErrMsg(messages.errEmptyContent);
+    function bindDecryptBtn() {
+      const btn = document.getElementById("decryptBtn");
+      if (!btn) return;
+      btn.onclick = async () => {
+        if (!G_Input?.pubkey || !G_Input?.salt) {
+          setErrMsg(messages.errNeedBookmark);
+          return;
         }
-      } catch (error) {
-        setErrMsg(error as string);
-        console.log(error);
-      }
-    };
 
-    // 保存到 CloudFlare D1
-    document.getElementById("saveToCloudflare")!.onclick = async () => {
-      const pubkey = G_Input?.pubkey;
-      if (!pubkey) {
-        setErrMsg(messages.errEmptyPubkey);
-        return;
-      }
+        let input = document.getElementById("keyphrase") as HTMLInputElement;
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(messages.errEmptyPhrase);
+          return;
+        }
 
-      const plainText = getPlainText();
-      if (!plainText) {
-        setErrMsg(messages.errEmptyContent);
-        return;
-      }
+        const salt = G_Input.salt || FIXED_SALT;
+        const kdf = { ver: G_Input.ver || KDF_V2.ver, hash: G_Input.kdfHash || KDF_V2.hash, iterations: G_Input.kdfIterations || KDF_V2.iterations };
+        let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
 
-      const salt = G_Input!.salt!;
-      const key = encodeURIComponent(await generateKey(pubkey, salt));
+        if (kp.public !== G_Input.pubkey) {
+          setErrMsg(messages.errPubkeyMismatchPhrase);
+          return;
+        }
 
-      let te = new TextEncoder();
-      let enc = await ec.encrypt(pubkey, te.encode(plainText));
-      let cipher = ec.base64Encode(enc, 0);
+        let base64 = getPlainText()?.trim();
+        if (!base64) {
+          setErrMsg(messages.errEmptyContent);
+          return;
+        }
 
-      const contentKey = await generateContentKey(pubkey, salt);
-      const cipherBytes = ec.base64Decode(cipher, 0);
-      const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
-      const e2 = ec.base64Encode(encryptedCipher, 0, 2);
-      const finalTxt = 'N.' + e2;
-      const content = encodeURIComponent(finalTxt);
+        try {
+          if (base64.startsWith('N.')) {
+            const nBase64 = base64.slice(2);
+            const contentKey = await generateContentKey(G_Input.pubkey, G_Input.salt);
+            const encryptedData = ec.base64Decode(nBase64);
+            const decryptedBuffer = await aesGcmDecrypt(encryptedData, contentKey);
+            const decryptedCipher = new Uint8Array(decryptedBuffer);
 
-      const emailSubjectEle = document.getElementById("emailsubject") as HTMLInputElement;
-      const subject = encodeURIComponent(emailSubjectEle.value.trim() || messages.emailSubjectDefault);
+            let dec = await ec.decrypt(kp.private, decryptedCipher);
+            let te = new TextDecoder();
+            setPlainText(te.decode(dec));
+            setSyncStatus(messages.loadSuccess);
+          } else {
+            setErrMsg(messages.errEmptyContent);
+          }
+        } catch (error) {
+          setErrMsg(error as string);
+          console.log(error);
+        }
+      };
+    }
 
-      const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${subject}&content=${content}`;
-      openUrl(url);
-      setSyncStatus(messages.saveSuccess);
-    };
+    function bindSaveBtn() {
+      const btn = document.getElementById("saveToCloudflare");
+      if (!btn) return;
+      btn.onclick = async () => {
+        const pubkey = G_Input?.pubkey;
+        if (!pubkey) {
+          setErrMsg(messages.errEmptyPubkey);
+          return;
+        }
 
-    // 从 CloudFlare 恢复
-    document.getElementById("restoreFromCloudflare")!.onclick = async () => {
-      const pubkey = G_Input?.pubkey;
-      if (!pubkey) {
-        setErrMsg(messages.errEmptyPubkey);
-        return;
-      }
+        const plainText = getPlainText();
+        if (!plainText) {
+          setErrMsg(messages.errEmptyContent);
+          return;
+        }
 
-      const salt = G_Input!.salt!;
-      const key = encodeURIComponent(await generateKey(pubkey, salt));
-      const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
-      openUrl(url);
-    };
+        const salt = G_Input!.salt!;
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+
+        let te = new TextEncoder();
+        let enc = await ec.encrypt(pubkey, te.encode(plainText));
+        let cipher = ec.base64Encode(enc, 0);
+
+        const contentKey = await generateContentKey(pubkey, salt);
+        const cipherBytes = ec.base64Decode(cipher, 0);
+        const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+        const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+        const finalTxt = 'N.' + e2;
+        const content = encodeURIComponent(finalTxt);
+
+        const subject = encodeURIComponent(messages.emailSubjectDefault);
+
+        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${subject}&content=${content}`;
+        openUrl(url);
+        setSyncStatus(messages.saveSuccess);
+      };
+    }
+
+    function bindRestoreBtn() {
+      const btn = document.getElementById("restoreFromCloudflare");
+      if (!btn) return;
+      btn.onclick = async () => {
+        const pubkey = G_Input?.pubkey;
+        if (!pubkey) {
+          setErrMsg(messages.errEmptyPubkey);
+          return;
+        }
+
+        const salt = G_Input!.salt!;
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
+        location.href = url;
+      };
+    }
+
+    function bindGenBookmarkBtn() {
+      const btn = document.getElementById("genbookmark2");
+      if (!btn) return;
+      btn.onclick = async () => {
+        let input = document.getElementById("keyphraseBookmark") as HTMLInputElement;
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(messages.errEmptyPhrase);
+          return;
+        }
+
+        const saltStr = generateRandomSalt();
+        let pubkey = (
+          await pbkdf2(phrase, saltStr, {
+            hash: KDF_V2.hash,
+            iterations: KDF_V2.iterations,
+          })
+        ).public;
+
+        await genbookmark(pubkey, saltStr, {
+          kdf: { ...KDF_V2 },
+          type: 'phrase',
+        });
+        showSaltInfo(saltStr);
+      };
+    }
+
+    // Bind all event handlers after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        bindGenBookmarkBtn();
+        bindDecryptBtn();
+        bindSaveBtn();
+        bindRestoreBtn();
+      });
+    } else {
+      bindGenBookmarkBtn();
+      bindDecryptBtn();
+      bindSaveBtn();
+      bindRestoreBtn();
+    }
 
     let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
-    let webPublic = "dTj41nmwoLcguLpM9AntyKgg67xxK4UAxc27CLIcFw=";
+    let webPublic = "dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=";
 
     async function genbookmark(
       pubkey: string,
@@ -325,7 +358,10 @@ const App = (function () {
       a.href = bookmark;
 
       let holder = document.getElementById("bookmark");
-      holder?.replaceChildren(a);
+      if (holder) {
+        holder.innerHTML = '';
+        holder.appendChild(a);
+      }
 
       if (options?.type === 'phrase') {
         const hint = document.createElement("p");
@@ -345,29 +381,6 @@ const App = (function () {
       }
       if (bookmarkInfo) bookmarkInfo.style.display = "block";
     }
-
-    document.getElementById("genbookmark2")!.onclick = async () => {
-      let input = document.getElementById("keyphraseBookmark") as HTMLInputElement;
-      let phrase = input?.value.trim();
-      if (!phrase) {
-        setErrMsg(messages.errEmptyPhrase);
-        return;
-      }
-
-      const saltStr = generateRandomSalt();
-      let pubkey = (
-        await pbkdf2(phrase, saltStr, {
-          hash: KDF_V2.hash,
-          iterations: KDF_V2.iterations,
-        })
-      ).public;
-
-      await genbookmark(pubkey, saltStr, {
-        kdf: { ...KDF_V2 },
-        type: 'phrase',
-      });
-      showSaltInfo(saltStr);
-    };
 
     (async function initDefaultValues() {
       console.log(location.hash);
@@ -427,3 +440,20 @@ const App = (function () {
   return { init };
 })();
 App.init();
+
+(function initSquircle() {
+  function applySquircle() {
+    Squircle.applyAll('.btn', 30, 5);
+    Squircle.applyAll('.section-card', 60, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('.text-card', 40, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('.contain', 90, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('input[type="text"]', 30, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('input[type="password"]', 30, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('textarea.bigTxtArea', 20, 5);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applySquircle);
+  } else {
+    applySquircle();
+  }
+})();

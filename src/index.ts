@@ -922,6 +922,23 @@ ${messages.emailDataBase64}: ${newLine}
 })();
 App.init();
 
+(function initSquircle() {
+  function applySquircle() {
+    Squircle.applyAll('.btn', 30, 5);
+    Squircle.applyAll('.section-card', 60, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('.text-card', 40, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('.contain', 90, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('input[type="text"]', 30, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('input[type="password"]', 30, 5, { color: '#e3e6ea', width: 1 });
+    Squircle.applyAll('textarea.bigTxtArea', 20, 5);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applySquircle);
+  } else {
+    applySquircle();
+  }
+})();
+
 
 
  
