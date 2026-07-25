@@ -25,31 +25,21 @@ function getLangFromAcceptLanguage(acceptLanguage) {
   return null;
 }
 
-function rewriteUrl(url, lang) {
-  const u = new URL(url);
-  const parts = u.pathname.split('/').filter(Boolean);
-  // Skip the 'ipaste' prefix and check if next segment is a lang dir
-  if (parts.length > 1 && parts[0] === 'ipaste' && ['cn', 'en'].includes(parts[1])) return null;
-  // Insert lang dir after 'ipaste'
-  u.pathname = '/ipaste/' + lang + '/' + parts.slice(1).join('/');
-  return u.toString();
-}
-
 export async function onRequest(context) {
   const { request, next, env } = context;
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (BLOCKED.some(b => path === '/ipaste/' + b || path.startsWith('/ipaste/' + b + '/'))) {
+  if (BLOCKED.some(b => path === '/' + b || path.startsWith('/' + b + '/'))) {
     return new Response('Not Found', { status: 404 });
   }
 
   const parts = path.split('/').filter(Boolean);
-  // Check if path is under /ipaste/ and has lang dir (e.g. /ipaste/cn/... or /ipaste/en/...)
-  if (parts.length > 1 && parts[0] === 'ipaste' && ['cn', 'en'].includes(parts[1])) {
-    const newPath = '/ipaste/' + parts.slice(2).join('/');
+  // If path already has lang dir (e.g. /cn/... or /en/...), strip it and set cookie
+  if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
+    const newPath = '/' + parts.slice(1).join('/');
     const redirectUrl = new URL(newPath, request.url).toString();
-    const langCookie = LANG_DIRS[parts[1]];
+    const langCookie = LANG_DIRS[parts[0]];
     return new Response(null, {
       status: 302,
       headers: {
@@ -69,7 +59,7 @@ export async function onRequest(context) {
 
   if (!lang) return next();
 
-  const newPath = '/ipaste/' + lang + '/' + parts.join('/');
+  const newPath = '/' + lang + '/' + parts.join('/');
   const newUrl = new URL(request.url);
   newUrl.pathname = newPath;
 
