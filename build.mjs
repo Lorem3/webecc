@@ -123,6 +123,7 @@ async function buildLibs() {
   mkdirp('tmp');
   const srcFiles = [
     'src/common/base64js.js',
+    'src/common/curve25519.js',
     'src/common/squircle.js',
   ];
   const compiled = [];
@@ -146,6 +147,7 @@ async function buildLibsLegacy() {
   const srcFiles = [
     'src/common/base64js.js',
     'src/common/blake2b.js',
+    'src/common/curve25519.js',
     'src/common/squircle.js',
   ];
   const compiled = [];

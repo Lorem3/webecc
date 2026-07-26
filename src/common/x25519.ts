@@ -1,8 +1,31 @@
 // X25519 implementation using Web Crypto API
-// Replaces static/curve25519.js, provides the same global X25519 object
+// Falls back to curve25519.js when browser lacks native X25519 support
+
+declare const X25519JS: {
+    generateKeyPair(seed: Uint8Array): { public: Uint8Array; private: Uint8Array };
+    sharedKey(secretKey: Uint8Array, publicKey: Uint8Array): Uint8Array;
+};
 
 const X25519 = (function () {
     const subtle = crypto.subtle;
+
+    // ── native X25519 support detection (runs once) ──────────────────────
+    let _supported: boolean | null = null;
+
+    async function checkSupport(): Promise<boolean> {
+        if (_supported !== null) return _supported;
+        try {
+            const dummy = new Uint8Array(32);
+            await subtle.importKey(
+                'pkcs8', pkcs8Wrap(dummy), { name: 'X25519' }, true, ['deriveBits']
+            );
+            _supported = true;
+        } catch {
+            _supported = false;
+        }
+        console.log('X25519 native support:', _supported);
+        return _supported;
+    }
 
     function b64ToBytes(b64: string): Uint8Array {
         const s = b64.replace(/-/g, '+').replace(/_/g, '/');
@@ -39,6 +62,10 @@ const X25519 = (function () {
     }
 
     async function generateKeyPair(seed: Uint8Array): Promise<{ public: Uint8Array; private: Uint8Array }> {
+        if (!(await checkSupport())) {
+            console.log('browser does not support x25519');
+            return X25519JS.generateKeyPair(seed);
+        }
         const priv = clamp(seed);
         const privKey = await subtle.importKey(
             'pkcs8', pkcs8Wrap(priv), { name: 'X25519' }, true, ['deriveBits']
@@ -49,6 +76,10 @@ const X25519 = (function () {
     }
 
     async function sharedKey(privateKey: Uint8Array, publicKey: Uint8Array): Promise<Uint8Array> {
+        if (!(await checkSupport())) {
+            console.log('browser does not support x25519');
+            return X25519JS.sharedKey(privateKey, publicKey);
+        }
         const privKey = await subtle.importKey(
             'pkcs8', pkcs8Wrap(clamp(privateKey)), { name: 'X25519' }, false, ['deriveBits']
         );
