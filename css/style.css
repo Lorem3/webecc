@@ -35,6 +35,9 @@ body {
   padding: 2rem;
   max-width: 720px;
   margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  corner-shape: superellipse(4);
 }
 
 .page-title {
@@ -51,6 +54,9 @@ body {
   padding: var(--space);
   margin-bottom: var(--space);
   transition: box-shadow var(--transition);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  corner-shape: superellipse(4);
 }
 .section-card:hover {
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
@@ -122,6 +128,8 @@ input[type="password"] {
   flex: 1;
   box-sizing: border-box;
   background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 input[type="text"]:focus,
@@ -375,6 +383,8 @@ pre {
   border: 1px solid var(--border);
   padding: var(--space-sm);
   transition: border-color var(--transition);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(4);
 }
 .text-card:focus-within {
   border-color: var(--border-focus);
@@ -391,6 +401,7 @@ textarea.bigTxtArea {
   min-height: 160px;
   width: 100%;
   box-sizing: border-box;
+  border-radius: var(--radius-sm);
   transition: box-shadow 0.2s ease;
 }
 textarea.bigTxtArea:focus {
