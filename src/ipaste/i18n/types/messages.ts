@@ -23,6 +23,7 @@ export interface HtmlMessages {
   syncPlaceholder: string;
   btnSave: string;
   btnLoad: string;
+  btnLoadLatest: string;
   btnEncrypt: string;
   btnDecrypt: string;
   decryptPhrase: string;

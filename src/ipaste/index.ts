@@ -331,6 +331,47 @@ const App = (function () {
       };
     }
 
+    function bindLoadLatestBtn() {
+      const btn = document.getElementById("loadLatest");
+      if (!btn) return;
+      btn.onclick = async () => {
+        const pubkey = G_Input?.pubkey;
+        if (!pubkey) {
+          setErrMsg(messages.errEmptyPubkey);
+          return;
+        }
+
+        const salt = G_Input!.salt!;
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const url = `https://ecd1data.kr7y.workers.dev/${key}/latest?fmt=json`;
+
+        const btnTitle = btn.querySelector('.btnTitle');
+        const originalText = btnTitle?.textContent;
+        if (btnTitle) btnTitle.textContent = 'Loading...';
+        btn.style.pointerEvents = 'none';
+
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Network response was not ok');
+          const data = await response.json();
+
+          if (data.content) {
+            setPlainText(data.content);
+            const syncSection = document.getElementById('syncSection');
+            if (syncSection) syncSection.style.display = '';
+            const usageSection = document.querySelector('.usage-section');
+            if (usageSection) (usageSection as HTMLElement).style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error loading latest:', error);
+          setErrMsg('Failed to load latest record: ' + (error as Error).message);
+        } finally {
+          if (btnTitle) btnTitle.textContent = originalText;
+          btn.style.pointerEvents = '';
+        }
+      };
+    }
+
     function bindEncryptBtn() {
       const btn = document.getElementById("encryptBtn");
       if (!btn) return;
@@ -433,6 +474,7 @@ const App = (function () {
         bindEncryptBtn();
         bindSaveBtn();
         bindRestoreBtn();
+        bindLoadLatestBtn();
         bindCopyResultBtn();
         bindSavePrivkeyToggle();
       });
@@ -442,6 +484,7 @@ const App = (function () {
       bindEncryptBtn();
       bindSaveBtn();
       bindRestoreBtn();
+      bindLoadLatestBtn();
       bindCopyResultBtn();
       bindSavePrivkeyToggle();
     }

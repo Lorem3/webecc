@@ -25,6 +25,7 @@ export const htmlMessages: HtmlMessages = {
   syncPlaceholder: 'Enter plaintext or paste ciphertext...',
   btnSave: 'Encrypt & Save to Cloud',
   btnLoad: 'Cloud Records',
+  btnLoadLatest: 'Load Latest',
   btnEncrypt: 'Encrypt',
   btnDecrypt: 'Decrypt',
   decryptPhrase: 'Passphrase',

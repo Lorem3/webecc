@@ -25,6 +25,7 @@ export const htmlMessages: HtmlMessages = {
   syncPlaceholder: '输入明文或粘贴密文...',
   btnSave: '加密保存到云端',
   btnLoad: '云端记录',
+  btnLoadLatest: '加载最近记录',
   btnEncrypt: '加密',
   btnDecrypt: '解密',
   decryptPhrase: '密码短语',
