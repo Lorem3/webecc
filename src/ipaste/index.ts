@@ -308,7 +308,7 @@ const App = (function () {
         const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
         const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
 
-        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&phash=${phash}&content=${content}`;
+        const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&phash=${phash}&content=${content}&expire=18`;
         openUrl(url);
         setSyncStatus(messages.saveSuccess);
       };
