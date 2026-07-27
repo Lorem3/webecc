@@ -67,7 +67,8 @@
         <textarea id="resultText" readonly placeholder="" style="width:100%;box-sizing:border-box;min-height:120px;padding:0.75rem 1rem;background:#f0f1f3;border:1px solid #dcdfe3;border-radius:8px;font-size:14px;line-height:1.5;resize:vertical;color:#333;font-family:inherit;display:none;"></textarea>
       </div>
       <div id="syncStatus" style="margin-top:0.5rem;color:var(--text-muted);font-size:0.875rem;">{{i18n:syncStatusReady}}</div>
-      <div class="row2 btnHolder btn-group" style="margin-top:1rem;">
+      <p style="color:#666;font-size:0.875rem;margin:0 0 0.5rem">本页面不发生网络请求，点击后打开新窗口，需要手动确认操作。</p>
+      <div class="row2 btnHolder btn-group" style="margin-top:0.5rem;">
         <div id="saveToCloudflare" class="btn"><span class="btnTitle">{{i18n:btnSave}}</span></div>
         <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">{{i18n:btnLoad}}</span></div>
       </div>
@@ -91,7 +92,6 @@
     <section class="section-card section-muted about-section">
       <h1>{{i18n:aboutTitle}}</h1>
       <pre class="about-intro">{{i18n:aboutIntro}}</pre>
-      <p><a href="https://github.com/Lorem3/webecc/">{{i18n:aboutProjectLink}}</a></p>
       <h2><a href="fmt.html">{{i18n:aboutFormatLink}}</a></h2>
     </section>
 
