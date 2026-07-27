@@ -166,14 +166,15 @@ class EC{
         }
 
         let isNew = useSha || (byte0 !== 4 && byte0 !== 5)
-        if (isNew && (byte0 & 0x06) !== 0x04) {
+        if (isNew && (byte0 & 0x04) !== 0x04) {
             throw "data format not support"
         }
 
         let isZip  = useSha ? ((byte0 & 0x01) === 0) : (byte0 === 4)
         let format:0|1 = useSha ? 1 : 0
         let type = isNew ? (isZip ? 4 : 5) : byte0
-        if (data.length < 88) {
+
+        if (data.length < 8 + 16 + 32 + 32) {
             throw "data too short"
         }
         let privateKey = base64js.toByteArray(privateKeyB64);
@@ -181,10 +182,18 @@ class EC{
             throw "privateKey length must be 32"
         }
 
-        let iv = data.subarray(8,24)
-        let mac = data.subarray(24,56);
-        let tmpPub = data.subarray(56,88);
-        let enc = data.subarray(88)
+        // 从 header bytes 2-3 读取 IV 长度
+        let ivLen = data[2] | (data[3] << 8)
+        if (ivLen !== 12 && ivLen !== 16) {
+            throw "invalid iv length"
+        }
+
+        let iv = data.subarray(8, 8 + ivLen)
+        let macStart = 8 + ivLen
+        let mac = data.subarray(macStart, macStart + 32);
+        let pubStart = macStart + 32
+        let tmpPub = data.subarray(pubStart, pubStart + 32);
+        let enc = data.subarray(pubStart + 32)
         let dh = await X25519.sharedKey(privateKey,tmpPub);
 
         let kp = await X25519.generateKeyPair(privateKey);
@@ -205,8 +214,14 @@ class EC{
             }
         }
 
-
-        let dec = await this.aesDecrypt(hash64.subarray(0,32),iv,enc);
+        // 根据 header IV 长度决定 AES 模式：12=GCM, 16=CBC
+        let aesKey = hash64.subarray(0,32)
+        let dec:Uint8Array
+        if (ivLen === 16) {
+            dec = await this.aesDecrypt(aesKey,iv,enc)
+        } else {
+            dec = await this.aesGcmDecrypt(aesKey,iv,enc)
+        }
 
         if (type == 4) {
 
@@ -282,8 +297,8 @@ class EC{
         kp.private.fill(0)
 
         let key = hash2.subarray(0,32)
-        let iv = await crypto.getRandomValues(new Uint8Array(16))
-        let enc = await this.aesEncrypt(key,iv,data)
+        let iv = await crypto.getRandomValues(new Uint8Array(12))
+        let enc = await this.aesGcmEncrypt(key,iv,data)
         var tmpPub = kp.public
 
         let macData = new Uint8Array(iv.length + tmpPub.length + enc.length)
@@ -297,7 +312,7 @@ class EC{
         let result = new Uint8Array(8 + mac.length + iv.length + tmpPub.length + enc.length )
         result[0]= (0x04 | (isZipData ? 0 : 0x01) | 0x08)
         result[1]= 0
-        result[2]= 16;
+        result[2]= 12;
         result[3]= 0;
         result[4]= 32;
         result[5]= 0;
@@ -326,14 +341,13 @@ class EC{
 
         return  new Uint8Array(await subtle.decrypt(p,keyObj,data));
     }
-    async aesEncrypt(key:Uint8Array,iv:Uint8Array,data:Uint8Array):Promise<Uint8Array>{
-        let p = {
-            name:'AES-CBC',
-            iv:iv,
-            length:256
-        } as AesKeyAlgorithm
-        let keyObj = await subtle.importKey('raw',key,p,false,['encrypt']);
-        return new  Uint8Array(await subtle.encrypt(p,keyObj,data));
+    async aesGcmDecrypt(key:Uint8Array,iv:Uint8Array,data:Uint8Array):Promise<Uint8Array>{
+        let keyObj = await subtle.importKey('raw',key,'AES-GCM',false,['decrypt']);
+        return new Uint8Array(await subtle.decrypt({name:'AES-GCM',iv},keyObj,data));
+    }
+    async aesGcmEncrypt(key:Uint8Array,iv:Uint8Array,data:Uint8Array):Promise<Uint8Array>{
+        let keyObj = await subtle.importKey('raw',key,'AES-GCM',false,['encrypt']);
+        return new Uint8Array(await subtle.encrypt({name:'AES-GCM',iv,length:256},keyObj,data));
     }
 
     private async hmacSha512(key:Uint8Array,data:Uint8Array):Promise<Uint8Array>{

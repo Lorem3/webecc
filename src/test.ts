@@ -175,6 +175,23 @@ const TestApp = (function () {
   log('    公钥:', kp_phrase2.public, kp_phrase2.public === expectedPub2 ? '✅' : '❌')
   log('    私钥:', kp_phrase2.private, kp_phrase2.private === expectedPriv2 ? '✅' : '❌')
 
+  // ========== 测试11: CBC 解密兼容性测试 ==========
+  log('')
+  log('=== 测试11: CBC 解密兼容性测试 ===')
+  const cbcCipherB64 = 'DAAQACAAIADMod0xzoR8336Q9cnmmu9kZyFOXgq3IKwj74J/vn/zJNxe2k/1jfFszUJqBDCFr7qnOFtMX/JjccJx/+KRZRYzvaOWNwUB59fv3rnenlj5J2XZzlfFyNahrFYWqU3kJo8tnXTiMx31nNy2d6WAETlU'
+  const cbcPrivKey = 'SLddu5s1gMMY3mGTL8tIL2K53eFkyUxknXdVRgqNWEM='
+  const cbcData = ec.base64Decode(cbcCipherB64)
+  log('  输入byte[0]:', cbcData[0], '(bit1=' + ((cbcData[0] & 2) >> 1) + ', header IV长度=' + (cbcData[2] | (cbcData[3] << 8)) + ')')
+  try {
+    const decCbc = await ec.decrypt(cbcPrivKey, cbcData)
+    log('  解密hex:', toHex(decCbc))
+    log('  解密base64:', ec.base64Encode(decCbc))
+    log('  解密长度:', decCbc.length)
+    log('  ✅ CBC 解密成功')
+  } catch(e) {
+    log('  ❌ CBC 解密失败:', e)
+  }
+
   }
 
   return { run };
