@@ -201,11 +201,11 @@ const App = (function () {
       return false;
     }
   }
-  document.getElementById("encrypt")!.onclick = async () => {
-    await encryptClick();
-  };
+  const elEncrypt = document.getElementById("encrypt");
+  if (elEncrypt) elEncrypt.onclick = async () => { await encryptClick(); };
 
-  document.getElementById("decrypt")!.onclick = async () => {
+  const elDecrypt = document.getElementById("decrypt");
+  if (elDecrypt) elDecrypt.onclick = async () => {
     let p = getPirvateKey();
 
     let fileInput = document.getElementById("cipherfile") as HTMLInputElement;
@@ -310,7 +310,8 @@ const App = (function () {
     }
   };
 
-  document.getElementById("genpubkey")!.onclick = async () => {
+  const elGenpubkey = document.getElementById("genpubkey");
+  if (elGenpubkey) elGenpubkey.onclick = async () => {
     let seckey = getPirvateKey();
     console.log(seckey);
     if (!seckey) {
@@ -434,7 +435,8 @@ const App = (function () {
     return kp;
   }
 
-  document.getElementById("genkeyfrompharse")!.onclick = async () => {
+  const elGenkey = document.getElementById("genkeyfrompharse");
+  if (elGenkey) elGenkey.onclick = async () => {
     let input = document.getElementById("keyphrase") as HTMLInputElement;
     let phrase = input?.value.trim();
     if (!phrase) {
@@ -462,7 +464,8 @@ const App = (function () {
     showSaltInfo(salt);
   };
 
-  document.getElementById("downloadPlain")!.onclick = async () => {
+  const elDownloadPlain = document.getElementById("downloadPlain");
+  if (elDownloadPlain) elDownloadPlain.onclick = async () => {
     let s = getPlainText();
     if (!s) {
       setErrMsg(messages.errEmptyFile);
@@ -491,7 +494,8 @@ const App = (function () {
     return beijingtime().replace(/:/g, "_").substring(0, 19);
   }
 
-  document.getElementById("downloadCipher")!.onclick = async () => {
+  const elDownloadCipher = document.getElementById("downloadCipher");
+  if (elDownloadCipher) elDownloadCipher.onclick = async () => {
     let s = getCipherText().trim();
     if (!s) {
       setErrMsg(messages.errEmptyFile);
@@ -507,11 +511,13 @@ const App = (function () {
     window.URL.revokeObjectURL(link.href);
   };
 
-  document.getElementById("clearfile")!.onclick = async () => {
+  const elClearfile = document.getElementById("clearfile");
+  if (elClearfile) elClearfile.onclick = async () => {
     let obj = document.getElementById("clearfileform") as HTMLFormElement;
     obj.reset();
   };
-  document.getElementById("sendemail2")!.onclick = async () => {
+  const elSendemail2 = document.getElementById("sendemail2");
+  if (elSendemail2) elSendemail2.onclick = async () => {
     let cipher = getCipherText().trim();
     if (!cipher) {
       let t = await encryptClick();
@@ -550,7 +556,8 @@ ${messages.emailDataBase64}:
     console.log(mailto);
     window.open(mailto, "target", "");
   };
-  document.getElementById("sendemail")!.onclick = async () => {
+  const elSendemail = document.getElementById("sendemail");
+  if (elSendemail) elSendemail.onclick = async () => {
     let cipher = getCipherText().trim();
     if (!cipher) {
       let t = await encryptClick();
@@ -682,7 +689,8 @@ ${messages.emailDataBase64}: ${newLine}
   }
 
   // 保存到 CloudFlare
-  document.getElementById("saveToCloudflare")!.onclick = async () => {
+  const elSaveD1 = document.getElementById("saveToCloudflare");
+  if (elSaveD1) elSaveD1.onclick = async () => {
     const pubkey = getPublicKey();
     if (!pubkey) {
       setErrMsg(messages.errEmptyPubkey);
@@ -741,7 +749,8 @@ ${messages.emailDataBase64}: ${newLine}
   };
 
   // 从 CloudFlare 恢复
-  document.getElementById("restoreFromCloudflare")!.onclick = async () => {
+  const elRestoreD1 = document.getElementById("restoreFromCloudflare");
+  if (elRestoreD1) elRestoreD1.onclick = async () => {
     const pubkey = getPublicKey();
     if (!pubkey) {
       setErrMsg(messages.errEmptyPubkey);
@@ -833,7 +842,8 @@ ${messages.emailDataBase64}: ${newLine}
     if (bookmarkInfo) bookmarkInfo.style.display = "block";
   }
 
-  document.getElementById("genbookmark2")!.onclick = async () => {
+  const elGenbookmark2 = document.getElementById("genbookmark2");
+  if (elGenbookmark2) elGenbookmark2.onclick = async () => {
     let input = document.getElementById("keyphrase") as HTMLInputElement;
     let phrase = input?.value.trim();
     if (!phrase) {
