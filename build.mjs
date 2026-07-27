@@ -23,11 +23,8 @@ function cp(src, dest) {
   fs.copyFileSync(src, dest);
 }
 
-function beijingtime() {
-  return new Date(Date.now() + 3600000 * 8)
-    .toISOString()
-    .replace('T', ' ')
-    .replace('Z', ' +0800');
+function utctime() {
+  return new Date().toISOString();
 }
 
 function getHash() {
@@ -50,7 +47,7 @@ const esbuildOpts = {
   logLevel: 'warning',
   define: {
     __DEBUG__: isDev ? 'true' : 'false',
-    __BUILD_TIME__: JSON.stringify(beijingtime()),
+    __BUILD_TIME__: JSON.stringify(utctime()),
     __BUILD_MOD__: JSON.stringify(`${isDev ? 'DEBUG' : 'Release'}  ${getHash()}`),
   },
 };

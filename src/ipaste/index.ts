@@ -578,6 +578,22 @@ const App = (function () {
       }
     })();
 
+    // 显示版本信息
+    (function () {
+      var buildInfoEl = document.getElementById('buildInfo');
+      if (buildInfoEl) {
+        var buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '';
+        var buildMod = typeof __BUILD_MOD__ !== 'undefined' ? __BUILD_MOD__ : '';
+        if (buildTime || buildMod) {
+          // 解析 buildMod 格式: "Release  cmt: 5fa6ab2" -> "Release 5fa6ab2"
+          var parts = buildMod.split(/\s+/);
+          var mode = parts[0] || '';
+          var hash = parts[2] || '';
+          buildInfoEl.textContent = `Build:${buildTime} | ${mode} ${hash} | github.com/vitock/webecc`;
+        }
+      }
+    })();
+
   }
 
   return { init };
