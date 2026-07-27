@@ -132,16 +132,16 @@ Public key dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
 <li><strong>New format (SHA-512)</strong>: Uses bit flags<ul>
 <li>bit3 (0x08): Always 1, indicates new format</li>
 <li>bit2 (0x04): Always 1</li>
-<li>bit1 (0x02): Reserved</li>
+<li>bit1 (0x02): Fixed 0, indicates AES-GCM</li>
 <li>bit0 (0x01): Compression flag, 0=gzip then encrypt, 1=encrypt directly</li>
-<li>Example: 0x0C (12) = new format + compressed, 0x0D (13) = new format + uncompressed</li>
+<li>Example: 0x0C (12) = new format+GCM+compressed, 0x0D (13) = new format+GCM+uncompressed</li>
 </ul>
 </li>
 </ul>
 </li>
 <li><p>Byte 2: Reserved (0)</p>
 </li>
-<li>Bytes 3-4: short value for IV length, 16</li>
+<li>Bytes 3-4: short value for IV length, 12 for new format, 16 for old format</li>
 <li>Bytes 5-6: short value for MAC hash length, 32</li>
 <li>Bytes 7-8: short value for temporary public key length, 32</li>
 <li>IV   // Randomly generated</li>
@@ -178,7 +178,7 @@ digest = blake2b(buffer)
 Use SHA-512 hash to generate 64-byte digest
 digest = sha512(buffer)
 
-digest[0..31] is used as AES-CBC key aesKey, along with IV to encrypt the key and produce EncryptData
+digest[0..31] is used as AES-GCM key aesKey, along with IV to encrypt the key and produce EncryptData (ciphertext includes 16-byte authentication tag)
 
 digest[32,63] is used as MAC key HKEY, producing 32-byte output
 

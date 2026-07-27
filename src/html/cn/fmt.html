@@ -132,16 +132,16 @@ a { word-break: break-all; }
 <li><strong>新格式 (SHA-512)</strong>: 使用位标志<ul>
 <li>bit3 (0x08): 固定为1，表示新格式</li>
 <li>bit2 (0x04): 固定为1</li>
-<li>bit1 (0x02): 保留</li>
+<li>bit1 (0x02): 固定为0，表示 AES-GCM</li>
 <li>bit0 (0x01): 压缩标志，0=先gzip后加密，1=直接加密</li>
-<li>示例: 0x0C (12) = 新格式+压缩, 0x0D (13) = 新格式+不压缩</li>
+<li>示例: 0x0C (12) = 新格式+GCM+压缩, 0x0D (13) = 新格式+GCM+不压缩</li>
 </ul>
 </li>
 </ul>
 </li>
 <li><p>第2字节: 保留 (0)</p>
 </li>
-<li>3-4字节的short值表示 iv的长度 ，16  </li>
+<li>3-4字节的short值表示 iv的长度 ，新格式12，旧格式16  </li>
 <li>5-6字节的short值表示 mac校验hash的长度 32</li>
 <li>7-8字节 字节表示临时公钥长度 ，32</li>
 <li>IV   // 随机生成</li>
@@ -178,7 +178,7 @@ digest = blake2b(buffer)
 利用hash算法 SHA-512 生成64字节长度digest
 digest = sha512(buffer)
 
-其中 digest[0..31] 作为 AES-CBC 的密钥 aesKey,使用IV 一起加密密钥生成 加密数据 EncryptData
+其中 digest[0..31] 作为 AES-GCM 的密钥 aesKey,使用IV 一起加密密钥生成 加密数据 EncryptData（密文自带16字节tag）
 
 其中 digest[32,63]作为计算mac的密钥 HKEY，输出32字节数据
 
