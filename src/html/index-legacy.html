@@ -41,8 +41,13 @@
         <p>{{i18n:restoreStep3}}</p>
         <p>{{i18n:restoreStep4}}</p>
       </div>
-      <h2>{{i18n:bmGenTitle}}</h2>
-      <div class="section-card">
+      <div id="noHashRedirect" style="display:none;text-align:center;padding:2rem;background:#f5f5f5;border-radius:12px;margin:1rem 0;">
+        <h2 style="margin-top:0">请先通过书签访问</h2>
+        <p>本页面需要通过包含 hash data 的书签链接访问。</p>
+        <p><a href="index.html" style="color:#2563eb;text-decoration:none;font-weight:600;">前往主页生成书签</a></p>
+      </div>
+      <h2 style="display:none">{{i18n:bmGenTitle}}</h2>
+      <div class="section-card" style="display:none">
         <div class="row2">
           <span class="title">{{i18n:bmGenPhrase}}</span>
           <div class="password-wrap">
@@ -54,7 +59,7 @@
           </div>
         </div>
       </div>
-      <div class="section-card">
+      <div class="section-card" style="display:none">
         <p style="margin:0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">{{i18n:bmGenOptional}}</p>
         <div class="row2">
           <span class="title">{{i18n:bmGenEmail}}</span>
@@ -69,7 +74,7 @@
           <input id="prefix" type="text" autocomplete="off" placeholder="{{i18n:bmGenPrefixPlaceholder}}" />
         </div>
       </div>
-      <div class="bookmark-actions">
+      <div class="bookmark-actions" style="display:none">
         <div id="genbookmark2" class="btn"><span class="btnTitle">{{i18n:bmGenAction}}</span></div>
       </div>
       <div id="bookmark"></div>
@@ -122,15 +127,15 @@
         <div id="encrypt" class="btn"><span class="btnTitle">{{i18n:btnEncrypt}}</span></div>
         <div id="decrypt" class="btn"><span class="btnTitle">{{i18n:btnDecrypt}}</span></div>
       </div>
-      <div class="row2 btnHolder btn-group">
+      <div class="row2 btnHolder btn-group" style="display:none">
         <div id="saveToCloudflare" class="btn"><span class="btnTitle">{{i18n:btnSaveCloudflare}}</span></div>
         <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">{{i18n:btnRestoreCloudflare}}</span></div>
       </div>
-      <div class="action-links" style="margin-top:0.5rem">
+      <div class="action-links" style="margin-top:0.5rem;display:none">
         <a id="sendemail" href="javascript:void(0)" class="action-link">{{i18n:sendEmail}}</a>
         <a id="sendemail2" href="javascript:void(0)" class="action-link">{{i18n:sendEmailManual}}</a>
       </div>
-      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0;display:none">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
 
       <div class="row plain-cipher-row">
         <div class="text-card">
@@ -200,12 +205,15 @@ mysecret[31] |= 64;</pre>
       var contain = document.querySelector('.contain');
       var usageSection = document.querySelector('.usage-section');
       var browserSection = document.querySelector('.browser-requirements-section');
+      var noHashRedirect = document.getElementById('noHashRedirect');
       if (hasHashParams() && contain && usageSection && browserSection) {
         var keySection = document.getElementById('keySection');
         var encryptSection = document.getElementById('encryptSection');
         if (keySection) keySection.style.display = '';
         if (encryptSection) encryptSection.style.display = '';
         usageSection.style.display = 'none';
+      } else if (!hasHashParams() && noHashRedirect) {
+        noHashRedirect.style.display = 'block';
       }
     })();
   </script>
