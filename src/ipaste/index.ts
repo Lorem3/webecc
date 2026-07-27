@@ -589,7 +589,7 @@ const App = (function () {
           var parts = buildMod.split(/\s+/);
           var mode = parts[0] || '';
           var hash = parts[2] || '';
-          buildInfoEl.textContent = `Build:${buildTime} | ${mode} ${hash} | github.com/vitock/webecc`;
+          buildInfoEl.textContent = `Build:${buildTime} | ${mode} ${hash}`;
         }
       }
     })();
