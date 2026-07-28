@@ -77,4 +77,5 @@ export const htmlMessages: HtmlMessages = {
   browserTitle: '浏览器要求',
   browserThBrowser: '浏览器',
   browserThVersion: '版本',
+  historyTitle: '历史记录【密文】',
 };
