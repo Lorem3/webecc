@@ -5,7 +5,7 @@ import {
   createAppState,
   openUrl, getPlainText, setErrMsg, maskKey, showMaskedPrivkey,
   generateRandomSalt, pbkdf2, generateKey, generateContentKey, aesGcmEncrypt,
-  bindCommonButtons, initBookmark, autoFetchHistory, showBuildInfo, initSquircle,
+  bindCommonButtons, initBookmark, showBuildInfo, initSquircle,
 } from './common';
 
 const App = (function () {
@@ -160,9 +160,6 @@ const App = (function () {
 
     // Decode bookmark from hash and initialize
     await initBookmark(ec, state);
-
-    // Auto-fetch history list
-    await autoFetchHistory(ec, state);
 
     // Show sync section when hash params are present
     (function () {

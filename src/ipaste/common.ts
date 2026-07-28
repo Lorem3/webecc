@@ -502,6 +502,18 @@ function formatTime(isoStr: string): string {
   }
 }
 
+function formatExpire(timeString: string, expire: number | null): string | null {
+  if (expire == null) return null;
+  try {
+    const d = new Date(timeString);
+    d.setTime(d.getTime() + expire * 86400000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  } catch {
+    return null;
+  }
+}
+
 function renderHistoryList(ec: any, state: AppState, items: HistoryItem[]) {
   const container = document.getElementById('historyList');
   if (!container) return;
@@ -513,11 +525,13 @@ function renderHistoryList(ec: any, state: AppState, items: HistoryItem[]) {
 
   container.innerHTML = '';
   items.forEach((item) => {
+    const expireStr = formatExpire(item.timeString, item.expire);
     const div = document.createElement('div');
     div.className = 'history-item';
     div.innerHTML = `
       <div class="history-item-time">${formatTime(item.timeString)}</div>
       <div class="history-item-note">${item.note || '(no note)'}</div>
+      ${expireStr ? `<div class="history-item-expire">过期: ${expireStr}</div>` : ''}
     `;
     div.onclick = () => handleHistoryClick(ec, state, item, div);
     container.appendChild(div);
