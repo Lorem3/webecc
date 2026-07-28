@@ -25,7 +25,7 @@ export const htmlMessages: HtmlMessages = {
   syncPlaceholder: '输入明文或粘贴密文...',
   btnSave: '加密保存到云端',
   btnLoad: '云端记录',
-  btnLoadLatest: '加载最近记录',
+  btnLoadLatest: '便捷模式',
   btnEncrypt: '加密',
   btnDecrypt: '解密',
   decryptPhrase: '密码短语',
@@ -44,4 +44,5 @@ export const htmlMessages: HtmlMessages = {
   browserTitle: '浏览器要求',
   browserThBrowser: '浏览器',
   browserThVersion: '版本',
+  historyTitle: '历史记录',
 };

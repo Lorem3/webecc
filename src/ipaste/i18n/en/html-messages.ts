@@ -25,7 +25,7 @@ export const htmlMessages: HtmlMessages = {
   syncPlaceholder: 'Enter plaintext or paste ciphertext...',
   btnSave: 'Encrypt & Save to Cloud',
   btnLoad: 'Cloud Records',
-  btnLoadLatest: 'Load Latest',
+  btnLoadLatest: 'Quick Mode',
   btnEncrypt: 'Encrypt',
   btnDecrypt: 'Decrypt',
   decryptPhrase: 'Passphrase',
@@ -44,4 +44,5 @@ export const htmlMessages: HtmlMessages = {
   browserTitle: 'Browser Requirements',
   browserThBrowser: 'Browser',
   browserThVersion: 'Version',
+  historyTitle: 'History',
 };

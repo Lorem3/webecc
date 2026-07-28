@@ -454,6 +454,68 @@ function inlineIPasteHtml(lang) {
   console.log(`  inlineIPasteHtml(${lang}) done`);
 }
 
+// --- ipaste autofetch ---
+
+async function buildIPasteAutofetch(lang) {
+  mkdirp('tmp');
+  const i18nJsPath = path.resolve(`src/ipaste/i18n/${lang}/js-messages.ts`);
+  const i18nHtmlPath = path.resolve(`src/ipaste/i18n/${lang}/html-messages.ts`);
+  const result = await build({
+    entryPoints: ['src/ipaste/autofetch.ts'],
+    bundle: true,
+    write: false,
+    alias: {
+      '@i18n/js-messages': i18nJsPath,
+      '@i18n/html-messages': i18nHtmlPath,
+    },
+    ...esbuildOpts,
+  });
+  fs.writeFileSync(`tmp/ipaste-autofetch.${lang}.js`, result.outputFiles[0].text);
+  console.log(`  buildIPasteAutofetch(${lang}) done`);
+}
+
+async function buildIPasteAutofetchPages(lang) {
+  const outDir = `www/ipaste/${lang}`;
+  mkdirp(outDir);
+  const messages = await loadHtmlMessagesForPath(`src/ipaste/i18n/${lang}/html-messages.ts`);
+
+  let html = fs.readFileSync('src/ipaste/autofetch.html', 'utf8');
+  html = replaceI18n(html, messages);
+  fs.writeFileSync(path.join(outDir, 'autofetch.html'), html);
+
+  console.log(`  buildIPasteAutofetchPages(${lang}) done`);
+}
+
+function inlineIPasteAutofetchHtml(lang) {
+  const htmlPath = `www/ipaste/${lang}/autofetch.html`;
+  const cssPath = `www/${lang}/css/style.min.css`;
+  const libsPath = 'tmp/libs.js';
+  const comJsPath = 'tmp/com.js';
+  const autofetchJsPath = `tmp/ipaste-autofetch.${lang}.js`;
+
+  if (!fs.existsSync(htmlPath)) {
+    console.log(`  inlineIPasteAutofetchHtml(${lang}) skipped (file not found)`);
+    return;
+  }
+
+  const css = fs.readFileSync(cssPath, 'utf8');
+  const libs = fs.readFileSync(libsPath, 'utf8');
+  const comJs = fs.readFileSync(comJsPath, 'utf8');
+  const autofetchJs = fs.readFileSync(autofetchJsPath, 'utf8');
+
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = html.replace(
+    /<link\s+rel="stylesheet"\s+type="text\/css"\s+href="css\/style\.min\.css"\s*\/>/,
+    `<style>\n${css}\n</style>`
+  );
+  html = html.replace(
+    /<script\s+src="js\/app\.js"><\/script>/,
+    `<script>\n${wrapIIFE(libs, comJs, autofetchJs)}\n</script>`
+  );
+  fs.writeFileSync(htmlPath, html);
+  console.log(`  inlineIPasteAutofetchHtml(${lang}) done`);
+}
+
 // --- main ---
 
 async function main() {
@@ -518,6 +580,15 @@ async function main() {
   }
   for (const lang of LANGS) {
     inlineIPasteHtml(lang);
+  }
+
+  // Build ipaste autofetch pages
+  for (const lang of LANGS) {
+    await buildIPasteAutofetch(lang);
+    await buildIPasteAutofetchPages(lang);
+  }
+  for (const lang of LANGS) {
+    inlineIPasteAutofetchHtml(lang);
   }
 
   // Copy ipaste cn files to ipaste root as GitHub Pages fallback

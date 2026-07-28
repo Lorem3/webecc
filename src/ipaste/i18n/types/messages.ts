@@ -42,6 +42,7 @@ export interface HtmlMessages {
   browserTitle: string;
   browserThBrowser: string;
   browserThVersion: string;
+  historyTitle: string;
 }
 
 export interface JsMessages {
