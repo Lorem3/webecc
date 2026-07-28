@@ -44,5 +44,5 @@ export const htmlMessages: HtmlMessages = {
   browserTitle: 'Browser Requirements',
   browserThBrowser: 'Browser',
   browserThVersion: 'Version',
-  historyTitle: 'History',
+  historyTitle: 'History [Ciphertext]',
 };
