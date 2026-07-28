@@ -407,15 +407,29 @@ export async function initBookmark(ec: any, state: AppState): Promise<boolean> {
   if (jsonObj) {
     state.G_Input = jsonObj;
     let inputDataElement = document.getElementById("inputData")!;
-    inputDataElement.style.display = 'block'
+    inputDataElement.style.display = 'block';
+
     const displayData = { ...state.G_Input };
     if (displayData.salt) displayData.salt = maskKey(displayData.salt);
     if (displayData.private) displayData.private = maskKey(displayData.private);
-    inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
-      displayData,
-      null,
-      "\t"
-    )}`;
+
+    inputDataElement.innerHTML = `
+      <div class="inputData-header">
+        <span class="inputData-label">${messages.inputDataLabel}</span>
+        <span class="inputData-pubkey">${maskKey(state.G_Input.pubkey)}</span>
+        <span class="inputData-toggle">▶</span>
+      </div>
+      <pre class="inputData-details" style="display:none;margin:0.75rem 0 0;white-space:pre-wrap;word-wrap:break-word;">${JSON.stringify(displayData, null, '\t')}</pre>
+    `;
+
+    const header = inputDataElement.querySelector('.inputData-header') as HTMLElement;
+    const details = inputDataElement.querySelector('.inputData-details') as HTMLElement;
+    const toggle = inputDataElement.querySelector('.inputData-toggle') as HTMLElement;
+    header.addEventListener('click', () => {
+      const open = details.style.display !== 'none';
+      details.style.display = open ? 'none' : '';
+      toggle.textContent = open ? '▶' : '▼';
+    });
     if (jsonObj.salt) {
       showSaltInfo(jsonObj.salt, state);
     }
