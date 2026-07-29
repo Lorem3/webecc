@@ -35,6 +35,7 @@ export interface HtmlMessages {
   syncStatusEmpty: string;
   syncStatusError: string;
   resultLabel: string;
+  ciphertextLabel: string;
   aboutTitle: string;
   aboutIntro: string;
   aboutProjectLink: string;
@@ -52,6 +53,10 @@ export interface JsMessages {
   errPubkeyMismatchPhrase: string;
   errEmptyContent: string;
   bookmarkHint: string;
+  errNeedNformat: string;
+  errDecodeBase64: string;
+  errDecryptAes: string;
+  errDecryptEc: string;
   emailSubjectDefault: string;
   inputDataLabel: string;
   saveSuccess: string;

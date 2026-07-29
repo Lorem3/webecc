@@ -48,6 +48,11 @@ export function getPlainText() {
   return input?.value;
 }
 
+export function getResultText() {
+  let input = document.getElementById("resultText") as HTMLTextAreaElement;
+  return input?.value;
+}
+
 export function setPlainText(str: string) {
   let input = document.getElementById("plaintext") as HTMLTextAreaElement;
   if (input) input.value = str;
@@ -63,7 +68,6 @@ export function setResultText(str: string) {
   const copyBtn = document.getElementById("resultCopyBtn");
   if (el) {
     el.value = str;
-    el.style.display = str ? '' : 'none';
   }
   if (copyBtn) copyBtn.style.display = str ? '' : 'none';
 }
@@ -239,29 +243,48 @@ export function bindDecryptBtn(ec: any, state: AppState) {
       privkey = kp.private;
     }
 
-    let base64 = getPlainText()?.trim();
+    let base64 = getResultText()?.trim();
     if (!base64) {
       setErrMsg(messages.errEmptyContent);
       return;
     }
 
     try {
-      if (base64.startsWith('N.')) {
-        const nBase64 = base64.slice(2);
-        const contentKey = await generateContentKey(state.G_Input.pubkey, state.G_Input.salt);
-        const encryptedData = ec.base64Decode(nBase64);
-        const decryptedBuffer = await aesGcmDecrypt(encryptedData, contentKey);
-        const decryptedCipher = new Uint8Array(decryptedBuffer);
-
-        let dec = await ec.decrypt(privkey, decryptedCipher);
-        let te = new TextDecoder();
-        setResultText(te.decode(dec));
-        setSyncStatus(messages.loadSuccess);
-      } else {
-        setErrMsg(messages.errEmptyContent);
+      if (!base64.startsWith('N.')) {
+        setErrMsg(messages.errNeedNformat);
+        return;
       }
+
+      const nBase64 = base64.slice(2);
+
+      let encryptedData: Uint8Array;
+      try {
+        encryptedData = ec.base64Decode(nBase64);
+      } catch {
+        setErrMsg(messages.errDecodeBase64);
+        return;
+      }
+
+      let decryptedBuffer: ArrayBuffer;
+      try {
+        decryptedBuffer = await aesGcmDecrypt(encryptedData, await generateContentKey(state.G_Input.pubkey, state.G_Input.salt));
+      } catch {
+        setErrMsg(messages.errDecryptAes);
+        return;
+      }
+
+      let dec: Uint8Array;
+      try {
+        dec = await ec.decrypt(privkey, new Uint8Array(decryptedBuffer));
+      } catch {
+        setErrMsg(messages.errDecryptEc);
+        return;
+      }
+
+      let te = new TextDecoder();
+      setPlainText(te.decode(dec));
     } catch (error) {
-      const errMsg = error as string;
+      const errMsg = (error as Error).message;
       if (errMsg.includes('老格式不支持')) {
         setErrMsg('此内容使用老格式加密，请使用 Legacy 版本解密');
       } else {
@@ -556,7 +579,6 @@ async function handleHistoryClick(ec: any, state: AppState, item: HistoryItem, e
     const content = await fetchHistoryDetail(ec, state.G_Input.pubkey, state.G_Input.salt, item.timeString);
     if (content) {
       setPlainText(content);
-      setSyncStatus(messages.loadSuccess);
     }
   } catch (error) {
     setErrMsg('Failed to load: ' + (error as Error).message);
