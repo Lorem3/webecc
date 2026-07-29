@@ -2,6 +2,10 @@ const LANGS = { 'en': 'en', 'zh-CN': 'cn' };
 const LANG_DIRS = { 'cn': 'zh-CN', 'en': 'en' };
 const BLOCKED = ['_middleware.js', '_routes.json', 'netlify.toml', 'netlify', 'functions', 'ipaste'];
 
+function isWellKnown(path) {
+  return path.startsWith('/.well-known/');
+}
+
 function parseCookie(cookieHeader, name) {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
@@ -41,6 +45,8 @@ export async function onRequest(context) {
   if (BLOCKED.some(b => path === '/' + b || path.startsWith('/' + b + '/'))) {
     return new Response('Not Found', { status: 404 });
   }
+
+  if (isWellKnown(path)) return next();
 
   const parts = path.split('/').filter(Boolean);
   if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
