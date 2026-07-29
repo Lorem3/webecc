@@ -97,6 +97,12 @@ const App = (function () {
       window.open(url, "_blank");
     }
   }
+
+  function maskKey(key: string): string {
+    if (key.length <= 6) return key;
+    return key.slice(0, 3) + '*'.repeat(key.length - 6) + key.slice(-3);
+  }
+
   let currentKdf: { ver: string; hash: string; iterations: number } | undefined;
 
   let ec = await ECC.initEC();
@@ -906,11 +912,28 @@ ${messages.emailDataBase64}: ${newLine}
         G_Input = jsonObj;
         let inputDataElement = document.getElementById("inputData")!;
         inputDataElement.style.display = 'block'
-        inputDataElement.innerText = `${messages.inputDataLabel}:\n ${JSON.stringify(
-          G_Input,
-          null,
-          "\t"
-        )}`;
+
+        const displayData = { ...G_Input };
+        if (displayData.salt) displayData.salt = maskKey(displayData.salt);
+
+        inputDataElement.innerHTML = `
+          <div class="inputData-header">
+            <span class="inputData-label">${messages.inputDataLabel}</span>
+            <span class="inputData-pubkey">${maskKey(G_Input.pubkey)}</span>
+            <span class="inputData-toggle">▶</span>
+          </div>
+          <pre class="inputData-details" style="display:none;margin:0.75rem 0 0;white-space:pre-wrap;word-wrap:break-word;">${JSON.stringify(displayData, null, '\t')}</pre>
+        `;
+
+        const header = inputDataElement.querySelector('.inputData-header') as HTMLElement;
+        const details = inputDataElement.querySelector('.inputData-details') as HTMLElement;
+        const toggle = inputDataElement.querySelector('.inputData-toggle') as HTMLElement;
+        header.addEventListener('click', () => {
+          const open = details.style.display !== 'none';
+          details.style.display = open ? 'none' : '';
+          toggle.textContent = open ? '▶' : '▼';
+        });
+
         setPublicKey(jsonObj.pubkey);
         const kdf = kdfFromInput(jsonObj);
         if (kdf) {
