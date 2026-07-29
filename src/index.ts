@@ -992,15 +992,10 @@ ${messages.emailDataBase64}: ${newLine}
   }
 
   function formatExpire(timeString: string, expire: number | null): string | null {
-    if (expire == null) return null;
-    try {
-      const d = new Date(timeString);
-      d.setTime(d.getTime() + expire * 86400000);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    } catch {
-      return null;
-    }
+    if (expire == null || expire <= 0) return null;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date(expire * 1000);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   function renderHistoryList(items: HistoryItem[]) {

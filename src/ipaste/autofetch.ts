@@ -63,15 +63,12 @@ function formatTime(isoStr: string): string {
 }
 
 function formatExpire(timeString: string, expire: string | null): string | null {
-  if (expire == null) return null;
-  try {
-    const d = new Date(timeString);
-    d.setTime(d.getTime() + parseInt(expire) * 86400000);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  } catch {
-    return null;
-  }
+  if (expire == null || expire === '-1') return null;
+  const expireTs = parseInt(expire);
+  if (isNaN(expireTs) || expireTs <= 0) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const d = new Date(expireTs * 1000);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function renderHistoryList(ec: any, state: any, items: HistoryItem[]) {
