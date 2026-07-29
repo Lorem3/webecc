@@ -1,7 +1,7 @@
 import { jsMessages as messages } from '@i18n/js-messages';
 import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
-  showBuildInfo, initSquircle,
+  setSyncStatus, setResultText, showBuildInfo, initSquircle,
 } from './common';
 
 // --- History ---
@@ -148,6 +148,20 @@ export async function autoFetchHistory(ec: any, state: any) {
   }
 }
 
+export async function fetchLatestContent(ec: any, pubkey: string, salt: string): Promise<string> {
+  const key = encodeURIComponent(await generateKey(ec, pubkey, salt));
+  const url = `https://ecd1data.kr7y.workers.dev/${key}/latest?fmt=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to fetch latest content');
+  const text = await response.text();
+  try {
+    const data = JSON.parse(text);
+    return data.content || '';
+  } catch {
+    return text;
+  }
+}
+
 export function bindHistoryRefreshBtn(ec: any, state: any) {
   const btn = document.getElementById('historyRefreshBtn');
   if (!btn) return;
@@ -172,6 +186,19 @@ const App = (function () {
 
     await autoFetchHistory(ec, state);
     bindHistoryRefreshBtn(ec, state);
+
+    // 页面加载后自动获取最新密文
+    if (state.G_Input?.pubkey && state.G_Input?.salt) {
+      try {
+        const content = await fetchLatestContent(ec, state.G_Input.pubkey, state.G_Input.salt);
+        if (content) {
+          setResultText(content);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch latest:', error);
+      }
+    }
+
     showBuildInfo();
   }
 

@@ -406,6 +406,20 @@ export function bindCopyResultBtn() {
   };
 }
 
+export function bindPlainCopyBtn() {
+  const copyBtn = document.getElementById("plainCopyBtn");
+  if (!copyBtn) return;
+  copyBtn.onclick = () => {
+    const el = document.getElementById("plaintext") as HTMLTextAreaElement;
+    if (el && el.value) {
+      navigator.clipboard.writeText(el.value).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+      });
+    }
+  };
+}
+
 // --- Bookmark Decode & Init ---
 
 export async function initBookmark(ec: any, state: AppState): Promise<boolean> {
@@ -479,6 +493,7 @@ export function bindCommonButtons(ec: any, state: AppState) {
       bindSaveBtn(ec, state);
       bindRestoreBtn(ec, state);
       bindCopyResultBtn();
+      bindPlainCopyBtn();
     });
   } else {
     bindDecryptBtn(ec, state);
@@ -486,6 +501,7 @@ export function bindCommonButtons(ec: any, state: AppState) {
     bindSaveBtn(ec, state);
     bindRestoreBtn(ec, state);
     bindCopyResultBtn();
+    bindPlainCopyBtn();
   }
 }
 
