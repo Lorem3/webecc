@@ -23,6 +23,21 @@ function cp(src, dest) {
   fs.copyFileSync(src, dest);
 }
 
+function cpDir(src, dest) {
+  if (!fs.existsSync(src)) return;
+  mkdirp(dest);
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const s = path.join(src, entry.name);
+    const d = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      cpDir(s, d);
+    } else {
+      cp(s, d);
+    }
+  }
+}
+
 function utctime() {
   return new Date().toISOString();
 }
@@ -538,6 +553,12 @@ async function main() {
   cp('src/middleware/netlify-i18n.js', 'www/netlify/edge-functions/i18n.js');
   cp('src/middleware/netlify.toml', 'www/netlify.toml');
   console.log('  middleware files copied');
+
+  // Copy static files from src/staticfile/ to www/
+  cpDir('src/staticfile', 'www');
+  // Copy static files from src/ipaste/staticfile/ to www/ipaste/
+  cpDir('src/ipaste/staticfile', 'www/ipaste');
+  console.log('  static files copied');
 
   // 构建 ipaste 和 index 使用 ec-new（不包含 blake2b）
   await buildTSCore();
