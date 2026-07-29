@@ -14,7 +14,6 @@ export const jsMessages: JsMessages = {
   historyLoading: 'Loading...',
   historyFetchFailed: 'Failed to fetch history',
   historyFetchFailedCors: 'Cannot reach cloud (CORS blocked), use "Cloud Records" button to access manually',
-  historyEmpty: 'No data on cloud',
   emailSubjectDefault: 'Backup',
   inputDataLabel: 'Info from bookmark link',
   saveSuccess: 'Saved to cloud',

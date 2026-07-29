@@ -79,7 +79,10 @@
   </div>
 
   <div class="history-panel">
-    <h3>{{i18n:historyTitle}}</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+      <h3 style="margin:0;font-size:1rem;color:#333;">{{i18n:historyTitle}}</h3>
+      <span id="historyRefreshBtn" style="font-size:0.75rem;color:#2563eb;cursor:pointer;user-select:none;">{{i18n:historyRefresh}}</span>
+    </div>
     <div id="historyList" class="history-list">
       <div class="history-loading">{{i18n:syncStatusReady}}...</div>
     </div>

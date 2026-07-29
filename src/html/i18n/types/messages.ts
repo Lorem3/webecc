@@ -76,6 +76,7 @@ export interface HtmlMessages {
   browserThBrowser: string;
   browserThVersion: string;
   historyTitle: string;
+  historyRefresh: string;
 }
 
 export interface JsMessages {
@@ -101,4 +102,7 @@ export interface JsMessages {
   emailWebUrl: string;
   emailDataBase64: string;
   inputDataLabel: string;
+  historyLoading: string;
+  historyFetchFailed: string;
+  historyFetchFailedCors: string;
 }

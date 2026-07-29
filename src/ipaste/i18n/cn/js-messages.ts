@@ -14,7 +14,6 @@ export const jsMessages: JsMessages = {
   historyLoading: '加载中...',
   historyFetchFailed: '获取历史记录失败',
   historyFetchFailedCors: '无法连接云端（CORS 限制），请通过「云端记录」按钮手动访问',
-  historyEmpty: '云端暂无数据',
   emailSubjectDefault: '备份',
   inputDataLabel: '从书签链接带入的信息',
   saveSuccess: '已保存到云端',

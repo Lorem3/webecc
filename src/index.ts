@@ -949,6 +949,12 @@ ${messages.emailDataBase64}: ${newLine}
     }
   })();
 
+  // Bind history refresh button
+  const refreshBtn = document.getElementById('historyRefreshBtn');
+  if (refreshBtn) {
+    refreshBtn.onclick = () => autoFetchHistory();
+  }
+
   // --- History ---
 
   interface HistoryItem {
@@ -1049,16 +1055,27 @@ ${messages.emailDataBase64}: ${newLine}
   }
 
   async function autoFetchHistory() {
-    if (!G_Input?.pubkey || !G_Input?.salt) return;
+    const container = document.getElementById('historyList');
+    if (!container) return;
+
+    if (!G_Input?.pubkey || !G_Input?.salt) {
+      container.innerHTML = `<div class="history-empty">${messages.errNeedBookmark}</div>`;
+      return;
+    }
     const panel = document.getElementById('historyPanel');
     if (panel) panel.style.display = '';
+    container.innerHTML = `<div class="history-loading">${messages.historyLoading || '加载中...'}</div>`;
     try {
       const historyItems = await fetchHistoryList(G_Input.pubkey, G_Input.salt);
       renderHistoryList(historyItems);
     } catch (error) {
       console.error('Error fetching history:', error);
-      const container = document.getElementById('historyList');
-      if (container) container.innerHTML = `<div class="history-empty">Failed to load history</div>`;
+      const err = error as Error;
+      let msg = messages.historyFetchFailed || 'Failed to load history';
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('Network request failed')) {
+        msg = messages.historyFetchFailedCors || 'Cannot reach cloud (CORS blocked)';
+      }
+      container.innerHTML = `<div class="history-empty">${msg}</div>`;
     }
   }
 

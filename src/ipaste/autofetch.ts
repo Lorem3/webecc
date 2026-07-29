@@ -151,6 +151,12 @@ export async function autoFetchHistory(ec: any, state: any) {
   }
 }
 
+export function bindHistoryRefreshBtn(ec: any, state: any) {
+  const btn = document.getElementById('historyRefreshBtn');
+  if (!btn) return;
+  btn.onclick = () => autoFetchHistory(ec, state);
+}
+
 // --- App ---
 
 const App = (function () {
@@ -168,6 +174,7 @@ const App = (function () {
     }
 
     await autoFetchHistory(ec, state);
+    bindHistoryRefreshBtn(ec, state);
     showBuildInfo();
   }
 

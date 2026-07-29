@@ -23,4 +23,7 @@ export const jsMessages: JsMessages = {
   emailWebUrl: 'Page URL',
   emailDataBase64: 'Data base64',
   inputDataLabel: 'Information loaded from bookmark',
+  historyLoading: 'Loading...',
+  historyFetchFailed: 'Failed to fetch history',
+  historyFetchFailedCors: 'Cannot reach cloud (CORS blocked)',
 };

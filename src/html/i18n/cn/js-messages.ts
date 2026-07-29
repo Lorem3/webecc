@@ -23,4 +23,7 @@ export const jsMessages: JsMessages = {
   emailWebUrl: '网页地址',
   emailDataBase64: '数据base64',
   inputDataLabel: '从书签链接带入的信息',
+  historyLoading: '加载中...',
+  historyFetchFailed: '获取历史记录失败',
+  historyFetchFailedCors: '无法连接云端（CORS 限制）',
 };

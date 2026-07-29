@@ -46,4 +46,5 @@ export const htmlMessages: HtmlMessages = {
   browserThBrowser: 'Browser',
   browserThVersion: 'Version',
   historyTitle: 'History [Ciphertext]',
+  historyRefresh: 'Refresh',
 };

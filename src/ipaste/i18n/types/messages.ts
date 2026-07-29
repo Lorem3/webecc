@@ -44,6 +44,7 @@ export interface HtmlMessages {
   browserThBrowser: string;
   browserThVersion: string;
   historyTitle: string;
+  historyRefresh: string;
 }
 
 export interface JsMessages {
@@ -60,7 +61,6 @@ export interface JsMessages {
   historyLoading: string;
   historyFetchFailed: string;
   historyFetchFailedCors: string;
-  historyEmpty: string;
   emailSubjectDefault: string;
   inputDataLabel: string;
   saveSuccess: string;

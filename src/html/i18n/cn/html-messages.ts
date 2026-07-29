@@ -78,4 +78,5 @@ export const htmlMessages: HtmlMessages = {
   browserThBrowser: '浏览器',
   browserThVersion: '版本',
   historyTitle: '历史记录【密文】',
+  historyRefresh: '刷新',
 };
