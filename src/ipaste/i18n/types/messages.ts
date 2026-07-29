@@ -57,6 +57,10 @@ export interface JsMessages {
   errDecodeBase64: string;
   errDecryptAes: string;
   errDecryptEc: string;
+  historyLoading: string;
+  historyFetchFailed: string;
+  historyFetchFailedCors: string;
+  historyEmpty: string;
   emailSubjectDefault: string;
   inputDataLabel: string;
   saveSuccess: string;
