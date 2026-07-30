@@ -55,17 +55,35 @@ jobs:
           git log -1 --format=%h > hash.txt
           npm run build
 
-      - name: Deploy www/ to page branch
+      - name: Deploy main site to page branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # Copy www/ excluding ipaste/
+          mkdir -p ../page_deploy
           cd www
+          find . -maxdepth 1 ! -name '.' ! -name 'ipaste' -exec cp -r {} ../page_deploy/ \;
+          cd ../page_deploy
           git init
           git add .
           git commit -m "Generated files after build"
           git checkout -b page
           git remote add origin https://github.com/${{ github.repository }}.git
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:page -f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy ipaste to ipaste branch
+        run: |
+          mkdir -p ../ipaste_deploy
+          cp -r www/ipaste/* ../ipaste_deploy/
+          cd ../ipaste_deploy
+          git init
+          git add .
+          git commit -m "Generated files after build"
+          git checkout -b ipaste
+          git remote add origin https://github.com/${{ github.repository }}.git
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:ipaste -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
