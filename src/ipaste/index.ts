@@ -44,6 +44,33 @@ const App = (function () {
           kdf: { ...KDF_V2 },
           type: 'phrase',
           private: savePrivkey ? kp.private : undefined,
+          targetPage: 'autofetch.html',
+        });
+      };
+    }
+
+    function bindGenBookmarkPageBtn() {
+      const btn = document.getElementById("genbookmarkPage");
+      if (!btn) return;
+      btn.onclick = async () => {
+        let input = document.getElementById("keyphraseBookmark") as HTMLInputElement;
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(messages.errEmptyPhrase);
+          return;
+        }
+
+        const savePrivkey = (document.getElementById("savePrivkeyToggle") as HTMLInputElement)?.checked;
+        const saltStr = generateRandomSalt(ec);
+        let kp = await pbkdf2(phrase, saltStr, ec, {
+          hash: KDF_V2.hash,
+          iterations: KDF_V2.iterations,
+        });
+
+        await genbookmark(kp.public, saltStr, {
+          kdf: { ...KDF_V2 },
+          type: 'phrase',
+          private: savePrivkey ? kp.private : undefined,
         });
       };
     }
@@ -55,12 +82,16 @@ const App = (function () {
       function updateBookmarkUI() {
         const checked = toggle.checked;
         const bmGenTitleEl = document.getElementById("bmGenTitle");
-        const btn = document.getElementById("genbookmark2");
+        const btnAutofetch = document.getElementById("genbookmark2");
+        const btnPage = document.getElementById("genbookmarkPage");
         if (bmGenTitleEl) {
           bmGenTitleEl.textContent = checked ? htmlMessages.bmGenTitlePrivkey : htmlMessages.bmGenTitle;
         }
-        if (btn) {
-          btn.style.backgroundColor = checked ? '#e74c3c' : '#1a1a1d';
+        if (btnAutofetch) {
+          btnAutofetch.style.backgroundColor = checked ? '#e74c3c' : '#45b787';
+        }
+        if (btnPage) {
+          btnPage.style.backgroundColor = checked ? '#e74c3c' : '#1a1a1d';
         }
       }
 
@@ -79,6 +110,7 @@ const App = (function () {
         kdf?: { ver: string; hash: string; iterations: number };
         type?: 'phrase' | 'pubkey';
         private?: string;
+        targetPage?: string;
       }
     ) {
       let s: InputData = { pubkey };
@@ -102,7 +134,15 @@ const App = (function () {
       let dataBuff = await ec.encrypt(WEB_PUBLIC, arr);
       let data = ec.base64Encode(dataBuff, 1).replace(/[\r\n]/g, '');
 
-      let bookmark = `${location.origin}${location.pathname}?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data)}`;
+      let targetPath: string;
+      if (options?.targetPage) {
+        const currentDir = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+        targetPath = currentDir + options.targetPage;
+      } else {
+        targetPath = location.pathname;
+      }
+
+      let bookmark = `${location.origin}${targetPath}?t=${new Date().toISOString()}#&data2=${encodeURIComponent(data)}`;
 
       console.log('网页地址:', bookmark);
 
@@ -146,11 +186,13 @@ const App = (function () {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         bindGenBookmarkBtn();
+        bindGenBookmarkPageBtn();
         bindLoadLatestBtn();
         bindSavePrivkeyToggle();
       });
     } else {
       bindGenBookmarkBtn();
+      bindGenBookmarkPageBtn();
       bindLoadLatestBtn();
       bindSavePrivkeyToggle();
     }

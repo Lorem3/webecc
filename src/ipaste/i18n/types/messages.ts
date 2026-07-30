@@ -12,6 +12,7 @@ export interface HtmlMessages {
   bmGenPhrase: string;
   bmGenPhrasePlaceholder: string;
   bmGenAction: string;
+  bmGenActionAutofetch: string;
   bmSavePrivkey: string;
   bmSavePrivkeyHint: string;
   bmSavePrivkeyConfirm: string;

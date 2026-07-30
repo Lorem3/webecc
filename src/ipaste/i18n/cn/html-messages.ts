@@ -14,6 +14,7 @@ export const htmlMessages: HtmlMessages = {
   bmGenPhrase: '密码短语',
   bmGenPhrasePlaceholder: '密码短语（不能公开）',
   bmGenAction: '生成书签链接',
+  bmGenActionAutofetch: '生成便捷模式书签',
   bmSavePrivkey: '保存私钥到书签',
   bmSavePrivkeyHint: '书签信息存在链接hash中，不会发送到服务器，请自行保护书签安全',
   bmSavePrivkeyConfirm: '警告：保存私钥后，任何持有此书签链接的人无需密码短语即可解密全部历史内容。请确保妥善保管书签链接。是否继续？',

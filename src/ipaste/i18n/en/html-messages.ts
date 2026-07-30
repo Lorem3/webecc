@@ -14,6 +14,7 @@ export const htmlMessages: HtmlMessages = {
   bmGenPhrase: 'Passphrase',
   bmGenPhrasePlaceholder: 'Passphrase (do not share)',
   bmGenAction: 'Generate Bookmark Link',
+  bmGenActionAutofetch: 'Generate Quick Mode Bookmark',
   bmSavePrivkey: 'Save private key to bookmark',
   bmSavePrivkeyHint: 'Bookmark data is in the URL hash, never sent to a server. Keep your bookmark safe.',
   bmSavePrivkeyConfirm: 'Warning: With the private key saved, anyone who has this bookmark link can decrypt all history without a passphrase. Please keep your bookmark safe. Continue?',

@@ -38,12 +38,13 @@
         </div>
       </div>
       <div class="row2" style="margin-top:0.5rem;">
-        <input id="savePrivkeyToggle" type="checkbox" style="width:16px;height:16px;margin:0;" />
+        <input id="savePrivkeyToggle" type="checkbox" style="width:16px;height:16px;margin:0;" autocomplete="off" />
         <span style="margin-left:8px;font-size:0.875rem;color:#666;">{{i18n:bmSavePrivkey}}</span>
       </div>
       <p style="font-size:0.75rem;color:#999;margin:0.25rem 0 0;">{{i18n:bmSavePrivkeyHint}}</p>
-      <div class="bookmark-actions">
-        <div id="genbookmark2" class="btn"><span class="btnTitle">{{i18n:bmGenAction}}</span></div>
+      <div class="bookmark-actions" style="display:flex;gap:12px;margin-top:0.5rem;">
+        <div id="genbookmark2" class="btn" style="background-color:#45b787;flex:1;justify-content:center;"><span class="btnTitle">{{i18n:bmGenActionAutofetch}}</span></div>
+        <div id="genbookmarkPage" class="btn" style="flex:1;justify-content:center;"><span class="btnTitle">{{i18n:bmGenAction}}</span></div>
       </div>
       <div id="bookmark"></div>
       <div id="bookmarkInfo" class="section-card section-muted" style="display:none;margin-top:1rem;padding:1rem;">
