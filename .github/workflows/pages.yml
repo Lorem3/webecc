@@ -56,6 +56,7 @@ jobs:
           npm run build
 
       - name: Deploy main site to page branch
+        if: ${{ !contains(github.event.head_commit.message, '[ipaste]') }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -75,6 +76,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy ipaste to ipaste branch
+        if: ${{ !contains(github.event.head_commit.message, '[webecc]') }}
         run: |
           mkdir -p ../ipaste_deploy
           cp -r www/ipaste/* ../ipaste_deploy/
