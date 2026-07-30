@@ -55,12 +55,14 @@ jobs:
           git log -1 --format=%h > hash.txt
           npm run build
 
-      - name: Deploy main site to page branch
-        if: ${{ !contains(github.event.head_commit.message, '[ipaste]') }}
+      - name: Configure git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Deploy main site to page branch
+        if: ${{ !contains(github.event.head_commit.message, '[ipaste]') }}
+        run: |
           # Copy www/ excluding ipaste/
           mkdir -p ../page_deploy
           cd www
