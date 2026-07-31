@@ -295,6 +295,17 @@ export function bindDecryptBtn(ec: any, state: AppState) {
   };
 }
 
+export async function computePhash(ec: any, plainText: string, salt: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const phashKeyData = encoder.encode('phash' + salt);
+  const phashKey = await crypto.subtle.importKey(
+    'raw', phashKeyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
+  );
+  const phashBuffer = await crypto.subtle.sign('HMAC', phashKey, encoder.encode(plainText));
+  const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
+  return ec.base64Encode(phashArray, 1);
+}
+
 export function bindSaveBtn(ec: any, state: AppState) {
   const btn = document.getElementById("saveToCloudflare");
   if (!btn) return;
@@ -363,6 +374,18 @@ export function bindRestoreBtn(ec: any, state: AppState) {
   };
 }
 
+export async function encryptContent(ec: any, plainText: string, pubkey: string, salt: string): Promise<string> {
+  let te = new TextEncoder();
+  let enc = await ec.encrypt(pubkey, te.encode(plainText));
+  let cipher = ec.base64Encode(enc, 0);
+
+  const contentKey = await generateContentKey(pubkey, salt);
+  const cipherBytes = ec.base64Decode(cipher, 0);
+  const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+  const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+  return 'N.' + e2;
+}
+
 export function bindEncryptBtn(ec: any, state: AppState) {
   const btn = document.getElementById("encryptBtn");
   if (!btn) return;
@@ -380,15 +403,12 @@ export function bindEncryptBtn(ec: any, state: AppState) {
     }
 
     const salt = state.G_Input!.salt!;
-    let te = new TextEncoder();
-    let enc = await ec.encrypt(pubkey, te.encode(plainText));
-    let cipher = ec.base64Encode(enc, 0);
-
-    const contentKey = await generateContentKey(pubkey, salt);
-    const cipherBytes = ec.base64Decode(cipher, 0);
-    const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
-    const e2 = ec.base64Encode(encryptedCipher, 0, 2);
-    setResultText('N.' + e2);
+    try {
+      const ciphertext = await encryptContent(ec, plainText, pubkey, salt);
+      setResultText(ciphertext);
+    } catch (error) {
+      setErrMsg((error as Error).message);
+    }
   };
 }
 

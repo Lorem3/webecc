@@ -560,6 +560,9 @@ async function main() {
   cpDir('src/ipaste/staticfile', 'www/ipaste');
   console.log('  static files copied');
 
+  // Copy gdrive callback page for OAuth popup
+  cp('src/ipaste/gdrive-callback.html', 'www/ipaste/gdrive-callback.html');
+
   // 构建 ipaste 和 index 使用 ec-new（不包含 blake2b）
   await buildTSCore();
   await buildLibs();
@@ -610,6 +613,10 @@ async function main() {
   }
   for (const lang of LANGS) {
     inlineIPasteAutofetchHtml(lang);
+  }
+  // Copy gdrive callback page to lang dirs
+  for (const lang of LANGS) {
+    cp('src/ipaste/gdrive-callback.html', `www/ipaste/${lang}/gdrive-callback.html`);
   }
 
   // Copy ipaste cn files to ipaste root as GitHub Pages fallback

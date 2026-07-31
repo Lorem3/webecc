@@ -48,4 +48,9 @@ export const htmlMessages: HtmlMessages = {
   browserThVersion: 'Version',
   historyTitle: 'History [Ciphertext]',
   historyRefresh: 'Refresh',
+  btnSaveGdrive: 'Save to Google Drive',
+  btnLoadGdrive: 'Load from Google Drive',
+  gdriveDescLabel: 'Google Drive Description',
+  gdriveDescPlaceholder: 'Description (required)',
+  gdriveNote: 'Data stored in your Google Drive. Suitable for large files > 250KB.',
 };

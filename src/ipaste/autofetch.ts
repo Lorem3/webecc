@@ -1,8 +1,10 @@
 import { jsMessages as messages } from '@i18n/js-messages';
 import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
-  setSyncStatus, setResultText, showBuildInfo, initSquircle,
+  setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, computePhash,
+  showBuildInfo, initSquircle,
 } from './common';
+import { GoogleDriveManager } from './gdrive';
 
 // --- History ---
 
@@ -168,6 +170,170 @@ export function bindHistoryRefreshBtn(ec: any, state: any) {
   btn.onclick = () => autoFetchHistory(ec, state);
 }
 
+// --- Google Drive ---
+
+const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
+let gdrive: GoogleDriveManager | null = null;
+
+function getGDriveManager(): GoogleDriveManager {
+  if (!gdrive) {
+    gdrive = new GoogleDriveManager(GDRIVE_CLIENT_ID);
+  }
+  return gdrive;
+}
+
+async function bindGoogleDriveSaveBtn(ec: any, state: any) {
+  const btn = document.getElementById('saveToGDrive');
+  if (!btn) return;
+
+  btn.onclick = async () => {
+    const pubkey = state.G_Input?.pubkey;
+    const salt = state.G_Input?.salt;
+    if (!pubkey || !salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    const plainText = getPlainText()?.trim();
+    if (!plainText) {
+      setErrMsg(messages.errEmptyContent);
+      return;
+    }
+
+    const description = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim();
+    if (!description) {
+      setErrMsg(messages.gdriveDescRequired);
+      return;
+    }
+
+    try {
+      const manager = getGDriveManager();
+      setSyncStatus(messages.gdriveLoading || 'Saving to Google Drive...');
+      const ciphertext = await encryptContent(ec, plainText, pubkey, salt);
+      setResultText(ciphertext);
+      await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
+      const phash = await computePhash(ec, plainText, salt);
+      showToast(`${messages.gdriveSaveSuccess}: i-${phash}.txt`);
+    } catch (error) {
+      const errMsg = (error as Error).message;
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveSaveFailed}: ${errMsg}`);
+    }
+  };
+}
+
+async function bindGoogleDriveLoadBtn(ec: any, state: any) {
+  const btn = document.getElementById('loadFromGDrive');
+  if (!btn) return;
+
+  btn.onclick = async () => {
+    const pubkey = state.G_Input?.pubkey;
+    const salt = state.G_Input?.salt;
+    if (!pubkey || !salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    try {
+      const manager = getGDriveManager();
+      setSyncStatus(messages.gdriveLoading || 'Loading from Google Drive...');
+      const files = await manager.listBackups(pubkey, salt, ec);
+
+      if (files.length === 0) {
+        setErrMsg(messages.gdriveNoFiles);
+        setSyncStatus('');
+        return;
+      }
+
+      // Build a simple file selection dialog
+      const selectedFile = await showFilePicker(files);
+      if (!selectedFile) {
+        setSyncStatus('');
+        return;
+      }
+
+      const content = await manager.readBackup(selectedFile.id);
+      if (content) {
+        setResultText(content);
+        setSyncStatus(messages.gdriveLoadSuccess);
+      }
+    } catch (error) {
+      const errMsg = (error as Error).message;
+      if (errMsg.includes('canceled') || errMsg.includes('cancel')) {
+        setSyncStatus('');
+        return;
+      }
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveLoadFailed}: ${errMsg}`);
+    }
+  };
+}
+
+function showToast(message: string, duration = 3000) {
+  const toast = document.getElementById('gdriveToast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(() => {
+    toast.style.display = 'none';
+  }, duration);
+}
+
+function showFilePicker(files: any[]): Promise<any> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:#fff;border-radius:12px;padding:1.5rem;max-width:500px;width:90%;max-height:80vh;display:flex;flex-direction:column;';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Select a backup file';
+    title.style.cssText = 'margin:0 0 1rem;font-size:1rem;color:#333;';
+
+    const select = document.createElement('select');
+    select.style.cssText = 'width:100%;padding:0.5rem;font-size:0.875rem;border:1px solid #e3e6ea;border-radius:8px;margin-bottom:1rem;';
+
+    files.forEach((f) => {
+      const option = document.createElement('option');
+      option.value = f.id;
+      const date = new Date(f.modifiedTime);
+      const dateStr = date.toLocaleString();
+      const desc = f.description || '';
+      option.textContent = desc ? `${desc} (${dateStr})` : `${f.name} (${dateStr})`;
+      select.appendChild(option);
+    });
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:0.5rem;justify-content:flex-end;';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e3e6ea;border-radius:8px;background:#fff;cursor:pointer;font-size:0.875rem;';
+    cancelBtn.onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'Load';
+    okBtn.style.cssText = 'padding:0.5rem 1rem;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;font-size:0.875rem;';
+    okBtn.onclick = () => {
+      const selectedId = select.value;
+      const selectedFile = files.find((f) => f.id === selectedId);
+      overlay.remove();
+      resolve(selectedFile || null);
+    };
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(okBtn);
+
+    dialog.appendChild(title);
+    dialog.appendChild(select);
+    dialog.appendChild(btnRow);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+  });
+}
+
 // --- App ---
 
 const App = (function () {
@@ -177,6 +343,8 @@ const App = (function () {
     const state = createAppState();
 
     bindCommonButtons(ec, state);
+    bindGoogleDriveSaveBtn(ec, state);
+    bindGoogleDriveLoadBtn(ec, state);
 
     try {
       await initBookmark(ec, state);

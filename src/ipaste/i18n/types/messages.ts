@@ -46,6 +46,11 @@ export interface HtmlMessages {
   browserThVersion: string;
   historyTitle: string;
   historyRefresh: string;
+  btnSaveGdrive: string;
+  btnLoadGdrive: string;
+  gdriveDescLabel: string;
+  gdriveDescPlaceholder: string;
+  gdriveNote: string;
 }
 
 export interface JsMessages {
@@ -68,4 +73,16 @@ export interface JsMessages {
   loadSuccess: string;
   loadEmpty: string;
   bmSavePrivkeyConfirm: string;
+  gdriveAuthRequired: string;
+  gdriveAuthFailed: string;
+  gdriveSaveSuccess: string;
+  gdriveSaveFailed: string;
+  gdriveLoadSuccess: string;
+  gdriveLoadFailed: string;
+  gdriveLoadCanceled: string;
+  gdriveNoFiles: string;
+  gdriveDescRequired: string;
+  gdriveStatusReady: string;
+  gdriveStatusReady_: string;
+  gdriveLoading: string;
 }
