@@ -44,12 +44,14 @@ export async function onRequest(context) {
   // If path already has lang dir (e.g. /cn/... or /en/...), strip it and set cookie
   if (parts.length > 0 && ['cn', 'en'].includes(parts[0])) {
     const newPath = '/' + parts.slice(1).join('/');
-    const redirectUrl = new URL(newPath, request.url).toString();
+    const redirectUrl = new URL(newPath, request.url);
+    redirectUrl.search = url.search;
+    redirectUrl.hash = url.hash;
     const langCookie = LANG_DIRS[parts[0]];
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': redirectUrl,
+        'Location': redirectUrl.toString(),
         'Set-Cookie': `lang=${langCookie};path=/;max-age=31536000`
       }
     });
