@@ -575,6 +575,23 @@ async function main() {
     await buildLangPages(lang);
   }
 
+  // Copy main site gdrive callback page to lang dirs (after lang dirs exist)
+  for (const lang of LANGS) {
+    cp('src/html/gdrive-callback.html', `www/${lang}/gdrive-callback.html`);
+  }
+
+  // 构建 ipaste 和 index 使用 ec-new（不包含 blake2b）
+  await buildTSCore();
+  await buildLibs();
+  await buildTest();
+  cssMin('cn');
+  cssMin('en');
+
+  for (const lang of LANGS) {
+    await buildIndex(lang);
+    await buildLangPages(lang);
+  }
+
   genReadMe();
   buildTestHtml();
 

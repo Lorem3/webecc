@@ -26,4 +26,13 @@ export const jsMessages: JsMessages = {
   historyLoading: '加载中...',
   historyFetchFailed: '获取历史记录失败',
   historyFetchFailedCors: '无法连接云端（CORS 限制）',
+  gdriveAuthRequired: '请先登录 Google Drive',
+  gdriveAuthFailed: 'Google 授权失败',
+  gdriveSaveSuccess: '已保存到 Google Drive',
+  gdriveSaveFailed: '保存失败',
+  gdriveLoadSuccess: '已从 Google Drive 加载',
+  gdriveLoadFailed: '加载失败',
+  gdriveLoadCanceled: '已取消选择文件',
+  gdriveNoFiles: 'Google Drive 上未找到备份',
+  gdriveDescRequired: '请输入描述',
 };

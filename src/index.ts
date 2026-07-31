@@ -1,5 +1,8 @@
 
 import { jsMessages as messages } from '@i18n/js-messages';
+import { GoogleDriveManager } from './ipaste/gdrive';
+
+const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
 
 const App = (function () {
 
@@ -743,6 +746,48 @@ ${messages.emailDataBase64}: ${newLine}
 
     const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}&expire=-1`;
     openUrl(url);
+  };
+
+  // 保存到 Google Drive
+  document.getElementById("saveToGDrive")!.onclick = async () => {
+    const pubkey = getPublicKey();
+    if (!pubkey) {
+      setErrMsg(messages.errEmptyPubkey);
+      return;
+    }
+    if (!G_Input?.salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    const description = (document.getElementById("gdriveDesc") as HTMLInputElement)?.value?.trim();
+    if (!description) {
+      setErrMsg(messages.gdriveDescRequired);
+      return;
+    }
+
+    try {
+      const t = await encryptClick();
+      if (!t) return;
+      const cipher = getCipherText().trim();
+      if (!cipher) return;
+
+      const salt = G_Input.salt;
+      const contentKey = await generateContentKey(pubkey, salt);
+      const cipherBytes = ec.base64Decode(cipher, 0);
+      const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+      const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+      const finalTxt = 'N.' + e2;
+
+      const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, './gdrive-callback.html', 'webecc');
+      const toast = document.getElementById('gdriveToast');
+      if (toast) { toast.textContent = 'Saving to Google Drive...'; toast.style.display = 'block'; }
+      await manager.saveBackup(ec, getPlainText() || '', finalTxt, pubkey, salt, description);
+      if (toast) { toast.textContent = messages.gdriveSaveSuccess; setTimeout(() => { toast.style.display = 'none'; }, 3000); }
+    } catch (error) {
+      const errMsg = (error as Error).message;
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveSaveFailed}: ${errMsg}`);
+    }
   };
 
   // 从 CloudFlare 恢复

@@ -26,4 +26,13 @@ export const jsMessages: JsMessages = {
   historyLoading: 'Loading...',
   historyFetchFailed: 'Failed to fetch history',
   historyFetchFailedCors: 'Cannot reach cloud (CORS blocked)',
+  gdriveAuthRequired: 'Sign in with Google Drive first',
+  gdriveAuthFailed: 'Google authorization failed',
+  gdriveSaveSuccess: 'Saved to Google Drive',
+  gdriveSaveFailed: 'Save failed',
+  gdriveLoadSuccess: 'Loaded from Google Drive',
+  gdriveLoadFailed: 'Load failed',
+  gdriveLoadCanceled: 'File selection canceled',
+  gdriveNoFiles: 'No backups found on Google Drive',
+  gdriveDescRequired: 'Please enter a description',
 };

@@ -17,9 +17,13 @@ export interface GDriveFile {
 export class GoogleDriveManager {
   private clientId: string;
   private accessToken: string | null = null;
+  private callbackPath: string;
+  private folderName: string;
 
-  constructor(clientId: string) {
+  constructor(clientId: string, callbackPath = './gdrive-callback.html', folderName = 'ipaste') {
     this.clientId = clientId;
+    this.callbackPath = callbackPath;
+    this.folderName = folderName;
   }
 
   // Auth: opens a popup to gdrive-callback.html which handles the OAuth flow.
@@ -47,7 +51,7 @@ export class GoogleDriveManager {
 
       window.addEventListener('message', handler);
 
-      const callbackUrl = './gdrive-callback.html';
+      const callbackUrl = this.callbackPath;
       const popup = window.open(
         `${callbackUrl}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`,
         'gdrive-auth',
@@ -245,7 +249,7 @@ export class GoogleDriveManager {
 
   private async ensurePubkeyFolder(ec: any, pubkey: string, salt: string): Promise<string> {
     const folderName = 'P' + await pubkeyHash(ec, pubkey, salt);
-    const ipasteFolderId = await this.ensureIPasteFolder();
+    const ipasteFolderId = await this.ensureRootFolder();
 
     // Check if folder exists in ipaste root
     const response = await this.driveFetch(`/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${ipasteFolderId}' in parents&fields=files(id,name)`);
@@ -266,21 +270,19 @@ export class GoogleDriveManager {
     return folder.id;
   }
 
-  private async ensureIPasteFolder(): Promise<string> {
-    // Check if ipaste folder exists
-    const response = await this.driveFetch(`/files?q=name='ipaste' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`);
-    if (!response.ok) throw new Error('Failed to find ipaste folder');
+  private async ensureRootFolder(): Promise<string> {
+    const response = await this.driveFetch(`/files?q=name='${this.folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`);
+    if (!response.ok) throw new Error(`Failed to find ${this.folderName} folder`);
     const data = await response.json();
     if (data.files && data.files.length > 0) {
       return data.files[0].id;
     }
-    // Create the folder
     const createResp = await this.driveFetch('/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'ipaste', mimeType: 'application/vnd.google-apps.folder' }),
+      body: JSON.stringify({ name: this.folderName, mimeType: 'application/vnd.google-apps.folder' }),
     });
-    if (!createResp.ok) throw new Error('Failed to create ipaste folder');
+    if (!createResp.ok) throw new Error(`Failed to create ${this.folderName} folder`);
     const folder = await createResp.json();
     return folder.id;
   }
