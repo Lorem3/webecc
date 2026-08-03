@@ -1127,7 +1127,7 @@ App.init();
 
 (function initSquircle() {
   function applySquircle() {
-    Squircle.applyAll('.btn', 30, 5);
+    Squircle.applyAll('.btn, .btn-gdrive', 30, 5);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', applySquircle);
