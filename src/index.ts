@@ -790,6 +790,66 @@ ${messages.emailDataBase64}: ${newLine}
     }
   };
 
+  // 从 Google Drive 加载
+  document.getElementById("loadFromGDrive")!.onclick = async () => {
+    const pubkey = getPublicKey();
+    if (!pubkey) {
+      setErrMsg(messages.errEmptyPubkey);
+      return;
+    }
+    if (!G_Input?.salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    try {
+      const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, './gdrive-callback.html', 'webecc');
+      const files = await manager.listBackups(pubkey, G_Input.salt, ec);
+      if (!files.length) {
+        setErrMsg(messages.gdriveNoFiles);
+        return;
+      }
+
+      // 弹出选择列表
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999';
+
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:12px;padding:1.5rem 1.5rem 1rem;max-width:420px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2)';
+
+      const title = document.createElement('h3');
+      title.textContent = 'Google Drive Backups';
+      title.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;font-weight:600';
+      box.appendChild(title);
+
+      files.forEach((f) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:10px 12px;border:1px solid #e3e6ea;border-radius:8px;cursor:pointer;margin-bottom:6px;transition:background-color 0.15s';
+        const date = new Date(f.modifiedTime).toLocaleString();
+        item.innerHTML = `<div style="font-size:0.875rem;font-weight:500;color:#333">${f.description || f.name}</div><div style="font-size:0.75rem;color:#999;margin-top:2px">${date}</div>`;
+        item.onmouseenter = () => { item.style.background = '#f5f7fa'; };
+        item.onmouseleave = () => { item.style.background = ''; };
+        item.onclick = async () => {
+          overlay.remove();
+          try {
+            const content = await manager.readBackup(f.id);
+            if (content) setCipherText(content);
+          } catch (e) {
+            setErrMsg(`${messages.gdriveLoadFailed}: ${(e as Error).message}`);
+          }
+        };
+        box.appendChild(item);
+      });
+
+      overlay.appendChild(box);
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+      document.body.appendChild(overlay);
+    } catch (e) {
+      const errMsg = (e as Error).message;
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveLoadFailed}: ${errMsg}`);
+    }
+  };
+
   // 从 CloudFlare 恢复
   document.getElementById("restoreFromCloudflare")!.onclick = async () => {
     const pubkey = getPublicKey();

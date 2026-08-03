@@ -78,6 +78,7 @@ export interface HtmlMessages {
   historyTitle: string;
   historyRefresh: string;
   btnSaveGdrive: string;
+  btnLoadGdrive: string;
   gdriveDescLabel: string;
   gdriveDescPlaceholder: string;
   gdriveNote: string;
