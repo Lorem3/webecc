@@ -744,7 +744,7 @@ ${messages.emailDataBase64}: ${newLine}
     const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
     const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
 
-    const url = `https://ecd1data.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}`;
+    const url = `https://vault10.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}`;
     openUrl(url);
   };
 
@@ -765,7 +765,7 @@ ${messages.emailDataBase64}: ${newLine}
 
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
-    const url = `https://ecd1data.kr7y.workers.dev/list#key=${key}`;
+    const url = `https://vault10.kr7y.workers.dev/list#key=${key}`;
     openUrl(url);
   };
 
