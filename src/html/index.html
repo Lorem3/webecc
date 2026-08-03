@@ -133,19 +133,6 @@
       </div>
       <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">{{i18n:cloudflareNote}}<br/>{{i18n:cloudflareDetail}}<br/><strong>{{i18n:cloudflareSecurity}}</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; {{i18n:d1DetailLink}}</a></p>
 
-      <div style="border:1px solid #e3e6ea;border-radius:12px;padding:1rem;margin-top:0.75rem;">
-        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#666;">{{i18n:gdriveNote}}</p>
-        <div class="row2" style="align-items:center;margin-bottom:0.75rem;">
-          <span class="title" style="min-width:6em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:gdriveDescLabel}}</span>
-          <input id="gdriveDesc" type="text" placeholder="{{i18n:gdriveDescPlaceholder}}" autocomplete="off" style="flex:1;height:40px;padding:0 0.75rem;border:1px solid #e3e6ea;border-radius:8px;font-size:0.875rem;" />
-        </div>
-        <div class="row2 btnHolder btn-group">
-          <div id="saveToGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;"><span class="btnTitle">{{i18n:btnSaveGdrive}}</span></div>
-          <div id="loadFromGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;margin-left:0px;"><span class="btnTitle">{{i18n:btnLoadGdrive}}</span></div>
-        </div>
-        <div id="gdriveToast" style="display:none;margin-top:0.5rem;padding:0.6rem 1rem;background:#e8f5e9;color:#2e7d32;border-radius:8px;font-size:0.875rem;font-weight:500;"></div>
-      </div>
-
       <div class="row plain-cipher-row">
         <div class="text-card">
           <div class="title">{{i18n:plaintextLabel}}</div>
@@ -176,6 +163,20 @@
           <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="{{i18n:ciphertextPlaceholder}}"></textarea>
         </div>
       </div>
+    </section>
+
+    <section class="section-card">
+      <h2>{{i18n:gdriveTitle}}</h2>
+      <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#666;">{{i18n:gdriveNote}}</p>
+      <div class="row2" style="align-items:center;margin-bottom:0.75rem;">
+        <span class="title" style="min-width:6em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:gdriveDescLabel}}</span>
+        <input id="gdriveDesc" type="text" placeholder="{{i18n:gdriveDescPlaceholder}}" autocomplete="off" style="flex:1;height:40px;padding:0 0.75rem;border:1px solid #e3e6ea;border-radius:8px;font-size:0.875rem;" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;"><span class="btnTitle">{{i18n:btnSaveGdrive}}</span></div>
+        <div id="loadFromGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;margin-left:0px;"><span class="btnTitle">{{i18n:btnLoadGdrive}}</span></div>
+      </div>
+      <div id="gdriveToast" style="display:none;margin-top:0.5rem;padding:0.6rem 1rem;background:#e8f5e9;color:#2e7d32;border-radius:8px;font-size:0.875rem;font-weight:500;"></div>
     </section>
 
     <section class="section-card section-muted about-section">

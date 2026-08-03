@@ -46,17 +46,6 @@
         <div id="encryptBtn" class="btn"><span class="btnTitle">{{i18n:btnEncrypt}}</span></div>
         <div id="decryptBtn" class="btn"><span class="btnTitle">{{i18n:btnDecrypt}}</span></div>
       </div>
-      <div style="border:1px solid #e3e6ea;border-radius:12px;padding:1rem;margin-top:0.5rem;">
-        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#666;">{{i18n:gdriveNote}}</p>
-        <div class="row2" style="align-items:center;margin-bottom:0.75rem;">
-          <span class="title" style="min-width:6em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:gdriveDescLabel}}</span>
-          <input id="gdriveDesc" type="text" placeholder="{{i18n:gdriveDescPlaceholder}}" autocomplete="off" style="flex:1;height:40px;padding:0 0.75rem;border:1px solid #e3e6ea;border-radius:8px;font-size:0.875rem;" />
-        </div>
-        <div class="row2 btnHolder btn-group">
-          <div id="saveToGDrive" class="btn btn-gdrive" style="background-color:#45b787;"><span class="btnTitle">{{i18n:btnSaveGdrive}}</span></div>
-          <div id="loadFromGDrive" class="btn btn-gdrive" style="background-color:#45b787;"><span class="btnTitle">{{i18n:btnLoadGdrive}}</span></div>
-        </div>
-      </div>
       <div id="passphraseRow" class="row2" style="margin-top:1rem;align-items:flex-start;">
         <span class="title" style="min-width:4.5em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:decryptPhrase}}</span>
         <div class="password-wrap">
@@ -68,6 +57,19 @@
         </div>
       </div>
       <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0"><strong>{{i18n:decryptNote}}</strong></p>
+    </section>
+
+    <section class="section-card">
+      <h2>{{i18n:gdriveTitle}}</h2>
+      <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#666;">{{i18n:gdriveNote}}</p>
+      <div class="row2" style="align-items:center;margin-bottom:0.75rem;">
+        <span class="title" style="min-width:6em;color:var(--text-muted);font-size:0.9375rem;">{{i18n:gdriveDescLabel}}</span>
+        <input id="gdriveDesc" type="text" placeholder="{{i18n:gdriveDescPlaceholder}}" autocomplete="off" style="flex:1;height:40px;padding:0 0.75rem;border:1px solid #e3e6ea;border-radius:8px;font-size:0.875rem;" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToGDrive" class="btn btn-gdrive" style="background-color:#45b787;"><span class="btnTitle">{{i18n:btnSaveGdrive}}</span></div>
+        <div id="loadFromGDrive" class="btn btn-gdrive" style="background-color:#45b787;"><span class="btnTitle">{{i18n:btnLoadGdrive}}</span></div>
+      </div>
     </section>
 
     <section class="section-card section-muted about-section">

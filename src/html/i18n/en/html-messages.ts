@@ -81,6 +81,7 @@ export const htmlMessages: HtmlMessages = {
   historyRefresh: 'Refresh',
   btnSaveGdrive: 'Save to Google Drive',
   btnLoadGdrive: 'Load from Google Drive',
+  gdriveTitle: 'Google Drive',
   gdriveDescLabel: 'Description',
   gdriveDescPlaceholder: 'Description (required)',
   gdriveNote: 'Data stored in your Google Drive. Suitable for large files > 250KB.',

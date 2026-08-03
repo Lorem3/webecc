@@ -81,6 +81,7 @@ export const htmlMessages: HtmlMessages = {
   historyRefresh: '刷新',
   btnSaveGdrive: '保存到 Google Drive',
   btnLoadGdrive: '从 Google Drive 加载',
+  gdriveTitle: 'Google Drive',
   gdriveDescLabel: '描述',
   gdriveDescPlaceholder: '请输入描述（必填）',
   gdriveNote: '数据保存在您的 Google Drive，适合大文件 > 250KB',
