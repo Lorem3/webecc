@@ -2,7 +2,7 @@ import { jsMessages as messages } from '@i18n/js-messages';
 import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
   setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, computePhash,
-  showBuildInfo, initSquircle,
+  showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
 } from './common';
 import { GoogleDriveManager } from './gdrive';
 
@@ -346,6 +346,25 @@ const App = (function () {
     bindGoogleDriveSaveBtn(ec, state);
     bindGoogleDriveLoadBtn(ec, state);
 
+    // 绑定眼睛按钮事件
+    function bindEyeBtn() {
+      const eyeBtn = document.getElementById('eyeBtn');
+      const keyphrase = document.getElementById('keyphrase');
+      if (eyeBtn && keyphrase) {
+        const eyeOpen = eyeBtn.querySelector('.eye-open');
+        const eyeClosed = eyeBtn.querySelector('.eye-closed');
+        eyeBtn.addEventListener('click', function() {
+          const isPassword = keyphrase.type === 'password';
+          keyphrase.type = isPassword ? 'text' : 'password';
+          if (eyeOpen) eyeOpen.style.display = isPassword ? 'none' : '';
+          if (eyeClosed) eyeClosed.style.display = isPassword ? '' : 'none';
+        });
+      }
+    }
+
+    // 立即绑定眼睛按钮事件
+    bindEyeBtn();
+
     let bookmarkOk = false;
     try {
       bookmarkOk = await initBookmark(ec, state);
@@ -356,6 +375,12 @@ const App = (function () {
     if (!bookmarkOk) {
       setTimeout(() => { alert(messages.errNeedBookmark); location.href = 'index.html'; }, 2000);
       return;
+    }
+
+    const passphraseSection = document.getElementById('passphraseSection');
+    if (passphraseSection && !state.G_Input?.private) {
+      passphraseSection.style.display = 'block';
+      setTimeout(applyComputePrivkeyBtnSquircle, 50);
     }
 
     await autoFetchHistory(ec, state);

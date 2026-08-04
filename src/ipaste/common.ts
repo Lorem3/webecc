@@ -440,6 +440,40 @@ export function bindPlainCopyBtn() {
   };
 }
 
+export function bindComputePrivkeyBtn(ec: any, state: AppState) {
+  const btn = document.getElementById("computePrivkeyBtn");
+  if (!btn) return;
+  btn.onclick = async () => {
+    if (!state.G_Input?.pubkey || !state.G_Input?.salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    let input = document.getElementById("keyphrase") as HTMLInputElement;
+    let phrase = input?.value.trim();
+    if (!phrase) {
+      setErrMsg(messages.errEmptyPhrase);
+      return;
+    }
+
+    const salt = state.G_Input.salt;
+    const kdf = { ver: state.G_Input.ver || KDF_V2.ver, hash: state.G_Input.kdfHash || KDF_V2.hash, iterations: state.G_Input.kdfIterations || KDF_V2.iterations };
+    let kp = await pbkdf2(phrase, salt, ec, { hash: kdf.hash, iterations: kdf.iterations });
+
+    if (kp.public !== state.G_Input.pubkey) {
+      setErrMsg(messages.errPubkeyMismatchPhrase);
+      return;
+    }
+
+    state.G_Input.private = kp.private;
+
+    const passphraseContent = document.getElementById("passphraseContent");
+    const passphraseSuccess = document.getElementById("passphraseSuccess");
+    if (passphraseContent) passphraseContent.style.display = 'none';
+    if (passphraseSuccess) passphraseSuccess.style.display = 'block';
+  };
+}
+
 // --- Bookmark Decode & Init ---
 
 export async function initBookmark(ec: any, state: AppState): Promise<boolean> {
@@ -492,10 +526,15 @@ export async function initBookmark(ec: any, state: AppState): Promise<boolean> {
     }
     if (jsonObj.private) {
       showMaskedPrivkey(jsonObj.private);
-      const passphraseRow = document.getElementById("passphraseRow");
-      const passphraseNote = passphraseRow?.nextElementSibling as HTMLElement;
-      if (passphraseRow) passphraseRow.style.display = 'none';
-      if (passphraseNote) passphraseNote.style.display = 'none';
+      const passphraseSection = document.getElementById("passphraseSection");
+      const passphraseContent = document.getElementById("passphraseContent");
+      const passphraseSuccess = document.getElementById("passphraseSuccess");
+      if (passphraseSection) passphraseSection.style.display = 'none';
+      if (passphraseContent) passphraseContent.style.display = 'none';
+      if (passphraseSuccess) passphraseSuccess.style.display = 'block';
+    } else {
+      const passphraseSection = document.getElementById("passphraseSection");
+      if (passphraseSection) passphraseSection.style.display = 'block';
     }
     return true;
   }
@@ -514,6 +553,7 @@ export function bindCommonButtons(ec: any, state: AppState) {
       bindRestoreBtn(ec, state);
       bindCopyResultBtn();
       bindPlainCopyBtn();
+      bindComputePrivkeyBtn(ec, state);
     });
   } else {
     bindDecryptBtn(ec, state);
@@ -522,6 +562,7 @@ export function bindCommonButtons(ec: any, state: AppState) {
     bindRestoreBtn(ec, state);
     bindCopyResultBtn();
     bindPlainCopyBtn();
+    bindComputePrivkeyBtn(ec, state);
   }
 }
 
@@ -551,5 +592,12 @@ export function initSquircle() {
     document.addEventListener('DOMContentLoaded', applySquircle);
   } else {
     applySquircle();
+  }
+}
+
+export function applyComputePrivkeyBtnSquircle() {
+  const btn = document.getElementById('computePrivkeyBtn');
+  if (btn) {
+    Squircle.applyMask(btn, 30, 5);
   }
 }

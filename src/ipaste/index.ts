@@ -5,7 +5,7 @@ import {
   createAppState,
   openUrl, getPlainText, setErrMsg, maskKey, showMaskedPrivkey,
   generateRandomSalt, pbkdf2, generateKey, generateContentKey, aesGcmEncrypt,
-  bindCommonButtons, initBookmark, showBuildInfo, initSquircle,
+  bindCommonButtons, initBookmark, showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
 } from './common';
 
 const App = (function () {
@@ -200,6 +200,45 @@ const App = (function () {
     // Bind common buttons (decrypt, encrypt, save, restore, copy)
     bindCommonButtons(ec, state);
 
+    // 绑定眼睛按钮事件
+    function bindEyeBtn() {
+      console.log('bindEyeBtn called');
+      const eyeBtn = document.getElementById('eyeBtn');
+      console.log('eyeBtn:', eyeBtn);
+      const keyphrase = document.getElementById('keyphrase');
+      console.log('keyphrase:', keyphrase);
+      if (eyeBtn && keyphrase) {
+        const eyeOpen = eyeBtn.querySelector('.eye-open');
+        const eyeClosed = eyeBtn.querySelector('.eye-closed');
+        console.log('eyeOpen:', eyeOpen);
+        console.log('eyeClosed:', eyeClosed);
+        console.log('Adding click event listener to eyeBtn');
+        eyeBtn.addEventListener('click', function(e) {
+          console.log('eyeBtn click event fired');
+          console.log('Event target:', e.target);
+          console.log('Event currentTarget:', e.currentTarget);
+          const isPassword = keyphrase.type === 'password';
+          console.log('isPassword:', isPassword);
+          keyphrase.type = isPassword ? 'text' : 'password';
+          console.log('keyphrase.type:', keyphrase.type);
+          if (eyeOpen) {
+            eyeOpen.style.display = isPassword ? 'none' : '';
+            console.log('eyeOpen.style.display:', eyeOpen.style.display);
+          }
+          if (eyeClosed) {
+            eyeClosed.style.display = isPassword ? '' : 'none';
+            console.log('eyeClosed.style.display:', eyeClosed.style.display);
+          }
+        });
+        console.log('Click event listener added successfully');
+      } else {
+        console.log('eyeBtn or keyphrase not found');
+      }
+    }
+
+    // 立即绑定眼睛按钮事件
+    bindEyeBtn();
+
     // Decode bookmark from hash and initialize
     await initBookmark(ec, state);
 
@@ -211,9 +250,14 @@ const App = (function () {
       }
       var syncSection = document.getElementById('syncSection');
       var usageSection = document.querySelector('.usage-section');
+      var passphraseSection = document.getElementById('passphraseSection');
       if (hasHashParams() && syncSection && usageSection) {
         syncSection.style.display = '';
         usageSection.style.display = 'none';
+        if (passphraseSection && !state.G_Input?.private) {
+          passphraseSection.style.display = 'block';
+          setTimeout(applyComputePrivkeyBtnSquircle, 50);
+        }
       }
     })();
 
