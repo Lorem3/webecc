@@ -90,7 +90,7 @@ export async function onRequest(context) {
       const rootRequest = new Request(new URL(path, request.url).toString(), request);
       const rootResponse = await env.ASSETS.fetch(rootRequest);
       if (rootResponse.status !== 404) return rootResponse;
-      return new Response('Not Found', { status: 404 });
+      return env.ASSETS.fetch(new URL('/404.html', request.url));
     }
     return next();
   }
