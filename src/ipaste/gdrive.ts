@@ -1,8 +1,9 @@
 import { jsMessages as messages } from '@i18n/js-messages';
-import { computePhash, generateKey } from './common';
+import { computePhash } from './common';
 
-export function pubkeyHash(ec: any, pubkey: string, salt: string): Promise<string> {
-  return generateKey(ec, pubkey, salt).then(key => key.slice(0, 9));
+export function getPubkeyFolderName(pubkey: string): string {
+  const safe = pubkey.replace(/[+/=]/g, m => m === '+' ? '-' : m === '/' ? '_' : '');
+  return 'P-' + safe.slice(0, 13);
 }
 
 export interface GDriveFile {
@@ -121,7 +122,7 @@ export class GoogleDriveManager {
     const phash = await computePhash(ec, plainText, salt);
     const fileName = `i-${phash}.txt`;
 
-    const pubkeyFolderId = await this.ensurePubkeyFolder(ec, pubkey, salt);
+    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
 
     // Check if file with same phash already exists
     const existingFile = await this.findBackupByPhash(phash, pubkeyFolderId);
@@ -197,7 +198,7 @@ export class GoogleDriveManager {
 
   async listBackups(pubkey: string, salt: string, ec: any): Promise<GDriveFile[]> {
     await this.ensureAuthorized();
-    const pubkeyFolderId = await this.ensurePubkeyFolder(ec, pubkey, salt);
+    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
     const query = `name contains 'i-' and trashed=false and '${pubkeyFolderId}' in parents`;
 
     const params = new URLSearchParams({
@@ -247,8 +248,8 @@ export class GoogleDriveManager {
     return (data.files && data.files.length > 0) ? data.files[0] : null;
   }
 
-  private async ensurePubkeyFolder(ec: any, pubkey: string, salt: string): Promise<string> {
-    const folderName = 'P' + await pubkeyHash(ec, pubkey, salt);
+  private async ensurePubkeyFolder(pubkey: string): Promise<string> {
+    const folderName = getPubkeyFolderName(pubkey);
     const ipasteFolderId = await this.ensureRootFolder();
 
     // Check if folder exists in ipaste root
