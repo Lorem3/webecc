@@ -3,7 +3,7 @@ import type { JsMessages } from '../types/messages';
 export const jsMessages: JsMessages = {
   errEmptyPhrase: '请输入密码短语',
   errEmptyPubkey: '公钥为空',
-  errNeedBookmark: '请重新生成书签地址，从书签地址进入',
+  errNeedBookmark: '书签地址无公钥，请重新生成书签，从新进入',
   errPubkeyMismatchPhrase: '生成的公钥与书签中保存的公钥不匹配，请检查短语是否正确',
   errEmptyContent: '请输入内容',
   bookmarkHint: '如果你的公钥是通过密码短语派生的，请使用密码短语书签',

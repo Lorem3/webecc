@@ -346,10 +346,16 @@ const App = (function () {
     bindGoogleDriveSaveBtn(ec, state);
     bindGoogleDriveLoadBtn(ec, state);
 
+    let bookmarkOk = false;
     try {
-      await initBookmark(ec, state);
+      bookmarkOk = await initBookmark(ec, state);
     } catch (error) {
       console.error('Failed to init bookmark:', error);
+    }
+
+    if (!bookmarkOk) {
+      setTimeout(() => { alert(messages.errNeedBookmark); location.href = 'index.html'; }, 2000);
+      return;
     }
 
     await autoFetchHistory(ec, state);

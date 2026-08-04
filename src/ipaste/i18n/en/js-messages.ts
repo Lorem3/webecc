@@ -3,7 +3,7 @@ import type { JsMessages } from '../types/messages';
 export const jsMessages: JsMessages = {
   errEmptyPhrase: 'Please enter a passphrase',
   errEmptyPubkey: 'Public key is empty',
-  errNeedBookmark: 'Please regenerate the bookmark link and open from it',
+  errNeedBookmark: 'Bookmark has no public key. Please regenerate the bookmark and open from it',
   errPubkeyMismatchPhrase: 'Generated public key does not match the bookmark. Check your passphrase.',
   errEmptyContent: 'Please enter content',
   bookmarkHint: 'If your public key is derived from a passphrase, use the passphrase bookmark',
