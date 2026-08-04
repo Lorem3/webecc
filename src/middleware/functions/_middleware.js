@@ -6,6 +6,10 @@ function isWellKnown(path) {
   return path.startsWith('/.well-known/');
 }
 
+function isStaticAsset(path) {
+  return /\.(ico|png|svg|jpg|jpeg|gif|webp|css|js|woff2?|ttf|eot|txt|xml|webmanifest)$/i.test(path);
+}
+
 function parseCookie(cookieHeader, name) {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
@@ -81,6 +85,13 @@ export async function onRequest(context) {
   const assetRequest = new Request(newUrl.toString(), request);
   const assetResponse = await env.ASSETS.fetch(assetRequest);
 
-  if (assetResponse.status === 404) return next();
+  if (assetResponse.status === 404) {
+    if (isStaticAsset(path)) {
+      const rootRequest = new Request(new URL(path, request.url).toString(), request);
+      const rootResponse = await env.ASSETS.fetch(rootRequest);
+      if (rootResponse.status !== 404) return rootResponse;
+    }
+    return next();
+  }
   return assetResponse;
 }
