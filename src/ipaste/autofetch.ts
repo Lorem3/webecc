@@ -197,7 +197,7 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
       const div = document.createElement('div');
       div.className = 'history-item';
 
-      let note = f.name;
+      let note = f.description || f.name;
       try {
         const obj = JSON.parse(f.description || '');
         if (obj.note) note = obj.note;
