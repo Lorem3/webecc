@@ -179,6 +179,8 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
 
   try {
     const manager = getGDriveManager();
+
+    // If not authorized, just show status (don't trigger auth)
     if (!manager.isAuthorized()) {
       container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
       return;
@@ -217,7 +219,16 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
     });
   } catch (error) {
     console.error('Error fetching GDrive history:', error);
-    container.innerHTML = `<div class="history-empty">${messages.gdriveLoadFailed}</div>`;
+    const errMsg = (error as Error).message;
+    // If token expired, clear it and show not connected status
+    if (errMsg.includes('Token expired') || errMsg.includes('401')) {
+      const manager = getGDriveManager();
+      manager.signOut();
+      localStorage.removeItem('gdrive_access_token');
+      container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
+    } else {
+      container.innerHTML = `<div class="history-empty">${messages.gdriveLoadFailed}</div>`;
+    }
   }
 }
 
