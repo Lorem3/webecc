@@ -3,7 +3,7 @@ import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
   setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, encryptFileContent,
   showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
-  hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI,
+  hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI, exitFileMode,
 } from './common';
 import { GoogleDriveManager } from './gdrive';
 
@@ -284,6 +284,7 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
           }
           setSyncStatus(messages.gdriveLoadSuccessFile);
         } else {
+          if (state.fileMode) exitFileMode(state);
           setResultText(content);
           setSyncStatus(messages.gdriveLoadSuccess);
         }
@@ -428,6 +429,7 @@ const App = (function () {
             }
             setSyncStatus(messages.gdriveLoadSuccessFile);
           } else {
+            if (state.fileMode) exitFileMode(state);
             setResultText(content);
           }
         }

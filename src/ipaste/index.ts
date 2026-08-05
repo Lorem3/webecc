@@ -7,7 +7,7 @@ import {
   generateRandomSalt, pbkdf2, generateKey, generateContentKey, aesGcmEncrypt,
   bindCommonButtons, initBookmark, showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
   encryptFileContent, encryptContent, bindFilePaste,
-  showFileLocked, hideFileLocked, setResultText, enterFileModeUI,
+  showFileLocked, hideFileLocked, setResultText, enterFileModeUI, exitFileMode,
 } from './common';
 import { GoogleDriveManager } from './gdrive';
 
@@ -127,6 +127,7 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
           setSyncStatus(messages.gdriveLoadSuccessFile);
         } else {
           // Text mode
+          if (state.fileMode) exitFileMode(state);
           setResultText(content);
           setSyncStatus(messages.gdriveLoadSuccess);
         }
