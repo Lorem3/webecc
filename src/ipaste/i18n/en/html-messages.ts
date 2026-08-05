@@ -23,6 +23,7 @@ export const htmlMessages: HtmlMessages = {
   bmInfoSalt: 'Salt',
   bmInfoPrivkey: 'Private Key',
   syncTitle: 'Clipboard',
+  syncTitleHint: 'Supports file paste',
   syncPlaceholder: 'Enter plaintext',
   btnSave: 'Encrypt & Save to Cloud',
   btnLoad: 'Cloud Records',

@@ -21,6 +21,7 @@ export interface HtmlMessages {
   bmInfoSalt: string;
   bmInfoPrivkey: string;
   syncTitle: string;
+  syncTitleHint: string;
   syncPlaceholder: string;
   btnSave: string;
   btnLoad: string;

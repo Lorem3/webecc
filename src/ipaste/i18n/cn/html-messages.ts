@@ -23,6 +23,7 @@ export const htmlMessages: HtmlMessages = {
   bmInfoSalt: 'Salt',
   bmInfoPrivkey: '私钥',
   syncTitle: '粘贴板',
+  syncTitleHint: '支持粘贴文件',
   syncPlaceholder: '输入明文内容',
   btnSave: '加密保存到云端',
   btnLoad: '云端记录',
