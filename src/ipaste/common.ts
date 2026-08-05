@@ -29,10 +29,11 @@ export interface AppState {
   fileMode: boolean;
   fileData: File | null;
   fileName: string | null;
+  fileCipher: string | null;
 }
 
 export function createAppState(): AppState {
-  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null, fileName: null };
+  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null, fileName: null, fileCipher: null };
 }
 
 // --- UI Helpers ---
@@ -145,6 +146,8 @@ export function enterFileMode(state: AppState, file: File) {
 export function exitFileMode(state: AppState) {
   state.fileMode = false;
   state.fileData = null;
+  state.fileName = null;
+  state.fileCipher = null;
 
   // Show text mode UI
   const plaintext = document.getElementById("plaintext");
@@ -274,10 +277,11 @@ export function bindFileRemoveBtn(state: AppState) {
   };
 }
 
-export function enterFileModeUI(state: AppState, fileName?: string) {
+export function enterFileModeUI(state: AppState, fileName?: string, cipher?: string) {
   state.fileMode = true;
   state.fileData = null;
   state.fileName = fileName || null;
+  state.fileCipher = cipher || null;
 
   const encryptBtn = document.getElementById("encryptBtn");
   const plaintext = document.getElementById("plaintext");
@@ -489,7 +493,12 @@ export function bindDecryptBtn(ec: any, state: AppState) {
       privkey = kp.private;
     }
 
-    let base64 = getResultText()?.trim();
+    let base64: string | null = null;
+    if (state.fileMode && state.fileCipher) {
+      base64 = state.fileCipher;
+    } else {
+      base64 = getResultText()?.trim() || null;
+    }
     if (!base64) {
       setErrMsg(messages.errEmptyContent);
       return;

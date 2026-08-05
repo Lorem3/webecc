@@ -273,8 +273,7 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
             const obj = JSON.parse(desc);
             if (obj.note) fileName = obj.note;
           } catch {}
-          enterFileModeUI(state, fileName);
-          setResultText(content);
+          enterFileModeUI(state, fileName, content);
           hideFileLocked();
           const decryptBtn = document.getElementById("decryptBtn");
           if (decryptBtn) {
@@ -418,8 +417,7 @@ const App = (function () {
         const content = await fetchLatestContent(ec, state.G_Input.pubkey, state.G_Input.salt);
         if (content) {
           if (content.startsWith('F.')) {
-            enterFileModeUI(state);
-            setResultText(content);
+            enterFileModeUI(state, undefined, content);
             hideFileLocked();
             const decryptBtn = document.getElementById("decryptBtn");
             if (decryptBtn) {

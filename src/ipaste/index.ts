@@ -115,8 +115,7 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
             const obj = JSON.parse(desc);
             if (obj.note) fileName = obj.note;
           } catch {}
-          enterFileModeUI(state, fileName);
-          setResultText(content);
+          enterFileModeUI(state, fileName, content);
           hideFileLocked();
           const decryptBtn = document.getElementById("decryptBtn");
           if (decryptBtn) {
