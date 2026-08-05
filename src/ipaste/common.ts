@@ -162,7 +162,7 @@ export function exitFileMode(state: AppState) {
   if (decryptBtn) {
     decryptBtn.style.display = '';
     const btnTitle = decryptBtn.querySelector('.btnTitle');
-    if (btnTitle) btnTitle.textContent = messages.btnDecrypt;
+    if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
   }
   if (saveToCf) saveToCf.style.display = '';
   if (restoreFromCf) restoreFromCf.style.display = '';
