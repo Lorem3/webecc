@@ -1,8 +1,9 @@
 import { jsMessages as messages } from '@i18n/js-messages';
 import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
-  setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, computePhash,
+  setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, encryptFileContent,
   showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
+  hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI,
 } from './common';
 import { GoogleDriveManager } from './gdrive';
 
@@ -194,26 +195,37 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
       return;
     }
 
-    const plainText = getPlainText()?.trim();
-    if (!plainText) {
-      setErrMsg(messages.errEmptyContent);
-      return;
-    }
-
-    const description = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim();
-    if (!description) {
-      setErrMsg(messages.gdriveDescRequired);
-      return;
-    }
-
     try {
       const manager = getGDriveManager();
-      setSyncStatus(messages.gdriveLoading || 'Saving to Google Drive...');
-      const ciphertext = await encryptContent(ec, plainText, pubkey, salt);
-      setResultText(ciphertext);
-      await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
-      const phash = await computePhash(ec, plainText, salt);
-      showToast(`${messages.gdriveSaveSuccess}: i-${phash}.txt`);
+      setSyncStatus(messages.gdriveLoading || 'Saving...');
+
+      if (state.fileMode && state.fileData) {
+        // === File mode ===
+        const file = state.fileData;
+        const fileBytes = new Uint8Array(await file.arrayBuffer());
+        const ciphertext = await encryptFileContent(ec, fileBytes, pubkey, salt);
+        const desc = JSON.stringify({ note: file.name, ft: "F" });
+        await manager.saveBackup(ec, file.name, ciphertext, pubkey, salt, desc);
+        showFileLocked();
+        setSyncStatus(messages.gdriveSaveSuccessFile);
+      } else {
+        // === Text mode ===
+        const plainText = getPlainText()?.trim();
+        if (!plainText) {
+          setErrMsg(messages.errEmptyContent);
+          return;
+        }
+        const ciphertext = await encryptContent(ec, plainText, pubkey, salt);
+        setResultText(ciphertext);
+        const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || '';
+        if (!descInput) {
+          setErrMsg(messages.gdriveDescRequired);
+          return;
+        }
+        const description = JSON.stringify({ note: descInput, ft: "N" });
+        await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
+        setSyncStatus(messages.gdriveSaveSuccess);
+      }
     } catch (error) {
       const errMsg = (error as Error).message;
       setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveSaveFailed}: ${errMsg}`);
@@ -253,8 +265,21 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
 
       const content = await manager.readBackup(selectedFile.id);
       if (content) {
-        setResultText(content);
-        setSyncStatus(messages.gdriveLoadSuccess);
+        if (content.startsWith('F.')) {
+          enterFileModeUI(state);
+          setResultText(content);
+          hideFileLocked();
+          const decryptBtn = document.getElementById("decryptBtn");
+          if (decryptBtn) {
+            decryptBtn.style.display = '';
+            const btnTitle = decryptBtn.querySelector('.btnTitle');
+            if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+          }
+          setSyncStatus(messages.gdriveLoadSuccessFile);
+        } else {
+          setResultText(content);
+          setSyncStatus(messages.gdriveLoadSuccess);
+        }
       }
     } catch (error) {
       const errMsg = (error as Error).message;
@@ -265,16 +290,6 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
       setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveLoadFailed}: ${errMsg}`);
     }
   };
-}
-
-function showToast(message: string, duration = 3000) {
-  const toast = document.getElementById('gdriveToast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.style.display = 'block';
-  setTimeout(() => {
-    toast.style.display = 'none';
-  }, duration);
 }
 
 function showFilePicker(files: any[]): Promise<any> {
@@ -298,7 +313,9 @@ function showFilePicker(files: any[]): Promise<any> {
       const date = new Date(f.modifiedTime);
       const dateStr = date.toLocaleString();
       const desc = f.description || '';
-      option.textContent = desc ? `${desc} (${dateStr})` : `${f.name} (${dateStr})`;
+      let note = desc;
+      try { const obj = JSON.parse(desc); if (obj.note) note = obj.note; } catch {}
+      option.textContent = note ? `${note} (${dateStr})` : `${f.name} (${dateStr})`;
       select.appendChild(option);
     });
 
@@ -343,6 +360,7 @@ const App = (function () {
     const state = createAppState();
 
     bindCommonButtons(ec, state);
+    bindFilePaste(ec, state);
     bindGoogleDriveSaveBtn(ec, state);
     bindGoogleDriveLoadBtn(ec, state);
 
@@ -391,7 +409,20 @@ const App = (function () {
       try {
         const content = await fetchLatestContent(ec, state.G_Input.pubkey, state.G_Input.salt);
         if (content) {
-          setResultText(content);
+          if (content.startsWith('F.')) {
+            enterFileModeUI(state);
+            setResultText(content);
+            hideFileLocked();
+            const decryptBtn = document.getElementById("decryptBtn");
+            if (decryptBtn) {
+              decryptBtn.style.display = '';
+              const btnTitle = decryptBtn.querySelector('.btnTitle');
+              if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+            }
+            setSyncStatus(messages.gdriveLoadSuccessFile);
+          } else {
+            setResultText(content);
+          }
         }
       } catch (error) {
         console.warn('Failed to fetch latest:', error);

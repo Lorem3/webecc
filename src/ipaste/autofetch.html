@@ -58,12 +58,24 @@
         <span id="plainCopyBtn" style="font-size:0.75rem;color:#999;cursor:pointer;user-select:none;">Copy</span>
       </div>
       <textarea id="plaintext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="{{i18n:syncPlaceholder}}"></textarea>
+      <div id="filePreview" style="display:none;margin-top:0.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:0.8125rem;color:#666;font-weight:600;">{{i18n:filePreviewTitle}}</span>
+          <span id="fileRemoveBtn" style="font-size:0.75rem;color:#e74c3c;cursor:pointer;user-select:none;">{{i18n:fileRemove}}</span>
+        </div>
+        <div id="filePreviewContent" style="min-height:100px;padding:0.75rem;background:#f0f1f3;border:1px solid #dcdfe3;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        </div>
+      </div>
       <div id="resultCard" style="margin-top:0.5rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:0.8125rem;color:#666;font-weight:600;">{{i18n:ciphertextLabel}}</span>
           <span id="resultCopyBtn" style="font-size:0.75rem;color:#999;cursor:pointer;user-select:none;">Copy</span>
         </div>
         <textarea id="resultText" autocomplete="off" placeholder="" style="width:100%;box-sizing:border-box;min-height:200px;padding:0.75rem 1rem;background:#f0f1f3;border:1px solid #dcdfe3;border-radius:8px;font-size:14px;line-height:1.5;resize:vertical;color:#333;font-family:inherit;"></textarea>
+      </div>
+      <div id="fileLocked" style="display:none;margin-top:0.5rem;padding:0.75rem;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;text-align:center;">
+        <span style="font-size:1.5rem;">🔒</span>
+        <span style="margin-left:8px;color:#2e7d32;font-size:0.875rem;">{{i18n:fileLockedLabel}}</span>
       </div>
       <div id="syncStatus" style="margin-top:0.5rem;color:var(--text-muted);font-size:0.875rem;">{{i18n:syncStatusReady}}</div>
       <div id="gdriveToast" style="display:none;margin-top:0.5rem;padding:0.6rem 1rem;background:#e8f5e9;color:#2e7d32;border-radius:8px;font-size:0.875rem;font-weight:500;"></div>

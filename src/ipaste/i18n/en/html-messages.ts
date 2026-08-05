@@ -54,4 +54,8 @@ export const htmlMessages: HtmlMessages = {
   gdriveDescLabel: 'Google Drive Description',
   gdriveDescPlaceholder: 'Description (required)',
   gdriveNote: 'Data stored in your Google Drive. Suitable for large files > 250KB.',
+  filePreviewTitle: 'File Preview',
+  fileRemove: 'Remove',
+  fileNotePlaceholder: 'File name (used as Google Drive description)',
+  fileLockedLabel: 'File Encrypted',
 };

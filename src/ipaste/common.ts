@@ -1,5 +1,4 @@
 import { jsMessages as messages } from '@i18n/js-messages';
-import { htmlMessages } from '@i18n/html-messages';
 
 // --- Constants ---
 
@@ -27,10 +26,12 @@ export interface InputData {
 export interface AppState {
   G_Input: InputData | undefined;
   currentSalt: string | undefined;
+  fileMode: boolean;
+  fileData: File | null;
 }
 
 export function createAppState(): AppState {
-  return { G_Input: undefined, currentSalt: undefined };
+  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null };
 }
 
 // --- UI Helpers ---
@@ -97,6 +98,197 @@ export function showMaskedPrivkey(privkey: string) {
   if (!row || !el) return;
   el.textContent = maskKey(privkey);
   row.style.display = "flex";
+}
+
+// --- File Mode UI ---
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+export function enterFileMode(state: AppState, file: File) {
+  state.fileMode = true;
+  state.fileData = file;
+
+  // Hide text mode UI
+  const plaintext = document.getElementById("plaintext");
+  const resultCard = document.getElementById("resultCard");
+  const encryptBtn = document.getElementById("encryptBtn");
+  const decryptBtn = document.getElementById("decryptBtn");
+  const saveToCf = document.getElementById("saveToCloudflare");
+  const restoreFromCf = document.getElementById("restoreFromCloudflare");
+
+  if (plaintext) plaintext.style.display = 'none';
+  if (resultCard) resultCard.style.display = 'none';
+  if (encryptBtn) encryptBtn.style.display = 'none';
+  if (decryptBtn) decryptBtn.style.display = 'none';
+  if (saveToCf) saveToCf.style.display = 'none';
+  if (restoreFromCf) restoreFromCf.style.display = 'none';
+
+  // Show file mode UI
+  showFilePreview(file);
+
+  // Show gdriveDesc with plain filename (JSON wrapping happens at save time)
+  const gdriveDescEl = document.getElementById("gdriveDesc") as HTMLInputElement;
+  if (gdriveDescEl) {
+    gdriveDescEl.value = file.name;
+    gdriveDescEl.style.display = '';
+  }
+
+  setSyncStatus(messages.fileModeEntered);
+}
+
+export function exitFileMode(state: AppState) {
+  state.fileMode = false;
+  state.fileData = null;
+
+  // Show text mode UI
+  const plaintext = document.getElementById("plaintext");
+  const resultCard = document.getElementById("resultCard");
+  const encryptBtn = document.getElementById("encryptBtn");
+  const decryptBtn = document.getElementById("decryptBtn");
+  const saveToCf = document.getElementById("saveToCloudflare");
+  const restoreFromCf = document.getElementById("restoreFromCloudflare");
+  const filePreview = document.getElementById("filePreview");
+  const fileLocked = document.getElementById("fileLocked");
+
+  if (plaintext) plaintext.style.display = '';
+  if (resultCard) resultCard.style.display = '';
+  if (encryptBtn) encryptBtn.style.display = '';
+  if (decryptBtn) {
+    decryptBtn.style.display = '';
+    const btnTitle = decryptBtn.querySelector('.btnTitle');
+    if (btnTitle) btnTitle.textContent = messages.btnDecrypt;
+  }
+  if (saveToCf) saveToCf.style.display = '';
+  if (restoreFromCf) restoreFromCf.style.display = '';
+  if (filePreview) filePreview.style.display = 'none';
+  if (fileLocked) fileLocked.style.display = 'none';
+
+  // Clear file preview content and revoke blob URLs
+  const previewContent = document.getElementById("filePreviewContent");
+  if (previewContent) {
+    const mediaElements = previewContent.querySelectorAll('img[src^="blob:"], video[src^="blob:"]');
+    mediaElements.forEach(el => {
+      const src = el.getAttribute('src');
+      if (src) URL.revokeObjectURL(src);
+    });
+    previewContent.innerHTML = '';
+  }
+
+  setSyncStatus(messages.fileModeExited);
+}
+
+export function showFilePreview(file: File) {
+  const preview = document.getElementById("filePreview");
+  const previewContent = document.getElementById("filePreviewContent");
+
+  if (!preview || !previewContent) return;
+
+  // Clear any existing blob URLs
+  const existingMedia = previewContent.querySelectorAll('img[src^="blob:"], video[src^="blob:"]');
+  existingMedia.forEach(el => {
+    const src = el.getAttribute('src');
+    if (src) URL.revokeObjectURL(src);
+  });
+
+  previewContent.innerHTML = '';
+
+  if (file.type.startsWith('image/')) {
+    const url = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = url;
+    img.className = 'file-preview-image';
+    img.alt = file.name;
+    previewContent.appendChild(img);
+  } else if (file.type.startsWith('video/')) {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url;
+    video.className = 'file-preview-video';
+    video.muted = true;
+    video.style.maxHeight = '300px';
+    previewContent.appendChild(video);
+  } else {
+    const size = formatFileSize(file.size);
+    const doc = document.createElement('div');
+    doc.className = 'file-preview-doc';
+    doc.innerHTML = `<span class="file-icon">📄</span>`;
+    const info = document.createElement('div');
+    info.className = 'file-info';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'file-info-name';
+    nameEl.textContent = file.name;
+    const sizeEl = document.createElement('div');
+    sizeEl.className = 'file-info-size';
+    sizeEl.textContent = size;
+    info.appendChild(nameEl);
+    info.appendChild(sizeEl);
+    doc.appendChild(info);
+    previewContent.appendChild(doc);
+  }
+
+  preview.style.display = '';
+}
+
+export function showFileLocked() {
+  const fileLocked = document.getElementById("fileLocked");
+  const filePreview = document.getElementById("filePreview");
+  if (fileLocked) fileLocked.style.display = 'flex';
+  if (filePreview) filePreview.style.display = 'none';
+}
+
+export function hideFileLocked() {
+  const fileLocked = document.getElementById("fileLocked");
+  if (fileLocked) fileLocked.style.display = 'none';
+}
+
+export function bindFilePaste(ec: any, state: AppState) {
+  document.addEventListener('paste', (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.kind === 'file') {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          enterFileMode(state, file);
+        }
+        return;
+      }
+    }
+    // No file in clipboard, allow normal text paste
+  });
+}
+
+export function bindFileRemoveBtn(state: AppState) {
+  const btn = document.getElementById("fileRemoveBtn");
+  if (!btn) return;
+  btn.onclick = () => {
+    exitFileMode(state);
+  };
+}
+
+export function enterFileModeUI(state: AppState) {
+  state.fileMode = true;
+  state.fileData = null;
+
+  const encryptBtn = document.getElementById("encryptBtn");
+  const plaintext = document.getElementById("plaintext");
+  const resultCard = document.getElementById("resultCard");
+  const saveToCf = document.getElementById("saveToCloudflare");
+  const restoreFromCf = document.getElementById("restoreFromCloudflare");
+  const gdriveDescEl = document.getElementById("gdriveDesc");
+
+  if (encryptBtn) encryptBtn.style.display = 'none';
+  if (plaintext) plaintext.style.display = 'none';
+  if (resultCard) resultCard.style.display = 'none';
+  if (saveToCf) saveToCf.style.display = 'none';
+  if (restoreFromCf) restoreFromCf.style.display = 'none';
+  if (gdriveDescEl) gdriveDescEl.style.display = 'none';
 }
 
 // --- Crypto ---
@@ -206,6 +398,57 @@ export async function aesGcmDecrypt(data: Uint8Array, key: CryptoKey): Promise<U
   );
 }
 
+// --- File Encryption/Decryption (F. format) ---
+
+export async function encryptFileContent(ec: any, fileBytes: Uint8Array, pubkey: string, salt: string): Promise<string> {
+  // Layer 1: EC encrypt (same as text, but with file bytes, gzip compressed)
+  let enc = await ec.encrypt(pubkey, fileBytes);
+  let cipher = ec.base64Encode(enc, 0);
+
+  // Layer 2: AES-GCM double encrypt (same as N. format)
+  const contentKey = await generateContentKey(pubkey, salt);
+  const cipherBytes = ec.base64Decode(cipher, 0);
+  const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+  const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+
+  // F. prefix (same structure as N., different prefix)
+  return 'F.' + e2;
+}
+
+export async function decryptFileContent(ec: any, ciphertext: string, privkey: string, pubkey: string, salt: string): Promise<Uint8Array> {
+  const fBase64 = ciphertext.slice(2); // strip "F."
+
+  let encryptedData: Uint8Array;
+  try {
+    encryptedData = ec.base64Decode(fBase64);
+  } catch {
+    throw new Error(messages.errDecodeFile);
+  }
+
+  // Layer 2 decrypt
+  let decryptedBuffer: ArrayBuffer;
+  try {
+    decryptedBuffer = await aesGcmDecrypt(encryptedData, await generateContentKey(pubkey, salt));
+  } catch {
+    throw new Error(messages.errDecryptAes);
+  }
+
+  // Layer 1 decrypt
+  return await ec.decrypt(privkey, new Uint8Array(decryptedBuffer));
+}
+
+export function downloadFile(bytes: Uint8Array, filename: string) {
+  const blob = new Blob([bytes], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // --- Button Bindings ---
 
 export function bindDecryptBtn(ec: any, state: AppState) {
@@ -250,11 +493,23 @@ export function bindDecryptBtn(ec: any, state: AppState) {
     }
 
     try {
-      if (!base64.startsWith('N.')) {
-        setErrMsg(messages.errNeedNformat);
+      if (!base64.startsWith('N.') && !base64.startsWith('F.')) {
+        setErrMsg(messages.errNeedFormat);
         return;
       }
 
+      if (base64.startsWith('F.')) {
+        // File mode decryption → download file
+        const fileBytes = await decryptFileContent(ec, base64, privkey, state.G_Input.pubkey, state.G_Input.salt);
+        const filename = state.fileData?.name || 'decrypted-file';
+        downloadFile(fileBytes, filename);
+        setSyncStatus(messages.fileDecryptDownload);
+        // Exit file mode after successful decrypt
+        setTimeout(() => exitFileMode(state), 500);
+        return;
+      }
+
+      // N. format: text decryption (existing logic)
       const nBase64 = base64.slice(2);
 
       let encryptedData: Uint8Array;
@@ -301,7 +556,7 @@ export async function computePhash(ec: any, plainText: string, salt: string): Pr
   const phashKey = await crypto.subtle.importKey(
     'raw', phashKeyData, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
   );
-  const phashBuffer = await crypto.subtle.sign('HMAC', phashKey, encoder.encode(plainText));
+  const phashBuffer = await crypto.subtle.sign("HMAC", phashKey, encoder.encode(plainText));
   const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
   return ec.base64Encode(phashArray, 1);
 }
@@ -554,6 +809,7 @@ export function bindCommonButtons(ec: any, state: AppState) {
       bindCopyResultBtn();
       bindPlainCopyBtn();
       bindComputePrivkeyBtn(ec, state);
+      bindFileRemoveBtn(state);
     });
   } else {
     bindDecryptBtn(ec, state);
@@ -563,10 +819,11 @@ export function bindCommonButtons(ec: any, state: AppState) {
     bindCopyResultBtn();
     bindPlainCopyBtn();
     bindComputePrivkeyBtn(ec, state);
+    bindFileRemoveBtn(state);
   }
 }
 
-// --- Bind Common Buttons ---
+// --- Build Info ---
 
 export function showBuildInfo() {
   var buildInfoEl = document.getElementById('buildInfo');

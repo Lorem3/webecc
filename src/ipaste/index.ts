@@ -6,7 +6,193 @@ import {
   openUrl, getPlainText, setErrMsg, maskKey, showMaskedPrivkey,
   generateRandomSalt, pbkdf2, generateKey, generateContentKey, aesGcmEncrypt,
   bindCommonButtons, initBookmark, showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
+  encryptFileContent, encryptContent, bindFilePaste,
+  showFileLocked, hideFileLocked, setResultText, enterFileModeUI,
 } from './common';
+import { GoogleDriveManager } from './gdrive';
+
+// --- Google Drive ---
+
+const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
+let gdrive: GoogleDriveManager | null = null;
+
+function getGDriveManager(): GoogleDriveManager {
+  if (!gdrive) {
+    gdrive = new GoogleDriveManager(GDRIVE_CLIENT_ID);
+  }
+  return gdrive;
+}
+
+async function bindGoogleDriveSaveBtn(ec: any, state: any) {
+  const btn = document.getElementById("saveToGDrive");
+  if (!btn) return;
+
+  btn.onclick = async () => {
+    const pubkey = state.G_Input?.pubkey;
+    const salt = state.G_Input?.salt;
+    if (!pubkey || !salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    try {
+      const manager = getGDriveManager();
+      setSyncStatus(messages.gdriveLoading || 'Saving...');
+
+      if (state.fileMode && state.fileData) {
+        // === File mode ===
+        const file = state.fileData;
+        const fileBytes = new Uint8Array(await file.arrayBuffer());
+        const ciphertext = await encryptFileContent(ec, fileBytes, pubkey, salt);
+
+        // description = JSON with note and ft
+        const desc = JSON.stringify({ note: file.name, ft: "F" });
+        await manager.saveBackup(ec, file.name, ciphertext, pubkey, salt, desc);
+        showFileLocked();
+        setSyncStatus(messages.gdriveSaveSuccessFile);
+      } else {
+        // === Text mode ===
+        const plainText = getPlainText()?.trim();
+        if (!plainText) {
+          setErrMsg(messages.errEmptyContent);
+          return;
+        }
+        const ciphertext = await encryptContent(ec, plainText, pubkey, salt);
+        setResultText(ciphertext);
+        const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || '';
+        if (!descInput) {
+          setErrMsg(messages.gdriveDescRequired);
+          return;
+        }
+        const description = JSON.stringify({ note: descInput, ft: "N" });
+        await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
+        setSyncStatus(messages.gdriveSaveSuccess);
+      }
+    } catch (error) {
+      const errMsg = (error as Error).message;
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveSaveFailed}: ${errMsg}`);
+    }
+  };
+}
+
+async function bindGoogleDriveLoadBtn(ec: any, state: any) {
+  const btn = document.getElementById("loadFromGDrive");
+  if (!btn) return;
+
+  btn.onclick = async () => {
+    const pubkey = state.G_Input?.pubkey;
+    const salt = state.G_Input?.salt;
+    if (!pubkey || !salt) {
+      setErrMsg(messages.errNeedBookmark);
+      return;
+    }
+
+    try {
+      const manager = getGDriveManager();
+      setSyncStatus(messages.gdriveLoading || 'Loading...');
+      const files = await manager.listBackups(pubkey, salt, ec);
+
+      if (files.length === 0) {
+        setErrMsg(messages.gdriveNoFiles);
+        setSyncStatus('');
+        return;
+      }
+
+      const selectedFile = await showFilePicker(files);
+      if (!selectedFile) {
+        setSyncStatus('');
+        return;
+      }
+
+      const content = await manager.readBackup(selectedFile.id);
+      if (content) {
+        if (content.startsWith('F.')) {
+          // File mode: show lock + decrypt btn
+          enterFileModeUI(state);
+          setResultText(content);
+          hideFileLocked();
+          const decryptBtn = document.getElementById("decryptBtn");
+          if (decryptBtn) {
+            decryptBtn.style.display = '';
+            const btnTitle = decryptBtn.querySelector('.btnTitle');
+            if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+          }
+          setSyncStatus(messages.gdriveLoadSuccessFile);
+        } else {
+          // Text mode
+          setResultText(content);
+          setSyncStatus(messages.gdriveLoadSuccess);
+        }
+      }
+    } catch (error) {
+      const errMsg = (error as Error).message;
+      if (errMsg.includes('canceled') || errMsg.includes('cancel')) {
+        setSyncStatus('');
+        return;
+      }
+      setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveLoadFailed}: ${errMsg}`);
+    }
+  };
+}
+
+function showFilePicker(files: any[]): Promise<any> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:#fff;border-radius:12px;padding:1.5rem;max-width:500px;width:90%;max-height:80vh;display:flex;flex-direction:column;';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Select a backup file';
+    title.style.cssText = 'margin:0 0 1rem;font-size:1rem;color:#333;';
+
+    const select = document.createElement('select');
+    select.style.cssText = 'width:100%;padding:0.5rem;font-size:0.875rem;border:1px solid #e3e6ea;border-radius:8px;margin-bottom:1rem;';
+
+    files.forEach((f) => {
+      const option = document.createElement('option');
+      option.value = f.id;
+      const date = new Date(f.modifiedTime);
+      const dateStr = date.toLocaleString();
+      const desc = f.description || f.name;
+      let note = desc;
+      try { const obj = JSON.parse(desc); if (obj.note) note = obj.note; } catch {}
+      option.textContent = `${note} (${dateStr})`;
+      select.appendChild(option);
+    });
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:0.5rem;justify-content:flex-end;';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e3e6ea;border-radius:8px;background:#fff;cursor:pointer;font-size:0.875rem;';
+    cancelBtn.onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'Load';
+    okBtn.style.cssText = 'padding:0.5rem 1rem;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;font-size:0.875rem;';
+    okBtn.onclick = () => {
+      const selectedId = select.value;
+      const selectedFile = files.find((f) => f.id === selectedId);
+      overlay.remove();
+      resolve(selectedFile || null);
+    };
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(okBtn);
+
+    dialog.appendChild(title);
+    dialog.appendChild(select);
+    dialog.appendChild(btnRow);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+  });
+}
 
 const App = (function () {
 
@@ -199,6 +385,11 @@ const App = (function () {
 
     // Bind common buttons (decrypt, encrypt, save, restore, copy)
     bindCommonButtons(ec, state);
+
+    // Bind file paste and GDrive
+    bindFilePaste(ec, state);
+    bindGoogleDriveSaveBtn(ec, state);
+    bindGoogleDriveLoadBtn(ec, state);
 
     // 绑定眼睛按钮事件
     function bindEyeBtn() {

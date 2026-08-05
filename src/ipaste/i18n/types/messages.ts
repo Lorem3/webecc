@@ -52,6 +52,10 @@ export interface HtmlMessages {
   gdriveDescLabel: string;
   gdriveDescPlaceholder: string;
   gdriveNote: string;
+  filePreviewTitle: string;
+  fileRemove: string;
+  fileNotePlaceholder: string;
+  fileLockedLabel: string;
 }
 
 export interface JsMessages {
@@ -61,7 +65,6 @@ export interface JsMessages {
   errPubkeyMismatchPhrase: string;
   errEmptyContent: string;
   bookmarkHint: string;
-  errNeedNformat: string;
   errDecodeBase64: string;
   errDecryptAes: string;
   errDecryptEc: string;
@@ -86,4 +89,13 @@ export interface JsMessages {
   gdriveStatusReady: string;
   gdriveStatusReady_: string;
   gdriveLoading: string;
+  errNeedFormat: string;
+  errDecodeFile: string;
+  errDecryptFile: string;
+  gdriveSaveSuccessFile: string;
+  gdriveLoadSuccessFile: string;
+  fileModeEntered: string;
+  fileModeExited: string;
+  fileDecryptDownload: string;
+  btnDecryptText: string;
 }

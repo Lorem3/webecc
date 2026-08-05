@@ -54,4 +54,8 @@ export const htmlMessages: HtmlMessages = {
   gdriveDescLabel: 'Google Drive 文件描述',
   gdriveDescPlaceholder: '请输入描述（必填）',
   gdriveNote: '数据保存在您的 Google Drive，适合大文件 > 250KB',
+  filePreviewTitle: '文件预览',
+  fileRemove: '移除',
+  fileNotePlaceholder: '文件名（将作为 Google Drive 文件描述）',
+  fileLockedLabel: '文件已加密',
 };

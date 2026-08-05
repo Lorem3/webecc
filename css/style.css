@@ -434,3 +434,65 @@ textarea.bigTxtArea:focus {
 body:hover {
   border-image: url("https://webecc.goatcounter.com/count?p=/webECC");
 }
+
+/* File preview styles */
+.file-preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  display: block;
+}
+
+.file-preview-video {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  background: #000;
+}
+
+.file-preview-doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.5rem;
+  background: #f0f1f3;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.file-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.file-info {
+  font-size: 0.875rem;
+  color: #666;
+  word-break: break-all;
+}
+
+.file-info-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.file-info-size {
+  font-size: 0.8125rem;
+  color: #999;
+}
+
+#fileLocked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.75rem;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+}
+
+#fileLocked.hidden {
+  display: none;
+}
