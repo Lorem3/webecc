@@ -179,9 +179,15 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
 
   try {
     const manager = getGDriveManager();
+
+    // Try to authorize if not already authorized
     if (!manager.isAuthorized()) {
-      container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
-      return;
+      try {
+        await manager.authorize();
+      } catch {
+        container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
+        return;
+      }
     }
 
     container.innerHTML = `<div class="history-loading">${messages.historyLoading}</div>`;
