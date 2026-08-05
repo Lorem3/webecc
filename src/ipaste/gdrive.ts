@@ -32,8 +32,8 @@ export class GoogleDriveManager {
   async authorize(): Promise<void> {
     if (this.accessToken) return;
 
-    // Try to restore token from sessionStorage
-    const stored = sessionStorage.getItem('gdrive_access_token');
+    // Try to restore token from localStorage
+    const stored = localStorage.getItem('gdrive_access_token');
     if (stored) {
       this.accessToken = stored;
       return;
@@ -45,7 +45,7 @@ export class GoogleDriveManager {
         if (event.data && event.data.type === 'gdrive-auth-success') {
           settled = true;
           this.accessToken = event.data.token;
-          sessionStorage.setItem('gdrive_access_token', this.accessToken);
+          localStorage.setItem('gdrive_access_token', this.accessToken);
           resolve();
         }
       };
