@@ -126,74 +126,18 @@ export class GoogleDriveManager {
 
     // Check if file with same phash already exists
     const existingFile = await this.findBackupByPhash(phash, pubkeyFolderId);
-    if (existingFile) {
-      // Update existing file using multipart
-      const boundary = '-------314159265358979323846';
-      const bodyParts =
-        `\r\n--${boundary}\r\n` +
-        'Content-Type: application/json\r\n\r\n' +
-        JSON.stringify({ name: existingFile.name, mimeType: 'text/plain', description }) +
-        `\r\n--${boundary}\r\n` +
-        'Content-Type: text/plain\r\n\r\n' +
-        ciphertext +
-        `\r\n--${boundary}--`;
 
-      const response = await this.driveFetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=multipart`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': `multipart/related; boundary="${boundary}"`,
-          },
-          body: bodyParts,
-        }
-      );
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Failed to update: ${response.status} ${errText}`);
-      }
-      const result = await response.json();
-      return result.id;
-    }
-
-    // Create file with content using multipart upload
-    const boundary = '-------314159265358979323846';
-    const metadataJson = JSON.stringify({
+    const metadata = {
       name: fileName,
       mimeType: 'text/plain',
       description,
-      parents: [pubkeyFolderId],
-    });
+      ...(existingFile ? {} : { parents: [pubkeyFolderId] }),
+    };
 
-    const multipartBody =
-      `\r\n--${boundary}\r\n` +
-      'Content-Type: application/json\r\n\r\n' +
-      metadataJson +
-      `\r\n--${boundary}\r\n` +
-      'Content-Type: text/plain\r\n\r\n' +
-      ciphertext +
-      `\r\n--${boundary}--`;
-
-    const response = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': `multipart/related; boundary="${boundary}"`,
-        },
-        body: multipartBody,
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Failed to save: ${response.status} ${errText}`);
-    }
-
-    const result = await response.json();
-    return result.id;
+    const fileId = existingFile ? existingFile.id : null;
+    const uploadUrl = await this.startResumableUpload(fileId, metadata);
+    const newFileId = await this.uploadContent(uploadUrl, ciphertext);
+    return fileId || newFileId;
   }
 
   async listBackups(pubkey: string, salt: string, ec: any): Promise<GDriveFile[]> {
@@ -231,6 +175,98 @@ export class GoogleDriveManager {
 
     const text = await response.text();
     return text.trim();
+  }
+
+  // --- Resumable Upload ---
+
+  private async startResumableUpload(fileId: string | null, metadata: Record<string, any>): Promise<string> {
+    const isUpdate = !!fileId;
+    const url = isUpdate
+      ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=resumable`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable';
+
+    const response = await this.driveFetch(url, {
+      method: isUpdate ? 'PATCH' : 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(metadata),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Failed to start upload: ${response.status} ${errText}`);
+    }
+
+    const sessionUrl = response.headers.get('Location');
+    if (!sessionUrl) {
+      throw new Error('No resumable upload session URL returned');
+    }
+    return sessionUrl;
+  }
+
+  private async uploadContent(sessionUrl: string, content: string): Promise<string> {
+    const CHUNK_SIZE = 256 * 1024; // 256KB
+    const encoder = new TextEncoder();
+    const data = encoder.encode(content);
+    const total = data.length;
+
+    if (total <= CHUNK_SIZE) {
+      // Small content: single PUT
+      const response = await fetch(sessionUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': String(total),
+        },
+        body: content,
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to upload: ${response.status} ${errText}`);
+      }
+      const result = await response.json();
+      return result.id;
+    }
+
+    // Chunked upload
+    let offset = 0;
+    while (offset < total) {
+      const end = Math.min(offset + CHUNK_SIZE, total) - 1;
+      const chunk = data.slice(offset, end + 1);
+      const chunkSize = chunk.length;
+      const isLast = end + 1 >= total;
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(chunkSize),
+      };
+      if (isLast) {
+        headers['Content-Range'] = `bytes ${offset}-${end}/${total}`;
+      } else {
+        headers['Content-Range'] = `bytes ${offset}-${end}/*`;
+      }
+
+      const response = await fetch(sessionUrl, {
+        method: 'PUT',
+        headers,
+        body: chunk,
+      });
+
+      if (!response.ok && response.status !== 308) {
+        const errText = await response.text();
+        throw new Error(`Failed to upload chunk: ${response.status} ${errText}`);
+      }
+
+      // 308 = resume incomplete, continue next chunk
+      if (response.status === 308) continue;
+
+      const result = await response.json();
+      return result.id;
+    }
+
+    throw new Error('Upload completed without server response');
   }
 
   // --- Helpers ---
