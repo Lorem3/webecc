@@ -266,7 +266,14 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
       const content = await manager.readBackup(selectedFile.id);
       if (content) {
         if (content.startsWith('F.')) {
-          enterFileModeUI(state);
+          // Extract note from description for filename
+          let fileName = 'decrypted-file';
+          try {
+            const desc = selectedFile.description || '';
+            const obj = JSON.parse(desc);
+            if (obj.note) fileName = obj.note;
+          } catch {}
+          enterFileModeUI(state, fileName);
           setResultText(content);
           hideFileLocked();
           const decryptBtn = document.getElementById("decryptBtn");

@@ -28,10 +28,11 @@ export interface AppState {
   currentSalt: string | undefined;
   fileMode: boolean;
   fileData: File | null;
+  fileName: string | null;
 }
 
 export function createAppState(): AppState {
-  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null };
+  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null, fileName: null };
 }
 
 // --- UI Helpers ---
@@ -111,6 +112,7 @@ export function formatFileSize(bytes: number): string {
 export function enterFileMode(state: AppState, file: File) {
   state.fileMode = true;
   state.fileData = file;
+  state.fileName = file.name;
 
   // Hide text mode UI
   const plaintext = document.getElementById("plaintext");
@@ -272,9 +274,10 @@ export function bindFileRemoveBtn(state: AppState) {
   };
 }
 
-export function enterFileModeUI(state: AppState) {
+export function enterFileModeUI(state: AppState, fileName?: string) {
   state.fileMode = true;
   state.fileData = null;
+  state.fileName = fileName || null;
 
   const encryptBtn = document.getElementById("encryptBtn");
   const plaintext = document.getElementById("plaintext");
@@ -501,7 +504,7 @@ export function bindDecryptBtn(ec: any, state: AppState) {
       if (base64.startsWith('F.')) {
         // File mode decryption → download file
         const fileBytes = await decryptFileContent(ec, base64, privkey, state.G_Input.pubkey, state.G_Input.salt);
-        const filename = state.fileData?.name || 'decrypted-file';
+        const filename = state.fileData?.name || state.fileName || 'decrypted-file';
         downloadFile(fileBytes, filename);
         setSyncStatus(messages.fileDecryptDownload);
         // Exit file mode after successful decrypt
