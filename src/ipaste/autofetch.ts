@@ -179,15 +179,9 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
 
   try {
     const manager = getGDriveManager();
-
-    // Try to authorize if not already authorized
     if (!manager.isAuthorized()) {
-      try {
-        await manager.authorize();
-      } catch {
-        container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
-        return;
-      }
+      container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
+      return;
     }
 
     container.innerHTML = `<div class="history-loading">${messages.historyLoading}</div>`;
@@ -272,7 +266,18 @@ async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTML
 export function bindGDriveHistoryRefreshBtn(ec: any, state: any) {
   const btn = document.getElementById('gdriveRefreshBtn');
   if (!btn) return;
-  btn.onclick = () => autoFetchGDriveHistory(ec, state);
+  btn.onclick = async () => {
+    const manager = getGDriveManager();
+    // Try to authorize when user manually clicks refresh
+    if (!manager.isAuthorized()) {
+      try {
+        await manager.authorize();
+      } catch {
+        return;
+      }
+    }
+    autoFetchGDriveHistory(ec, state);
+  };
 }
 
 // --- Google Drive ---
@@ -515,9 +520,9 @@ const App = (function () {
     await autoFetchHistory(ec, state);
     bindHistoryRefreshBtn(ec, state);
 
-    // GDrive history
-    autoFetchGDriveHistory(ec, state);
+    // GDrive history - only show status, don't auto-fetch (requires manual refresh to authorize)
     bindGDriveHistoryRefreshBtn(ec, state);
+    autoFetchGDriveHistory(ec, state);
 
     // 页面加载后自动获取最新密文
     if (state.G_Input?.pubkey && state.G_Input?.salt) {
