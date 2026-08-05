@@ -85,7 +85,16 @@ export class GoogleDriveManager {
   }
 
   isAuthorized(): boolean {
-    return this.accessToken !== null && this.accessToken !== '';
+    if (this.accessToken !== null && this.accessToken !== '') {
+      return true;
+    }
+    // Check localStorage for persisted token
+    const stored = localStorage.getItem('gdrive_access_token');
+    if (stored) {
+      this.accessToken = stored;
+      return true;
+    }
+    return false;
   }
 
   signOut(): void {
