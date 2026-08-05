@@ -207,30 +207,44 @@ export class GoogleDriveManager {
   }
 
   private async uploadContent(sessionUrl: string, content: string): Promise<string> {
-    const CHUNK_SIZE = 256 * 1024; // 256KB
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB
     const encoder = new TextEncoder();
     const data = encoder.encode(content);
     const total = data.length;
+    const MAX_RETRIES = 3;
+
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    const isRetryable = (status: number) => status === 0 || status >= 500;
 
     if (total <= CHUNK_SIZE) {
-      // Small content: single PUT
-      const response = await fetch(sessionUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': String(total),
-        },
-        body: content,
-      });
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Failed to upload: ${response.status} ${errText}`);
+      // Small content: single PUT with retry
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const response = await fetch(sessionUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'Content-Length': String(total),
+            },
+            body: content,
+          });
+          if (response.ok) {
+            const result = await response.json();
+            return result.id;
+          }
+          if (!isRetryable(response.status) || attempt === MAX_RETRIES - 1) {
+            const errText = await response.text();
+            throw new Error(`Failed to upload: ${response.status} ${errText}`);
+          }
+        } catch (e) {
+          if (attempt === MAX_RETRIES - 1) throw e;
+        }
+        await sleep(1000 * (attempt + 1));
       }
-      const result = await response.json();
-      return result.id;
     }
 
-    // Chunked upload
+    // Chunked upload with retry per chunk
     let offset = 0;
     while (offset < total) {
       const end = Math.min(offset + CHUNK_SIZE, total) - 1;
@@ -238,32 +252,51 @@ export class GoogleDriveManager {
       const chunkSize = chunk.length;
       const isLast = end + 1 >= total;
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': String(chunkSize),
-      };
-      if (isLast) {
-        headers['Content-Range'] = `bytes ${offset}-${end}/${total}`;
-      } else {
-        headers['Content-Range'] = `bytes ${offset}-${end}/*`;
+      let uploaded = false;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': String(chunkSize),
+        };
+        if (isLast) {
+          headers['Content-Range'] = `bytes ${offset}-${end}/${total}`;
+        } else {
+          headers['Content-Range'] = `bytes ${offset}-${end}/*`;
+        }
+
+        try {
+          const response = await fetch(sessionUrl, {
+            method: 'PUT',
+            headers,
+            body: chunk,
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            return result.id;
+          }
+
+          if (response.status === 308) {
+            // Server received chunk, move on
+            uploaded = true;
+            break;
+          }
+
+          if (!isRetryable(response.status) || attempt === MAX_RETRIES - 1) {
+            const errText = await response.text();
+            throw new Error(`Failed to upload chunk: ${response.status} ${errText}`);
+          }
+        } catch (e) {
+          if (attempt === MAX_RETRIES - 1) throw e;
+        }
+        await sleep(1000 * (attempt + 1));
       }
 
-      const response = await fetch(sessionUrl, {
-        method: 'PUT',
-        headers,
-        body: chunk,
-      });
-
-      if (!response.ok && response.status !== 308) {
-        const errText = await response.text();
-        throw new Error(`Failed to upload chunk: ${response.status} ${errText}`);
+      if (!uploaded) {
+        throw new Error(`Chunk at offset ${offset} failed after ${MAX_RETRIES} retries`);
       }
 
-      // 308 = resume incomplete, continue next chunk
-      if (response.status === 308) continue;
-
-      const result = await response.json();
-      return result.id;
+      offset += CHUNK_SIZE;
     }
 
     throw new Error('Upload completed without server response');
