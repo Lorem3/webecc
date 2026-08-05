@@ -171,6 +171,104 @@ export function bindHistoryRefreshBtn(ec: any, state: any) {
   btn.onclick = () => autoFetchHistory(ec, state);
 }
 
+// --- Google Drive History ---
+
+export async function autoFetchGDriveHistory(ec: any, state: any) {
+  const container = document.getElementById('gdriveHistoryList');
+  if (!container) return;
+
+  try {
+    const manager = getGDriveManager();
+    if (!manager.isAuthorized()) {
+      container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="history-loading">${messages.historyLoading}</div>`;
+    const files = await manager.listBackups(state.G_Input.pubkey, state.G_Input.salt, ec);
+
+    if (!files.length) {
+      container.innerHTML = `<div class="history-empty">${messages.gdriveNoFiles}</div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    files.forEach((f) => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+
+      let note = f.name;
+      try {
+        const obj = JSON.parse(f.description || '');
+        if (obj.note) note = obj.note;
+      } catch {}
+
+      const date = new Date(f.modifiedTime);
+      const dateStr = date.toLocaleString();
+      const isFile = f.description?.includes('"ft":"F"');
+
+      div.innerHTML = `
+        <div class="history-item-time">${dateStr}</div>
+        <div class="history-item-note">${note}</div>
+        ${isFile ? '<div class="history-item-expire">File</div>' : ''}
+      `;
+      div.onclick = () => handleGDriveHistoryClick(ec, state, f, div);
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Error fetching GDrive history:', error);
+    container.innerHTML = `<div class="history-empty">${messages.gdriveLoadFailed}</div>`;
+  }
+}
+
+async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTMLElement) {
+  document.querySelectorAll('#gdriveHistoryList .history-item').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+
+  const btnTitle = el.querySelector('.history-item-note') as HTMLElement;
+  const originalText = btnTitle?.textContent;
+  if (btnTitle) btnTitle.textContent = 'Loading...';
+  el.style.pointerEvents = 'none';
+
+  try {
+    const manager = getGDriveManager();
+    const content = await manager.readBackup(file.id);
+    if (content) {
+      if (content.startsWith('F.')) {
+        let fileName = 'decrypted-file';
+        try {
+          const obj = JSON.parse(file.description || '');
+          if (obj.note) fileName = obj.note;
+        } catch {}
+        enterFileModeUI(state, fileName, content);
+        hideFileLocked();
+        const decryptBtn = document.getElementById("decryptBtn");
+        if (decryptBtn) {
+          decryptBtn.style.display = '';
+          const btnTitle = decryptBtn.querySelector('.btnTitle');
+          if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+        }
+        setSyncStatus(messages.gdriveLoadSuccessFile);
+      } else {
+        if (state.fileMode) exitFileMode(state);
+        setResultText(content);
+        setSyncStatus(messages.gdriveLoadSuccess);
+      }
+    }
+  } catch (error) {
+    setErrMsg('Failed to load: ' + (error as Error).message);
+  } finally {
+    if (btnTitle) btnTitle.textContent = originalText;
+    el.style.pointerEvents = '';
+  }
+}
+
+export function bindGDriveHistoryRefreshBtn(ec: any, state: any) {
+  const btn = document.getElementById('gdriveRefreshBtn');
+  if (!btn) return;
+  btn.onclick = () => autoFetchGDriveHistory(ec, state);
+}
+
 // --- Google Drive ---
 
 const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
@@ -410,6 +508,10 @@ const App = (function () {
 
     await autoFetchHistory(ec, state);
     bindHistoryRefreshBtn(ec, state);
+
+    // GDrive history
+    autoFetchGDriveHistory(ec, state);
+    bindGDriveHistoryRefreshBtn(ec, state);
 
     // 页面加载后自动获取最新密文
     if (state.G_Input?.pubkey && state.G_Input?.salt) {

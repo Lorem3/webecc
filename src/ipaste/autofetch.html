@@ -131,6 +131,15 @@
     <div id="historyList" class="history-list">
       <div class="history-loading">{{i18n:syncStatusReady}}...</div>
     </div>
+    <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid #e3e6ea;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <h3 style="margin:0;font-size:1rem;color:#333;">{{i18n:gdriveTitle}}</h3>
+        <span id="gdriveRefreshBtn" style="font-size:0.75rem;color:#2563eb;cursor:pointer;user-select:none;">{{i18n:historyRefresh}}</span>
+      </div>
+      <div id="gdriveHistoryList" class="history-list">
+        <div class="history-empty">{{i18n:gdriveStatusReady}}</div>
+      </div>
+    </div>
   </div>
   </div>
   <script src="js/app.js"></script>
