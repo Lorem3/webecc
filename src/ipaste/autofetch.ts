@@ -535,31 +535,6 @@ const App = (function () {
     bindGDriveHistoryRefreshBtn(ec, state);
     autoFetchGDriveHistory(ec, state);
 
-    // 页面加载后自动获取最新密文
-    if (state.G_Input?.pubkey && state.G_Input?.salt) {
-      try {
-        const content = await fetchLatestContent(ec, state.G_Input.pubkey, state.G_Input.salt);
-        if (content) {
-          if (content.startsWith('F.')) {
-            enterFileModeUI(state, undefined, content);
-            hideFileLocked();
-            const decryptBtn = document.getElementById("decryptBtn");
-            if (decryptBtn) {
-              decryptBtn.style.display = '';
-              const btnTitle = decryptBtn.querySelector('.btnTitle');
-              if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
-            }
-            setSyncStatus(messages.gdriveLoadSuccessFile);
-          } else {
-            if (state.fileMode) exitFileMode(state);
-            setResultText(content);
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch latest:', error);
-      }
-    }
-
     showBuildInfo();
   }
 
