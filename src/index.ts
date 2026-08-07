@@ -744,7 +744,7 @@ ${messages.emailDataBase64}: ${newLine}
     const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
     const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
 
-    const url = `https://vault10.kr7y.workers.dev/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}&expire=-1`;
+    const url = `https://msgbrd.vercel.app/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}&expire=-1`;
     openUrl(url);
   };
 
@@ -866,7 +866,7 @@ ${messages.emailDataBase64}: ${newLine}
 
     const salt = G_Input.salt;
     const key = encodeURIComponent(await generateKey(pubkey, salt));
-    const url = `https://vault10.kr7y.workers.dev/list#key=${key}`;
+    const url = `https://msgbrd.vercel.app/list#key=${key}`;
     openUrl(url);
   };
 
@@ -1070,7 +1070,7 @@ ${messages.emailDataBase64}: ${newLine}
 
   async function fetchHistoryList(pubkey: string, salt: string): Promise<HistoryItem[]> {
     const key = encodeURIComponent(await generateKey(pubkey, salt));
-    const url = `https://vault10.kr7y.workers.dev/${key}`;
+    const url = `https://msgbrd.vercel.app/${key}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch history');
     const data = await response.json();
@@ -1079,7 +1079,7 @@ ${messages.emailDataBase64}: ${newLine}
 
   async function fetchHistoryDetail(pubkey: string, salt: string, timeString: string): Promise<string> {
     const key = encodeURIComponent(await generateKey(pubkey, salt));
-    const url = `https://vault10.kr7y.workers.dev/${key}/${encodeURIComponent(timeString)}?fmt=json`;
+    const url = `https://msgbrd.vercel.app/${key}/${encodeURIComponent(timeString)}?fmt=json`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch detail');
     const data = await response.json();

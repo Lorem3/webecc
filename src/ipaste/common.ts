@@ -618,7 +618,7 @@ export function bindSaveBtn(ec: any, state: AppState) {
     const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
     const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
 
-    const url = `https://vault10.kr7y.workers.dev/#key=${key}&phash=${phash}&content=${content}&expire=18`;
+    const url = `https://msgbrd.vercel.app/#key=${key}&phash=${phash}&content=${content}&expire=18`;
     openUrl(url);
     setSyncStatus(messages.saveSuccess);
   };
@@ -636,7 +636,7 @@ export function bindRestoreBtn(ec: any, state: AppState) {
 
     const salt = state.G_Input!.salt!;
     const key = encodeURIComponent(await generateKey(ec, pubkey, salt));
-    const url = `https://vault10.kr7y.workers.dev/list#key=${key}`;
+    const url = `https://msgbrd.vercel.app/list#key=${key}`;
     openUrl(url);
   };
 }

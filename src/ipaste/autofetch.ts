@@ -17,7 +17,7 @@ export interface HistoryItem {
 
 export async function fetchHistoryList(ec: any, pubkey: string, salt: string): Promise<HistoryItem[]> {
   const key = encodeURIComponent(await generateKey(ec, pubkey, salt));
-  const url = `https://vault10.kr7y.workers.dev/${key}`;
+  const url = `https://msgbrd.vercel.app/${key}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error('Failed to fetch history');
   const data = await response.json();
@@ -26,7 +26,7 @@ export async function fetchHistoryList(ec: any, pubkey: string, salt: string): P
 
 export async function fetchHistoryDetail(ec: any, pubkey: string, salt: string, timeString: string): Promise<string> {
   const key = encodeURIComponent(await generateKey(ec, pubkey, salt));
-  const url = `https://vault10.kr7y.workers.dev/${key}/${encodeURIComponent(timeString)}?fmt=json`;
+  const url = `https://msgbrd.vercel.app/${key}/${encodeURIComponent(timeString)}?fmt=json`;
   const response = await fetch(url);
   if (!response.ok) throw new Error('Failed to fetch detail');
   const data = await response.json();
@@ -153,7 +153,7 @@ export async function autoFetchHistory(ec: any, state: any) {
 
 export async function fetchLatestContent(ec: any, pubkey: string, salt: string): Promise<string> {
   const key = encodeURIComponent(await generateKey(ec, pubkey, salt));
-  const url = `https://vault10.kr7y.workers.dev/${key}/latest?fmt=json`;
+  const url = `https://msgbrd.vercel.app/${key}/latest?fmt=json`;
   const response = await fetch(url);
   if (!response.ok) throw new Error('Failed to fetch latest content');
   const text = await response.text();
