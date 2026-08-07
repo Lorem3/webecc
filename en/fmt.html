@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>README.md</title>
+  <style>
+table { width: 100%; }
+table, th, td { border: thin solid black; border-collapse: collapse; padding: 0.4rem; }
+pre { white-space: pre-wrap; word-wrap: break-word; }
+a { word-break: break-all; }
+  </style>
+  <style lang="">
+
+  body{
+        background-color: #efefef;
+        max-width: 960px;
+        margin:auto;
+    }
+    .main{
+        background-color: white;
+        padding: 2em;
+    }
+    tr:nth-child(even){
+        background-color: #efefef;
+    }
+
+    pre{
+        background-color: #efefef;
+        padding: 2em;
+    }
+
+  </style>
+</head>
+<body>
+<div class="main">
+<h1 id="-">What is this for?</h1>
+<p>Periodically export encryption keys from your password manager as encrypted backups, and send them to your email.<br><strong>All operations are performed locally in the browser. No server is involved.</strong></p>
+<blockquote>
+<p>I once lost the two-step verification for Bitwarden and had to delete my account.<br>Periodically export the manager's keys<br>Put the public key in the link for convenient backups each time, without re-entering the passphrase.</p>
+</blockquote>
+<h1 id="-">Parameters</h1>
+<p>Use the page's key pair to decrypt the data in the hash, decrypting it into a JSON object.</p>
+<pre><code>Private key yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=
+Public key dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
+</code></pre><p>JSON structure</p>
+<pre><code>{
+    pubkey: string
+    salt?: string
+    ver?: string
+    kdfHash?: string
+    kdfIterations?: number
+    type?: 'phrase' | 'pubkey'
+    private?: string
+}
+</code></pre><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pubkey</td>
+<td>Public key, used for encryption and verification</td>
+</tr>
+<tr>
+<td>salt</td>
+<td>Random salt for PBKDF2 key derivation</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>ver</td>
+<td>KDF version, e.g. "2.0"</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>kdfHash</td>
+<td>PBKDF2 hash algorithm, e.g. "SHA-512"</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>kdfIterations</td>
+<td>PBKDF2 iteration count, e.g. 210000</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>type</td>
+<td>Key type: 'phrase' (derived from passphrase) or 'pubkey' (direct public key)</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td>private</td>
+<td>Private key (Base64), allows passphrase-free decryption when saved</td>
+<td>Optional, requires user confirmation</td>
+</tr>
+</tbody>
+</table>
+<h1 id="-">Format Specification</h1>
+<h2 id="-">Structure</h2>
+<table>
+<thead>
+<tr>
+<th>1 byte</th>
+<th>1 byte</th>
+<th>2 bytes</th>
+<th>2 bytes</th>
+<th>2 bytes</th>
+<th>IV</th>
+<th>MAC</th>
+<th>Random public key</th>
+<th>Encrypted data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>All shorts below are little-endian</code></p>
+<ul>
+<li><p>Byte 1: Format flag</p>
+<ul>
+<li><strong>Old format (Blake2b)</strong>:<ul>
+<li>4: gzip then encrypt (Blake2b)</li>
+<li>5: encrypt directly (Blake2b)</li>
+</ul>
+</li>
+<li><strong>New format (SHA-512)</strong>: Uses bit flags<ul>
+<li>bit3 (0x08): Always 1, indicates new format</li>
+<li>bit2 (0x04): Always 1</li>
+<li>bit1 (0x02): Fixed 0, indicates AES-GCM</li>
+<li>bit0 (0x01): Compression flag, 0=gzip then encrypt, 1=encrypt directly</li>
+<li>Example: 0x0C (12) = new format+GCM+compressed, 0x0D (13) = new format+GCM+uncompressed</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Byte 2: Reserved (0)</p>
+</li>
+<li>Bytes 3-4: short value for IV length, 12 for new format, 16 for old format</li>
+<li>Bytes 5-6: short value for MAC hash length, 32</li>
+<li>Bytes 7-8: short value for temporary public key length, 32</li>
+<li>IV   // Randomly generated</li>
+<li>MAC  // Computed and appended</li>
+<li>tmpPubKey // Randomly generated public/private key pair, private key (tmpSecKey) is discarded after use</li>
+<li>EncryptData</li>
+</ul>
+<h2 id="-">Process</h2>
+<pre><code>Generate temporary key pair: tmpSecKey, tmpPubKey
+
+sharedX (32 bytes) = publicKey * tmpSecKey
+
+buffer[96];
+copy sharedX => buffer[0..31]
+
+/**
+* Public keys are compared in little-endian order, high position first
+*/
+if tmpPubKey > publicKey
+    copy publicKey => buffer[32...63]
+    copy tmpPubKey => buffer[64...95]
+else
+    copy publicKey => buffer[32...63]
+    copy tmpPubKey => buffer[64...95]
+end
+
+Select hash algorithm based on format:
+
+【Old format (format=0)】
+Use blake2b hash to generate 64-byte digest
+digest = blake2b(buffer)
+
+【New format (format=1)】
+Use SHA-512 hash to generate 64-byte digest
+digest = sha512(buffer)
+
+digest[0..31] is used as AES-GCM key aesKey, along with IV to encrypt the key and produce EncryptData (ciphertext includes 16-byte authentication tag)
+
+digest[32,63] is used as MAC key HKEY, producing 32-byte output
+
+【Old format MAC calculation】
+Using blake2b, output 32 bytes, key = HKEY
+mac = blake2b(IV + tmpPubKey + EncryptData, key=HKEY)
+
+【New format MAC calculation】
+Using HMAC-SHA-512, truncated to first 32 bytes
+mac = hmac_sha512(HKEY, IV + tmpPubKey + EncryptData)[0..31]
+
+
+</code></pre><h2 id="-">Compatibility</h2>
+<ul>
+<li><strong>Auto-detect format on decode</strong>: Determined by byte 1<ul>
+<li>byte0 = 4 or 5: Old format (Blake2b)</li>
+<li>byte0 bit3 (0x08) = 1: New format (SHA-512)</li>
+<li>Other values: Not supported, throws exception</li>
+</ul>
+</li>
+<li><strong>Default to new format on encode</strong>: format parameter defaults to 1 (SHA-512)</li>
+<li><strong>Backward compatible</strong>: Can decrypt old format data, but new encryption defaults to SHA-512</li>
+</ul>
+<h1 id="-">Generating Keys from Passphrase</h1>
+<p>Steps</p>
+<ol>
+<li>Determine key based on bookmark ver and whether salt is included:
+  <ul>
+    <li>ver=2.0 (new format) and hash contains salt: key = passphrase (without prefix)</li>
+    <li>Old format (no ver, or no salt): key = prefix (if any) + passphrase</li>
+  </ul>
+</li>
+<li>PBKDF2(key) generates 32 bytes as private key, secKey = PBKDF2(key)</li>
+<li>Generate key pair from private key</li>
+</ol>
+<p>PBKDF2 Parameters</p>
+<table>
+<thead>
+<tr>
+<th>PBKDF2 Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>salt</td>
+<td>New bookmarks: A random 33-byte Base64-encoded salt generated each time a bookmark is created, stored in the bookmark link hash.<br>Old bookmarks: Fixed value (The California sea lion ...)</td>
+</tr>
+<tr>
+<td>ver=1.0 (old bookmark) iteration / hash</td>
+<td>123456 / SHA-256</td>
+</tr>
+<tr>
+<td>ver=2.0 (new bookmark) iteration / hash</td>
+<td>210000 / SHA-512</td>
+</tr>
+<tr>
+<td>outLen</td>
+<td>256bit</td>
+</tr>
+</tbody>
+</table>
+</div>
+</body>
+</html>
