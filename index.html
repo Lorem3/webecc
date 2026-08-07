@@ -1,0 +1,3754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>便捷备份</title>
+  <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+  <style>
+    .bigTxtArea{width:320px;margin-top:10px;margin-bottom:10px;flex:auto}.content{height:500px;display:flex;flex-direction:column}input{height:50px;width:60%}.title{margin-right:10px;font-weight:600}.row{margin-top:5px;display:flex}.row2{margin-top:5px;display:flex;align-items:center;justify-content:flex-start}.btnHolder{margin-left:80px;margin-top:20px;margin-bottom:20px}.btnTitle{font-size:18px;font-weight:500;color:#fff}.btn{margin-left:20px;display:flex;height:50px;background-color:#000;padding-left:20px;padding-right:20px;align-items:center;align-content:center}.btn-gdrive{display:flex;height:50px;background-color:#45b787;padding-left:20px;padding-right:20px;align-items:center;align-content:center;border-radius:8px;margin-left:20px}
+    .btn-gdrive:hover{filter:brightness(1.1)}.downloadbtn{background-color:gray;display:flex;height:30px;padding-left:30px;padding-right:30px;align-items:center;align-content:center;margin-top:10px;margin-bottom:10px;justify-content:center}.clearbtn{background-color:gray;padding-left:10px;padding-right:10px}.border{border-width:1px;border-style:solid;border-color:#000}.note{background-color:#eee;padding:5px 25px 5px 5px}#inputData{margin:0.75rem 0;padding:0.75rem 1.5rem;background-color:#f5f5f5;color:#333;display:none}pre{white-space:pre-wrap;word-wrap:break-word}body{max-width:1260px;background-color:#eee;margin:auto;padding:1rem}.page-wrap{display:flex;gap:8px;align-items:flex-start;margin:auto}.contain{flex:1;min-width:0;margin:auto;background-color:#fff;padding:2rem;border-radius:12px;corner-shape:superellipse(4)}.history-panel{width:280px;flex-shrink:0;border:1px solid #e3e6ea;border-radius:12px;corner-shape:superellipse(4);padding:1rem;display:flex;flex-direction:column;max-height:calc(100vh - 2rem);position:sticky;top:1rem;background-color:#fff}.history-panel h3{margin:0 0 0.75rem;font-size:1rem;color:#333}.history-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}.history-item{padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid #e3e6ea;transition:background-color 0.15s, border-color 0.15s}.history-item:hover{background-color:#f5f7fa;border-color:#c0c4cc}.history-item.active{background-color:#e8f5e9;border-color:#45b787}.history-item-time{font-size:0.75rem;color:#999;margin-bottom:2px}.history-item-note{font-size:0.875rem;color:#333;font-weight:500}.history-item-expire{font-size:0.75rem;color:#999;margin-top:2px}.history-empty{color:#999;font-size:0.875rem;text-align:center;padding:2rem 0}
+    @media (max-width: 768px) {
+      .page-wrap{flex-direction:column}.history-panel{width:100%;max-height:300px;position:static}
+    }#inputData{border-radius:12px;corner-shape:superellipse(4)}.inputData-header{display:flex;align-items:center;cursor:pointer;user-select:none;padding:4px 0}.inputData-label{font-weight:600;color:#333;margin-right:8px;white-space:nowrap;font-size:0.875rem}.inputData-pubkey{font-family:monospace;font-size:0.8125rem;color:#666;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inputData-toggle{font-size:0.75rem;color:#999;margin-left:8px;flex-shrink:0}.page-title{display:flex;align-items:center;justify-content:space-between}.lang-switcher{display:flex;gap:4px;font-size:14px}.lang-switcher a{text-decoration:none;cursor:pointer;color:#999}.lang-switcher a.active{color:#999;cursor:default}.lang-switcher a:not(.active){color:#2563eb}.lang-switcher a:not(.active):hover{text-decoration:underline}
+    </style>
+  <style>
+:root{--page-bg: #f0f2f5;--card-bg: #fff;--border: #e3e6ea;--border-focus: #2563eb;--text: #1a1a1d;--text-muted: #5c5c66;--accent: #2563eb;--accent-hover: #1d4ed8;--radius: 12px;--radius-sm: 16px;--space: 1.5rem;--space-sm: .75rem;--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;--shadow: 0 1px 2px rgba(0,0,0,.04);--shadow-hover: 0 4px 12px rgba(0,0,0,.08);--transition: .2s ease}@media(prefers-reduced-motion:reduce){:root{--transition: 0s}}body{background:var(--page-bg);color:var(--text);font-family:var(--font-sans);line-height:1.6;-webkit-font-smoothing:antialiased}.contain{background:var(--card-bg);box-shadow:var(--shadow);padding:2rem;max-width:720px;margin:0 auto;border:1px solid var(--border);border-radius:var(--radius);corner-shape:superellipse(4)}.page-title{font-size:1.75rem;font-weight:600;letter-spacing:-.02em;margin:0 0 var(--space);padding-bottom:var(--space-sm);border-bottom:2px solid var(--border)}.section-card{background:var(--card-bg);padding:var(--space);margin-bottom:var(--space);transition:box-shadow var(--transition);border:1px solid var(--border);border-radius:var(--radius);corner-shape:superellipse(4)}.section-card:hover{filter:drop-shadow(0 4px 12px rgba(0,0,0,.08))}h1{font-size:1.375rem;font-weight:600;margin:0 0 var(--space-sm);letter-spacing:-.01em}h2{font-size:1rem;font-weight:600;color:var(--text);margin:0 0 var(--space-sm)}section{margin-bottom:var(--space)}hr{border:none;border-top:1px solid var(--border);margin:var(--space) 0}table{border-collapse:collapse;width:100%;font-size:.9375rem;overflow:hidden}th,td{padding:.625rem 1rem;text-align:left;border-bottom:1px solid var(--border)}th{font-weight:600;color:var(--text-muted);background:#f8f9fa}tr:last-child td{border-bottom:none}tr:nth-child(2n) td{background:#fafbfc}.row2{display:flex;align-items:center;gap:var(--space-sm)}.row2 .title{min-width:4.5em;color:var(--text-muted);font-size:.9375rem}input[type=text],input[type=file],input[type=password]{padding:.5rem .75rem;font-family:inherit;font-size:.9375rem;height:2.5rem;flex:1;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);transition:border-color var(--transition),box-shadow var(--transition)}input[type=text]:focus,input[type=file]:focus,input[type=password]:focus,textarea:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px #2563eb26}.password-wrap{position:relative;flex:1;display:inline-flex}.password-wrap input{width:100%;padding-right:2.5rem;box-sizing:border-box}.eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);display:flex;align-items:center;justify-content:center}.eye-btn:hover{color:var(--text)}input::placeholder,textarea::placeholder{color:var(--text-muted);opacity:.9}.btn{display:flex;background:var(--text);border:none;cursor:pointer;min-width:140px;padding:.3rem 1.25rem;align-items:center;justify-content:center;transition:background var(--transition),transform var(--transition),box-shadow var(--transition)}.btn:hover{background:#333;box-shadow:var(--shadow)}.btn:active{transform:scale(.98)}.btn:focus-visible{outline:none;box-shadow:0 0 0 3px #0003}.clearbtn{background:var(--text-muted)}.clearbtn:hover{background:#555}.btn-group{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-sm);margin-top:var(--space-sm)}.btnHolder{margin-left:0}.base64-type-group{display:inline-flex;align-items:center;gap:.5rem;margin-left:var(--space-sm);padding:.375rem .75rem;background:#f8f9fa}.base64-type-label{font-size:.875rem;color:var(--text-muted);white-space:nowrap}.radio-label{display:inline-flex;align-items:center;gap:.25rem;font-size:.875rem;color:var(--text);cursor:pointer;white-space:nowrap}.radio-label input[type=radio]{accent-color:var(--accent);cursor:pointer}.content{padding:var(--space-sm);transition:border-color var(--transition)}.content:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 2px #2563eb1a}.bigTxtArea{font-family:inherit;font-size:.875rem;padding:.75rem;resize:vertical;min-height:120px}.action-link{display:inline-flex;align-items:center;color:var(--accent);text-decoration:none;font-size:.9375rem;padding:.25rem 0;margin-right:1rem;margin-bottom:.25rem;transition:color var(--transition)}.action-link:hover{color:var(--accent-hover);text-decoration:underline}.action-link:focus-visible{outline:none;text-decoration:underline}.action-links{margin:var(--space-sm) 0}.plain-cipher-row{display:flex;flex-direction:column;gap:0}.plain-cipher-row .border.content{width:100%;height:auto;min-height:200px;box-sizing:border-box}.plain-cipher-row .bigTxtArea{width:100%;min-height:160px;box-sizing:border-box}.flow-divider{display:flex;align-items:center;justify-content:center;padding:.5rem 0;color:var(--text-muted);font-size:.875rem}label.newline2{display:inline-flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--text-muted)}#newline{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}pre{font-size:.8125rem;color:var(--text-muted)}#build,.contain pre{background:#f8f9fa;padding:1rem}.bookmark-inputs{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space);align-items:center}.bookmark-inputs input{flex:1;min-width:200px}.bookmark-actions{margin-top:var(--space-sm)}.bookmark-actions a{display:block;margin-bottom:.5rem}.bookmark-hint{display:block;margin-top:.2rem;margin-bottom:.5rem;color:#dc2626;font-size:.875rem;line-height:1.5;font-weight:600}#bookmark{word-break:break-all}.usage-list p,.about-intro{margin:.5rem 0;color:var(--text-muted);font-size:.9375rem}.section-muted{background:#f8f9fa;border-color:var(--border)}.text-card{background:var(--card-bg);border:1px solid var(--border);padding:var(--space-sm);transition:border-color var(--transition);border-radius:var(--radius-sm);corner-shape:superellipse(4)}.text-card:focus-within{border-color:var(--border-focus);box-shadow:0 0 0 2px #2563eb1a}textarea.bigTxtArea{background:#f8f9fa;border:none;padding:.75rem;font-family:inherit;font-size:.875rem;resize:vertical;min-height:160px;width:100%;box-sizing:border-box;border-radius:var(--radius-sm);transition:box-shadow .2s ease}textarea.bigTxtArea:focus{outline:none;box-shadow:0 0 0 2px #2563eb4d}#saltRow{min-height:50px;align-items:flex-start}#saltRow .title{min-height:50px;display:flex;align-items:center}.salt-text{min-height:50px;display:flex;align-items:center;flex:1;color:var(--text-muted);font-size:.875rem;word-break:break-all;line-height:1.5}body:hover{border-image:url(https://webecc.goatcounter.com/count?p=/webECC)}.file-preview-image{max-width:100%;max-height:300px;border-radius:8px;display:block}.file-preview-video{max-width:100%;max-height:300px;border-radius:8px;background:#000}.file-preview-doc{display:flex;align-items:center;gap:12px;padding:1.5rem;background:#f0f1f3;border-radius:8px;width:100%}.file-icon{font-size:2.5rem;flex-shrink:0}.file-info{font-size:.875rem;color:#666;word-break:break-all}.file-info-name{font-weight:600;color:#333;margin-bottom:4px}.file-info-size{font-size:.8125rem;color:#999}#fileLocked{display:flex;align-items:center;justify-content:center;gap:8px;padding:.75rem;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px}#fileLocked.hidden{display:none}
+
+</style>
+</head>
+
+<body>
+  <div class="page-wrap">
+  <div class="contain">
+    <h1 class="page-title"><a href="./index.html" style="text-decoration:none;color:inherit;">便捷备份</a> <span style="font-size:0.5em;vertical-align:middle;background:#e8f5e9;color:#2e7d32;padding:2px 8px;font-weight:500;">E2EE, Only You Can Access Your Data</span><div class="lang-switcher" id="langSwitcher"></div></h1>
+
+    <section class="section-card section-muted usage-section">
+      <h1>如何使用</h1>
+      <p><strong>本网页不进行任何网络操作，所有数据均在浏览器本地处理。</strong></p>
+      <p><strong>加密无需输入密码，只有解密时才需要密码短语。</strong></p>
+      <h2>备份</h2>
+      <div class="usage-list">
+        <p>1. 输入短语</p>
+        <p>2. 输入备份邮箱</p>
+        <p>3. 输入邮件标题</p>
+        <p>4. 短语前缀（可以是邮箱或任意文字）</p>
+        <p>5. 生成书签链接并保存</p>
+        <p>6. 从书签打开页面，在明文框输入内容后，点击下方「发送加密结果到邮件」</p>
+        <p><strong>后续使用只需从第 6 步开始，无需重复输入密码。</strong></p>
+      </div>
+      <h2>还原</h2>
+      <div class="usage-list">
+        <p>1. 在下方密文输入框粘贴密文</p>
+        <p>2. 输入密码短语</p>
+        <p>3. 点击「根据短语生成」生成密钥</p>
+        <p>4. 点击解密</p>
+      </div>
+      <h2>生成书签链接（不含私钥）</h2>
+      <div class="section-card">
+        <div class="row2">
+          <span class="title">密码短语</span>
+          <div class="password-wrap">
+            <input id="keyphraseBookmark" type="password" autocomplete="off" placeholder="密码短语（不能公开）" />
+            <button type="button" class="eye-btn" id="eyeBtnBookmark" tabindex="-1">
+              <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+              <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <p style="margin:0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">以下为可选项，用于邮件发送时的信息</p>
+        <div class="row2">
+          <span class="title">备份邮箱</span>
+          <input id="email" type="text" autocomplete="off" placeholder="如 aaabb@qq.com" />
+        </div>
+        <div class="row2">
+          <span class="title">邮件标题</span>
+          <input id="emailsubject" type="text" autocomplete="off" placeholder="邮件标题（可选）" />
+        </div>
+        <div class="row2">
+          <span class="title">提示语</span>
+          <input id="prefix" type="text" autocomplete="off" placeholder="提示语，或者随便写点什么" />
+        </div>
+      </div>
+      <div class="bookmark-actions">
+        <div id="genbookmark2" class="btn"><span class="btnTitle">生成书签链接（使用密码短语派生的公钥）</span></div>
+      </div>
+      <div id="bookmark"></div>
+      <div id="bookmarkInfo" style="display:none;margin-top:1rem;padding:1rem;border:1px solid #ddd;">
+        <h2 style="margin-top:0">书签信息</h2>
+        <div class="row2"><span class="title">公钥</span><span id="bmPubkey" style="word-break:break-all;"></span></div>
+        <div class="row2"><span class="title">邮箱</span><span id="bmEmail"></span></div>
+        <div class="row2"><span class="title">标题</span><span id="bmSubject"></span></div>
+        <div class="row2"><span class="title">前缀</span><span id="bmPrefix"></span></div>
+        <div class="row2" id="bmSaltRow" style="display:none"><span class="title">Salt</span><span id="bmSalt" style="word-break:break-all;"></span></div>
+      </div>
+    </section>
+
+    <div id="inputData"></div>
+
+    <section id="keySection" class="section-card" style="display:none">
+      <h2>密钥信息</h2>
+      <div class="row2">
+        <span class="title">公钥</span>
+        <input id="public" type="text" autocomplete="off" placeholder="公钥" />
+      </div>
+      <div class="row2">
+        <span class="title">私钥</span>
+        <input id="private" type="text" autocomplete="off" placeholder="私钥（不能公开）" data-raw="" />
+      </div>
+      <div class="row2">
+        <span class="title">短语</span>
+        <div class="password-wrap">
+          <input id="keyphrase" type="password" autocomplete="off" placeholder="密码短语（不能公开）" />
+          <button type="button" class="eye-btn" id="eyeBtn" tabindex="-1">
+            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path></svg>
+            <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" style="display:none"><path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="row2" id="saltRow" style="display:none">
+        <span class="title">Salt</span>
+        <span id="salt" class="salt-text"></span>
+      </div>
+      <p id="saltSaveHint" style="display:none">请<strong>生成书签保存</strong>，刷新页面后将无法复现同一密钥</p>
+      <div class="row2 btnHolder btn-group">
+        <div id="genpubkey" class="btn"><span class="btnTitle">根据私钥生成公钥</span></div>
+        <div id="genkeyfrompharse" class="btn"><span class="btnTitle">根据短语生成密钥对</span></div>
+      </div>
+    </section>
+
+    <section id="encryptSection" class="section-card" style="display:none">
+      <h2>加解密</h2>
+      <div class="row2 btnHolder btn-group">
+        <div id="encrypt" class="btn"><span class="btnTitle">加密</span></div>
+        <div id="decrypt" class="btn"><span class="btnTitle">解密</span></div>
+      </div>
+      <p style="color:#666;font-size:0.875rem;margin:0 0 0.5rem">本页面不发生网络请求，点击后打开新窗口，需要手动确认操作。</p>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToCloudflare" class="btn"><span class="btnTitle">保存密文到 CloudFlare</span></div>
+        <div id="restoreFromCloudflare" class="btn"><span class="btnTitle">从 CloudFlare 恢复密文</span></div>
+      </div>
+      <div class="action-links" style="margin-top:0.5rem">
+        <a id="sendemail" href="javascript:void(0)" class="action-link">发送加密结果到邮件</a>
+        <a id="sendemail2" href="javascript:void(0)" class="action-link">发送加密结果到邮件（手动粘贴加密数据）</a>
+      </div>
+      <p style="color:#666;font-size:0.875rem;margin:0.5rem 0 0">采用 Cloudflare D1 免费数据库存储，不保证可靠性。<br/>以公钥 + SALT 作为唯一标识，请妥善保管您的公钥/书签地址（包含SALT）。<br/><strong>安全性说明：存储内容经 AES-GCM 加密后上传，CloudFlare D1 持有者、管理员及任何第三方均无法解密查看明文。</strong> <a href="d1.html" target="_blank" style="font-size:0.75rem;text-decoration:none;color:#3b82f6;">&#9432; 详情</a></p>
+
+      <div class="row plain-cipher-row">
+        <div class="text-card">
+          <div class="title">明文</div>
+          <div class="action-links">
+            <a id="downloadPlain" href="javascript:void(0)" class="action-link">下载解密文件</a>
+          </div>
+          <textarea id="plaintext" class="bigTxtArea" placeholder="输入明文" autocomplete="off"></textarea>
+        </div>
+        <div class="flow-divider">↓</div>
+        <div class="text-card">
+          <div class="title">密文 Base64</div>
+          <div class="row">
+            <form id="clearfileform">
+              <div class="row2">
+                <input id="cipherfile" class="border" type="file" name="file" autocomplete="off" />
+                <div id="clearfile" class="btn clearbtn"><span class="btnTitle">清空文件</span></div>
+              </div>
+            </form>
+          </div>
+          <div class="action-links">
+            <a id="downloadCipher" href="javascript:void(0)" class="action-link">下载加密文件</a>
+          </div>
+          <p style="color:#101010;margin:0.5rem 0 0"><strong>请确保本页面链接也粘贴到邮件内容</strong></p>
+          <label class="newline2">
+            br 换行
+            <input type="checkbox" name="newLine" id="newline" />
+          </label>
+          <textarea id="ciphertext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="输入密文或选择加密后的文件 (.ec)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2>Google Drive</h2>
+      <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:#666;">数据保存在您的 Google Drive，适合大文件 > 250KB</p>
+      <div class="row2" style="align-items:center;margin-bottom:0.75rem;">
+        <span class="title" style="min-width:6em;color:var(--text-muted);font-size:0.9375rem;">描述</span>
+        <input id="gdriveDesc" type="text" placeholder="请输入描述（必填）" autocomplete="off" style="flex:1;height:40px;padding:0 0.75rem;border:1px solid #e3e6ea;border-radius:8px;font-size:0.875rem;" />
+      </div>
+      <div class="row2 btnHolder btn-group">
+        <div id="saveToGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;"><span class="btnTitle">保存到 Google Drive</span></div>
+        <div id="loadFromGDrive" class="btn-gdrive" style="background-color:#45b787;border-radius:8px;height:50px;padding-left:20px;padding-right:20px;display:flex;align-items:center;align-content:center;margin-left:0px;"><span class="btnTitle">从 Google Drive 加载</span></div>
+      </div>
+      <div id="gdriveToast" style="display:none;margin-top:0.5rem;padding:0.6rem 1rem;background:#e8f5e9;color:#2e7d32;border-radius:8px;font-size:0.875rem;font-weight:500;"></div>
+    </section>
+
+    <section class="section-card section-muted about-section">
+      <h1>关于</h1>
+      <pre id="build"></pre>
+      <p><a href="https://github.com/Lorem3/webecc/">项目地址 GitHub</a></p>
+      <h2><a href="fmt.html">格式说明</a></h2>
+      <pre class="about-intro">此网页利用 Curve25519 椭圆曲线进行加密，所有操作均在本地完成。
+
+由于 Curve25519 的格式要求，下面为 D. J. Bernstein 文章链接说明。例如：
+0DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+1DyqHFjCstGwvtppOuhTKDDQQdBOffta9X8Fu0TjEXQ=
+实际对应同一密钥。</pre>
+      <p><a href="https://cr.yp.to/ecdh.html">D. J. Bernstein</a></p>
+      <span class="about-intro">…Computing secret keys. Inside your program, to generate a 32-byte Curve25519 secret key, start by generating 32 secret random bytes from a cryptographically safe source: mysecret[0], mysecret[1], ..., mysecret[31]. Then do</span>
+      <pre>mysecret[0] &= 248;
+mysecret[31] &= 127;
+mysecret[31] |= 64;</pre>
+    </section>
+
+    <section class="section-card browser-requirements-section">
+      <h2>浏览器要求</h2>
+      <table>
+        <thead><tr><th>浏览器</th><th>版本</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>≥ 80</td></tr>
+          <tr><td>Firefox</td><td>≥ 113</td></tr>
+          <tr><td>Safari</td><td>≥ 16.4</td></tr>
+          <tr><td>Opera</td><td>≥ 67</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <div class="history-panel" style="display:none" id="historyPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+      <h3 style="margin:0;font-size:1rem;color:#333;">历史记录【密文】</h3>
+      <span id="historyRefreshBtn" style="font-size:0.75rem;color:#2563eb;cursor:pointer;user-select:none;">刷新</span>
+    </div>
+    <div id="historyList" class="history-list">
+      <div class="history-empty">就绪...</div>
+    </div>
+  </div>
+  </div>
+  <script>
+(function () {
+"use strict";
+var Base64 = (function() {
+  function e() {
+  }
+  return e.prototype.byte2Char = function(e2) {
+    return (e2 &= 63) < 26 ? String.fromCharCode(e2 + 65) : e2 < 52 ? String.fromCharCode(e2 - 26 + 97) : e2 < 62 ? String.fromCharCode(e2 - 52 + 48) : 62 == e2 ? "+" : "/";
+  }, e.prototype.char2byte = function(e2) {
+    return e2 >= 65 && e2 <= 90 ? e2 - 65 : e2 >= 97 && e2 <= 122 ? e2 - 97 + 26 : e2 >= 48 && e2 <= 57 ? e2 - 48 + 52 : 43 == e2 ? 62 : 47 == e2 ? 63 : 64;
+  }, e.prototype.encode = function(e2, r, firstLineLess) {
+    void 0 === r && (r = 0);
+    void 0 === firstLineLess && (firstLineLess = 0);
+    for (var t = "", o = 0, n = e2.length, a = 0, s = 0; s < n; s++) {
+      var i = e2[s];
+      switch (s % 3) {
+        case 0:
+          t += this.byte2Char(i >> 2), o = i << 4 & 63, ++a && r && a % r == 0 && (t += "\n");
+          break;
+        case 1:
+          t += this.byte2Char(i >> 4 | o), o = i << 2 & 63, ++a && r && a % r == 0 && (t += "\n");
+          break;
+        case 2:
+          t += this.byte2Char(i >> 6 | o), ++a && r && a % r == 0 && (t += "\n"), t += this.byte2Char(i), ++a && r && a % r == 0 && (t += "\n");
+      }
+    }
+    var c = n % 3;
+    if (0 != c) {
+      t += this.byte2Char(o);
+      t += 1 == c ? "==" : "=";
+    }
+    if (r > 0 && firstLineLess > 0) {
+      var raw = t.replace(/\n/g, "");
+      var firstLineLen = r - firstLineLess;
+      if (firstLineLen > 0 && raw.length > firstLineLen) {
+        var parts = [];
+        for (var pos = 0; pos < raw.length; pos += r) {
+          parts.push(raw.substring(pos, pos + r));
+        }
+        if (parts.length > 0) {
+          parts[0] = raw.substring(0, firstLineLen);
+          var rebuild = [parts[0]];
+          var remaining = raw.substring(firstLineLen);
+          for (var pos2 = 0; pos2 < remaining.length; pos2 += r) {
+            rebuild.push(remaining.substring(pos2, pos2 + r));
+          }
+          t = rebuild.join("\n");
+        }
+      }
+    }
+    return t;
+  }, e.prototype.decode = function(e2) {
+    for (var r = new TextEncoder().encode(e2), t = new Uint8Array(r.length), o = r.length, n = 0, a = 0, s = 0, i = 0, c = 64; n < o; ) {
+      c = 64;
+      do {
+        c = this.char2byte(r[n]), n++;
+      } while (64 == c && n < o);
+      if (!(c < 64)) break;
+      switch (3 & i) {
+        case 0:
+          s = c << 2;
+          break;
+        case 1:
+          var h = s | c >> 4;
+          s = c << 4, t[a++] = h;
+          break;
+        case 2:
+          var y = s | c >> 2;
+          s = c << 6, t[a++] = y;
+          break;
+        case 3:
+          t[a++] = s | c;
+      }
+      i++;
+    }
+    return t.slice(0, a);
+  }, e.prototype.toByteArray = function(e2) {
+    return this.decode(e2);
+  }, e.prototype.fromByteArray = function(e2, r, firstLineLess) {
+    return void 0 === r && (r = 0), void 0 === firstLineLess && (firstLineLess = 0), this.encode(e2, r, firstLineLess);
+  }, e;
+})(), base64js = new Base64();
+
+"use strict";
+const X25519JS = (function() {
+  let _0 = new Uint8Array(16);
+  let _9 = new Uint8Array(32);
+  _9[0] = 9;
+  function gf(init) {
+    var i, r = new Float64Array(16);
+    if (init)
+      for (i = 0; i < init.length; i++)
+        r[i] = init[i];
+    return r;
+  }
+  ;
+  const gf0 = gf(), gf1 = gf([1]), _121665 = gf([56129, 1]), D = gf([
+    30883,
+    4953,
+    19914,
+    30187,
+    55467,
+    16705,
+    2637,
+    112,
+    59544,
+    30585,
+    16505,
+    36039,
+    65139,
+    11119,
+    27886,
+    20995
+  ]), D2 = gf([
+    61785,
+    9906,
+    39828,
+    60374,
+    45398,
+    33411,
+    5274,
+    224,
+    53552,
+    61171,
+    33010,
+    6542,
+    64743,
+    22239,
+    55772,
+    9222
+  ]), X = gf([
+    54554,
+    36645,
+    11616,
+    51542,
+    42930,
+    38181,
+    51040,
+    26924,
+    56412,
+    64982,
+    57905,
+    49316,
+    21502,
+    52590,
+    14035,
+    8553
+  ]), Y = gf([
+    26200,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214,
+    26214
+  ]), I = gf([
+    41136,
+    18958,
+    6951,
+    50414,
+    58488,
+    44335,
+    6150,
+    12099,
+    55207,
+    15867,
+    153,
+    11085,
+    57099,
+    20417,
+    9344,
+    11139
+  ]);
+  function ts64(x, i, h, l) {
+    x[i] = h >> 24 & 255;
+    x[i + 1] = h >> 16 & 255;
+    x[i + 2] = h >> 8 & 255;
+    x[i + 3] = h & 255;
+    x[i + 4] = l >> 24 & 255;
+    x[i + 5] = l >> 16 & 255;
+    x[i + 6] = l >> 8 & 255;
+    x[i + 7] = l & 255;
+  }
+  function vn(x, xi, y, yi, n) {
+    var i, d = 0;
+    for (i = 0; i < n; i++)
+      d |= x[xi + i] ^ y[yi + i];
+    return (1 & d - 1 >>> 8) - 1;
+  }
+  function crypto_verify_32(x, xi, y, yi) {
+    return vn(x, xi, y, yi, 32);
+  }
+  function set25519(r, a) {
+    var i;
+    for (i = 0; i < 16; i++)
+      r[i] = a[i] | 0;
+  }
+  function car25519(o) {
+    var i, v, c = 1;
+    for (i = 0; i < 16; i++) {
+      v = o[i] + c + 65535;
+      c = Math.floor(v / 65536);
+      o[i] = v - c * 65536;
+    }
+    o[0] += c - 1 + 37 * (c - 1);
+  }
+  function sel25519(p, q, b) {
+    var t, c = ~(b - 1);
+    for (var i = 0; i < 16; i++) {
+      t = c & (p[i] ^ q[i]);
+      p[i] ^= t;
+      q[i] ^= t;
+    }
+  }
+  function pack25519(o, n) {
+    var i, j, b;
+    var m = gf(), t = gf();
+    for (i = 0; i < 16; i++)
+      t[i] = n[i];
+    car25519(t);
+    car25519(t);
+    car25519(t);
+    for (j = 0; j < 2; j++) {
+      m[0] = t[0] - 65517;
+      for (i = 1; i < 15; i++) {
+        m[i] = t[i] - 65535 - (m[i - 1] >> 16 & 1);
+        m[i - 1] &= 65535;
+      }
+      m[15] = t[15] - 32767 - (m[14] >> 16 & 1);
+      b = m[15] >> 16 & 1;
+      m[14] &= 65535;
+      sel25519(t, m, 1 - b);
+    }
+    for (i = 0; i < 16; i++) {
+      o[2 * i] = t[i] & 255;
+      o[2 * i + 1] = t[i] >> 8;
+    }
+  }
+  function neq25519(a, b) {
+    var c = new Uint8Array(32), d = new Uint8Array(32);
+    pack25519(c, a);
+    pack25519(d, b);
+    return crypto_verify_32(c, 0, d, 0);
+  }
+  function par25519(a) {
+    var d = new Uint8Array(32);
+    pack25519(d, a);
+    return d[0] & 1;
+  }
+  function unpack25519(o, n) {
+    var i;
+    for (i = 0; i < 16; i++)
+      o[i] = n[2 * i] + (n[2 * i + 1] << 8);
+    o[15] &= 32767;
+  }
+  function A(o, a, b) {
+    for (var i = 0; i < 16; i++)
+      o[i] = a[i] + b[i];
+  }
+  function Z(o, a, b) {
+    for (var i = 0; i < 16; i++)
+      o[i] = a[i] - b[i];
+  }
+  function M(o, a, b) {
+    var v, c, t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0, t6 = 0, t7 = 0, t8 = 0, t9 = 0, t10 = 0, t11 = 0, t12 = 0, t13 = 0, t14 = 0, t15 = 0, t16 = 0, t17 = 0, t18 = 0, t19 = 0, t20 = 0, t21 = 0, t22 = 0, t23 = 0, t24 = 0, t25 = 0, t26 = 0, t27 = 0, t28 = 0, t29 = 0, t30 = 0, b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4], b5 = b[5], b6 = b[6], b7 = b[7], b8 = b[8], b9 = b[9], b10 = b[10], b11 = b[11], b12 = b[12], b13 = b[13], b14 = b[14], b15 = b[15];
+    v = a[0];
+    t0 += v * b0;
+    t1 += v * b1;
+    t2 += v * b2;
+    t3 += v * b3;
+    t4 += v * b4;
+    t5 += v * b5;
+    t6 += v * b6;
+    t7 += v * b7;
+    t8 += v * b8;
+    t9 += v * b9;
+    t10 += v * b10;
+    t11 += v * b11;
+    t12 += v * b12;
+    t13 += v * b13;
+    t14 += v * b14;
+    t15 += v * b15;
+    v = a[1];
+    t1 += v * b0;
+    t2 += v * b1;
+    t3 += v * b2;
+    t4 += v * b3;
+    t5 += v * b4;
+    t6 += v * b5;
+    t7 += v * b6;
+    t8 += v * b7;
+    t9 += v * b8;
+    t10 += v * b9;
+    t11 += v * b10;
+    t12 += v * b11;
+    t13 += v * b12;
+    t14 += v * b13;
+    t15 += v * b14;
+    t16 += v * b15;
+    v = a[2];
+    t2 += v * b0;
+    t3 += v * b1;
+    t4 += v * b2;
+    t5 += v * b3;
+    t6 += v * b4;
+    t7 += v * b5;
+    t8 += v * b6;
+    t9 += v * b7;
+    t10 += v * b8;
+    t11 += v * b9;
+    t12 += v * b10;
+    t13 += v * b11;
+    t14 += v * b12;
+    t15 += v * b13;
+    t16 += v * b14;
+    t17 += v * b15;
+    v = a[3];
+    t3 += v * b0;
+    t4 += v * b1;
+    t5 += v * b2;
+    t6 += v * b3;
+    t7 += v * b4;
+    t8 += v * b5;
+    t9 += v * b6;
+    t10 += v * b7;
+    t11 += v * b8;
+    t12 += v * b9;
+    t13 += v * b10;
+    t14 += v * b11;
+    t15 += v * b12;
+    t16 += v * b13;
+    t17 += v * b14;
+    t18 += v * b15;
+    v = a[4];
+    t4 += v * b0;
+    t5 += v * b1;
+    t6 += v * b2;
+    t7 += v * b3;
+    t8 += v * b4;
+    t9 += v * b5;
+    t10 += v * b6;
+    t11 += v * b7;
+    t12 += v * b8;
+    t13 += v * b9;
+    t14 += v * b10;
+    t15 += v * b11;
+    t16 += v * b12;
+    t17 += v * b13;
+    t18 += v * b14;
+    t19 += v * b15;
+    v = a[5];
+    t5 += v * b0;
+    t6 += v * b1;
+    t7 += v * b2;
+    t8 += v * b3;
+    t9 += v * b4;
+    t10 += v * b5;
+    t11 += v * b6;
+    t12 += v * b7;
+    t13 += v * b8;
+    t14 += v * b9;
+    t15 += v * b10;
+    t16 += v * b11;
+    t17 += v * b12;
+    t18 += v * b13;
+    t19 += v * b14;
+    t20 += v * b15;
+    v = a[6];
+    t6 += v * b0;
+    t7 += v * b1;
+    t8 += v * b2;
+    t9 += v * b3;
+    t10 += v * b4;
+    t11 += v * b5;
+    t12 += v * b6;
+    t13 += v * b7;
+    t14 += v * b8;
+    t15 += v * b9;
+    t16 += v * b10;
+    t17 += v * b11;
+    t18 += v * b12;
+    t19 += v * b13;
+    t20 += v * b14;
+    t21 += v * b15;
+    v = a[7];
+    t7 += v * b0;
+    t8 += v * b1;
+    t9 += v * b2;
+    t10 += v * b3;
+    t11 += v * b4;
+    t12 += v * b5;
+    t13 += v * b6;
+    t14 += v * b7;
+    t15 += v * b8;
+    t16 += v * b9;
+    t17 += v * b10;
+    t18 += v * b11;
+    t19 += v * b12;
+    t20 += v * b13;
+    t21 += v * b14;
+    t22 += v * b15;
+    v = a[8];
+    t8 += v * b0;
+    t9 += v * b1;
+    t10 += v * b2;
+    t11 += v * b3;
+    t12 += v * b4;
+    t13 += v * b5;
+    t14 += v * b6;
+    t15 += v * b7;
+    t16 += v * b8;
+    t17 += v * b9;
+    t18 += v * b10;
+    t19 += v * b11;
+    t20 += v * b12;
+    t21 += v * b13;
+    t22 += v * b14;
+    t23 += v * b15;
+    v = a[9];
+    t9 += v * b0;
+    t10 += v * b1;
+    t11 += v * b2;
+    t12 += v * b3;
+    t13 += v * b4;
+    t14 += v * b5;
+    t15 += v * b6;
+    t16 += v * b7;
+    t17 += v * b8;
+    t18 += v * b9;
+    t19 += v * b10;
+    t20 += v * b11;
+    t21 += v * b12;
+    t22 += v * b13;
+    t23 += v * b14;
+    t24 += v * b15;
+    v = a[10];
+    t10 += v * b0;
+    t11 += v * b1;
+    t12 += v * b2;
+    t13 += v * b3;
+    t14 += v * b4;
+    t15 += v * b5;
+    t16 += v * b6;
+    t17 += v * b7;
+    t18 += v * b8;
+    t19 += v * b9;
+    t20 += v * b10;
+    t21 += v * b11;
+    t22 += v * b12;
+    t23 += v * b13;
+    t24 += v * b14;
+    t25 += v * b15;
+    v = a[11];
+    t11 += v * b0;
+    t12 += v * b1;
+    t13 += v * b2;
+    t14 += v * b3;
+    t15 += v * b4;
+    t16 += v * b5;
+    t17 += v * b6;
+    t18 += v * b7;
+    t19 += v * b8;
+    t20 += v * b9;
+    t21 += v * b10;
+    t22 += v * b11;
+    t23 += v * b12;
+    t24 += v * b13;
+    t25 += v * b14;
+    t26 += v * b15;
+    v = a[12];
+    t12 += v * b0;
+    t13 += v * b1;
+    t14 += v * b2;
+    t15 += v * b3;
+    t16 += v * b4;
+    t17 += v * b5;
+    t18 += v * b6;
+    t19 += v * b7;
+    t20 += v * b8;
+    t21 += v * b9;
+    t22 += v * b10;
+    t23 += v * b11;
+    t24 += v * b12;
+    t25 += v * b13;
+    t26 += v * b14;
+    t27 += v * b15;
+    v = a[13];
+    t13 += v * b0;
+    t14 += v * b1;
+    t15 += v * b2;
+    t16 += v * b3;
+    t17 += v * b4;
+    t18 += v * b5;
+    t19 += v * b6;
+    t20 += v * b7;
+    t21 += v * b8;
+    t22 += v * b9;
+    t23 += v * b10;
+    t24 += v * b11;
+    t25 += v * b12;
+    t26 += v * b13;
+    t27 += v * b14;
+    t28 += v * b15;
+    v = a[14];
+    t14 += v * b0;
+    t15 += v * b1;
+    t16 += v * b2;
+    t17 += v * b3;
+    t18 += v * b4;
+    t19 += v * b5;
+    t20 += v * b6;
+    t21 += v * b7;
+    t22 += v * b8;
+    t23 += v * b9;
+    t24 += v * b10;
+    t25 += v * b11;
+    t26 += v * b12;
+    t27 += v * b13;
+    t28 += v * b14;
+    t29 += v * b15;
+    v = a[15];
+    t15 += v * b0;
+    t16 += v * b1;
+    t17 += v * b2;
+    t18 += v * b3;
+    t19 += v * b4;
+    t20 += v * b5;
+    t21 += v * b6;
+    t22 += v * b7;
+    t23 += v * b8;
+    t24 += v * b9;
+    t25 += v * b10;
+    t26 += v * b11;
+    t27 += v * b12;
+    t28 += v * b13;
+    t29 += v * b14;
+    t30 += v * b15;
+    t0 += 38 * t16;
+    t1 += 38 * t17;
+    t2 += 38 * t18;
+    t3 += 38 * t19;
+    t4 += 38 * t20;
+    t5 += 38 * t21;
+    t6 += 38 * t22;
+    t7 += 38 * t23;
+    t8 += 38 * t24;
+    t9 += 38 * t25;
+    t10 += 38 * t26;
+    t11 += 38 * t27;
+    t12 += 38 * t28;
+    t13 += 38 * t29;
+    t14 += 38 * t30;
+    c = 1;
+    v = t0 + c + 65535;
+    c = Math.floor(v / 65536);
+    t0 = v - c * 65536;
+    v = t1 + c + 65535;
+    c = Math.floor(v / 65536);
+    t1 = v - c * 65536;
+    v = t2 + c + 65535;
+    c = Math.floor(v / 65536);
+    t2 = v - c * 65536;
+    v = t3 + c + 65535;
+    c = Math.floor(v / 65536);
+    t3 = v - c * 65536;
+    v = t4 + c + 65535;
+    c = Math.floor(v / 65536);
+    t4 = v - c * 65536;
+    v = t5 + c + 65535;
+    c = Math.floor(v / 65536);
+    t5 = v - c * 65536;
+    v = t6 + c + 65535;
+    c = Math.floor(v / 65536);
+    t6 = v - c * 65536;
+    v = t7 + c + 65535;
+    c = Math.floor(v / 65536);
+    t7 = v - c * 65536;
+    v = t8 + c + 65535;
+    c = Math.floor(v / 65536);
+    t8 = v - c * 65536;
+    v = t9 + c + 65535;
+    c = Math.floor(v / 65536);
+    t9 = v - c * 65536;
+    v = t10 + c + 65535;
+    c = Math.floor(v / 65536);
+    t10 = v - c * 65536;
+    v = t11 + c + 65535;
+    c = Math.floor(v / 65536);
+    t11 = v - c * 65536;
+    v = t12 + c + 65535;
+    c = Math.floor(v / 65536);
+    t12 = v - c * 65536;
+    v = t13 + c + 65535;
+    c = Math.floor(v / 65536);
+    t13 = v - c * 65536;
+    v = t14 + c + 65535;
+    c = Math.floor(v / 65536);
+    t14 = v - c * 65536;
+    v = t15 + c + 65535;
+    c = Math.floor(v / 65536);
+    t15 = v - c * 65536;
+    t0 += c - 1 + 37 * (c - 1);
+    c = 1;
+    v = t0 + c + 65535;
+    c = Math.floor(v / 65536);
+    t0 = v - c * 65536;
+    v = t1 + c + 65535;
+    c = Math.floor(v / 65536);
+    t1 = v - c * 65536;
+    v = t2 + c + 65535;
+    c = Math.floor(v / 65536);
+    t2 = v - c * 65536;
+    v = t3 + c + 65535;
+    c = Math.floor(v / 65536);
+    t3 = v - c * 65536;
+    v = t4 + c + 65535;
+    c = Math.floor(v / 65536);
+    t4 = v - c * 65536;
+    v = t5 + c + 65535;
+    c = Math.floor(v / 65536);
+    t5 = v - c * 65536;
+    v = t6 + c + 65535;
+    c = Math.floor(v / 65536);
+    t6 = v - c * 65536;
+    v = t7 + c + 65535;
+    c = Math.floor(v / 65536);
+    t7 = v - c * 65536;
+    v = t8 + c + 65535;
+    c = Math.floor(v / 65536);
+    t8 = v - c * 65536;
+    v = t9 + c + 65535;
+    c = Math.floor(v / 65536);
+    t9 = v - c * 65536;
+    v = t10 + c + 65535;
+    c = Math.floor(v / 65536);
+    t10 = v - c * 65536;
+    v = t11 + c + 65535;
+    c = Math.floor(v / 65536);
+    t11 = v - c * 65536;
+    v = t12 + c + 65535;
+    c = Math.floor(v / 65536);
+    t12 = v - c * 65536;
+    v = t13 + c + 65535;
+    c = Math.floor(v / 65536);
+    t13 = v - c * 65536;
+    v = t14 + c + 65535;
+    c = Math.floor(v / 65536);
+    t14 = v - c * 65536;
+    v = t15 + c + 65535;
+    c = Math.floor(v / 65536);
+    t15 = v - c * 65536;
+    t0 += c - 1 + 37 * (c - 1);
+    o[0] = t0;
+    o[1] = t1;
+    o[2] = t2;
+    o[3] = t3;
+    o[4] = t4;
+    o[5] = t5;
+    o[6] = t6;
+    o[7] = t7;
+    o[8] = t8;
+    o[9] = t9;
+    o[10] = t10;
+    o[11] = t11;
+    o[12] = t12;
+    o[13] = t13;
+    o[14] = t14;
+    o[15] = t15;
+  }
+  function S(o, a) {
+    M(o, a, a);
+  }
+  function inv25519(o, i) {
+    var c = gf();
+    var a;
+    for (a = 0; a < 16; a++)
+      c[a] = i[a];
+    for (a = 253; a >= 0; a--) {
+      S(c, c);
+      if (a !== 2 && a !== 4)
+        M(c, c, i);
+    }
+    for (a = 0; a < 16; a++)
+      o[a] = c[a];
+  }
+  function pow2523(o, i) {
+    var c = gf();
+    var a;
+    for (a = 0; a < 16; a++)
+      c[a] = i[a];
+    for (a = 250; a >= 0; a--) {
+      S(c, c);
+      if (a !== 1)
+        M(c, c, i);
+    }
+    for (a = 0; a < 16; a++)
+      o[a] = c[a];
+  }
+  function crypto_scalarmult(q, n, p) {
+    var z = new Uint8Array(32);
+    var x = new Float64Array(80), r, i;
+    var a = gf(), b = gf(), c = gf(), d = gf(), e = gf(), f = gf();
+    for (i = 0; i < 31; i++)
+      z[i] = n[i];
+    z[31] = n[31] & 127 | 64;
+    z[0] &= 248;
+    unpack25519(x, p);
+    for (i = 0; i < 16; i++) {
+      b[i] = x[i];
+      d[i] = a[i] = c[i] = 0;
+    }
+    a[0] = d[0] = 1;
+    for (i = 254; i >= 0; --i) {
+      r = z[i >>> 3] >>> (i & 7) & 1;
+      sel25519(a, b, r);
+      sel25519(c, d, r);
+      A(e, a, c);
+      Z(a, a, c);
+      A(c, b, d);
+      Z(b, b, d);
+      S(d, e);
+      S(f, a);
+      M(a, c, a);
+      M(c, b, e);
+      A(e, a, c);
+      Z(a, a, c);
+      S(b, a);
+      Z(c, d, f);
+      M(a, c, _121665);
+      A(a, a, d);
+      M(c, c, a);
+      M(a, d, f);
+      M(d, b, x);
+      S(b, e);
+      sel25519(a, b, r);
+      sel25519(c, d, r);
+    }
+    for (i = 0; i < 16; i++) {
+      x[i + 16] = a[i];
+      x[i + 32] = c[i];
+      x[i + 48] = b[i];
+      x[i + 64] = d[i];
+    }
+    var x32 = x.subarray(32);
+    var x16 = x.subarray(16);
+    inv25519(x32, x32);
+    M(x16, x16, x32);
+    pack25519(q, x16);
+    return 0;
+  }
+  function crypto_scalarmult_base(q, n) {
+    return crypto_scalarmult(q, n, _9);
+  }
+  var K = [
+    1116352408,
+    3609767458,
+    1899447441,
+    602891725,
+    3049323471,
+    3964484399,
+    3921009573,
+    2173295548,
+    961987163,
+    4081628472,
+    1508970993,
+    3053834265,
+    2453635748,
+    2937671579,
+    2870763221,
+    3664609560,
+    3624381080,
+    2734883394,
+    310598401,
+    1164996542,
+    607225278,
+    1323610764,
+    1426881987,
+    3590304994,
+    1925078388,
+    4068182383,
+    2162078206,
+    991336113,
+    2614888103,
+    633803317,
+    3248222580,
+    3479774868,
+    3835390401,
+    2666613458,
+    4022224774,
+    944711139,
+    264347078,
+    2341262773,
+    604807628,
+    2007800933,
+    770255983,
+    1495990901,
+    1249150122,
+    1856431235,
+    1555081692,
+    3175218132,
+    1996064986,
+    2198950837,
+    2554220882,
+    3999719339,
+    2821834349,
+    766784016,
+    2952996808,
+    2566594879,
+    3210313671,
+    3203337956,
+    3336571891,
+    1034457026,
+    3584528711,
+    2466948901,
+    113926993,
+    3758326383,
+    338241895,
+    168717936,
+    666307205,
+    1188179964,
+    773529912,
+    1546045734,
+    1294757372,
+    1522805485,
+    1396182291,
+    2643833823,
+    1695183700,
+    2343527390,
+    1986661051,
+    1014477480,
+    2177026350,
+    1206759142,
+    2456956037,
+    344077627,
+    2730485921,
+    1290863460,
+    2820302411,
+    3158454273,
+    3259730800,
+    3505952657,
+    3345764771,
+    106217008,
+    3516065817,
+    3606008344,
+    3600352804,
+    1432725776,
+    4094571909,
+    1467031594,
+    275423344,
+    851169720,
+    430227734,
+    3100823752,
+    506948616,
+    1363258195,
+    659060556,
+    3750685593,
+    883997877,
+    3785050280,
+    958139571,
+    3318307427,
+    1322822218,
+    3812723403,
+    1537002063,
+    2003034995,
+    1747873779,
+    3602036899,
+    1955562222,
+    1575990012,
+    2024104815,
+    1125592928,
+    2227730452,
+    2716904306,
+    2361852424,
+    442776044,
+    2428436474,
+    593698344,
+    2756734187,
+    3733110249,
+    3204031479,
+    2999351573,
+    3329325298,
+    3815920427,
+    3391569614,
+    3928383900,
+    3515267271,
+    566280711,
+    3940187606,
+    3454069534,
+    4118630271,
+    4000239992,
+    116418474,
+    1914138554,
+    174292421,
+    2731055270,
+    289380356,
+    3203993006,
+    460393269,
+    320620315,
+    685471733,
+    587496836,
+    852142971,
+    1086792851,
+    1017036298,
+    365543100,
+    1126000580,
+    2618297676,
+    1288033470,
+    3409855158,
+    1501505948,
+    4234509866,
+    1607167915,
+    987167468,
+    1816402316,
+    1246189591
+  ];
+  function crypto_hashblocks_hl(hh, hl, m, n) {
+    var wh = new Int32Array(16), wl = new Int32Array(16), bh0, bh1, bh2, bh3, bh4, bh5, bh6, bh7, bl0, bl1, bl2, bl3, bl4, bl5, bl6, bl7, th, tl, i, j, h, l, a, b, c, d;
+    var ah0 = hh[0], ah1 = hh[1], ah2 = hh[2], ah3 = hh[3], ah4 = hh[4], ah5 = hh[5], ah6 = hh[6], ah7 = hh[7], al0 = hl[0], al1 = hl[1], al2 = hl[2], al3 = hl[3], al4 = hl[4], al5 = hl[5], al6 = hl[6], al7 = hl[7];
+    var pos = 0;
+    while (n >= 128) {
+      for (i = 0; i < 16; i++) {
+        j = 8 * i + pos;
+        wh[i] = m[j + 0] << 24 | m[j + 1] << 16 | m[j + 2] << 8 | m[j + 3];
+        wl[i] = m[j + 4] << 24 | m[j + 5] << 16 | m[j + 6] << 8 | m[j + 7];
+      }
+      for (i = 0; i < 80; i++) {
+        bh0 = ah0;
+        bh1 = ah1;
+        bh2 = ah2;
+        bh3 = ah3;
+        bh4 = ah4;
+        bh5 = ah5;
+        bh6 = ah6;
+        bh7 = ah7;
+        bl0 = al0;
+        bl1 = al1;
+        bl2 = al2;
+        bl3 = al3;
+        bl4 = al4;
+        bl5 = al5;
+        bl6 = al6;
+        bl7 = al7;
+        h = ah7;
+        l = al7;
+        a = l & 65535;
+        b = l >>> 16;
+        c = h & 65535;
+        d = h >>> 16;
+        h = (ah4 >>> 14 | al4 << 32 - 14) ^ (ah4 >>> 18 | al4 << 32 - 18) ^ (al4 >>> 41 - 32 | ah4 << 32 - (41 - 32));
+        l = (al4 >>> 14 | ah4 << 32 - 14) ^ (al4 >>> 18 | ah4 << 32 - 18) ^ (ah4 >>> 41 - 32 | al4 << 32 - (41 - 32));
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        h = ah4 & ah5 ^ ~ah4 & ah6;
+        l = al4 & al5 ^ ~al4 & al6;
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        h = K[i * 2];
+        l = K[i * 2 + 1];
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        h = wh[i % 16];
+        l = wl[i % 16];
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        b += a >>> 16;
+        c += b >>> 16;
+        d += c >>> 16;
+        th = c & 65535 | d << 16;
+        tl = a & 65535 | b << 16;
+        h = th;
+        l = tl;
+        a = l & 65535;
+        b = l >>> 16;
+        c = h & 65535;
+        d = h >>> 16;
+        h = (ah0 >>> 28 | al0 << 32 - 28) ^ (al0 >>> 34 - 32 | ah0 << 32 - (34 - 32)) ^ (al0 >>> 39 - 32 | ah0 << 32 - (39 - 32));
+        l = (al0 >>> 28 | ah0 << 32 - 28) ^ (ah0 >>> 34 - 32 | al0 << 32 - (34 - 32)) ^ (ah0 >>> 39 - 32 | al0 << 32 - (39 - 32));
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        h = ah0 & ah1 ^ ah0 & ah2 ^ ah1 & ah2;
+        l = al0 & al1 ^ al0 & al2 ^ al1 & al2;
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        b += a >>> 16;
+        c += b >>> 16;
+        d += c >>> 16;
+        bh7 = c & 65535 | d << 16;
+        bl7 = a & 65535 | b << 16;
+        h = bh3;
+        l = bl3;
+        a = l & 65535;
+        b = l >>> 16;
+        c = h & 65535;
+        d = h >>> 16;
+        h = th;
+        l = tl;
+        a += l & 65535;
+        b += l >>> 16;
+        c += h & 65535;
+        d += h >>> 16;
+        b += a >>> 16;
+        c += b >>> 16;
+        d += c >>> 16;
+        bh3 = c & 65535 | d << 16;
+        bl3 = a & 65535 | b << 16;
+        ah1 = bh0;
+        ah2 = bh1;
+        ah3 = bh2;
+        ah4 = bh3;
+        ah5 = bh4;
+        ah6 = bh5;
+        ah7 = bh6;
+        ah0 = bh7;
+        al1 = bl0;
+        al2 = bl1;
+        al3 = bl2;
+        al4 = bl3;
+        al5 = bl4;
+        al6 = bl5;
+        al7 = bl6;
+        al0 = bl7;
+        if (i % 16 === 15) {
+          for (j = 0; j < 16; j++) {
+            h = wh[j];
+            l = wl[j];
+            a = l & 65535;
+            b = l >>> 16;
+            c = h & 65535;
+            d = h >>> 16;
+            h = wh[(j + 9) % 16];
+            l = wl[(j + 9) % 16];
+            a += l & 65535;
+            b += l >>> 16;
+            c += h & 65535;
+            d += h >>> 16;
+            th = wh[(j + 1) % 16];
+            tl = wl[(j + 1) % 16];
+            h = (th >>> 1 | tl << 32 - 1) ^ (th >>> 8 | tl << 32 - 8) ^ th >>> 7;
+            l = (tl >>> 1 | th << 32 - 1) ^ (tl >>> 8 | th << 32 - 8) ^ (tl >>> 7 | th << 32 - 7);
+            a += l & 65535;
+            b += l >>> 16;
+            c += h & 65535;
+            d += h >>> 16;
+            th = wh[(j + 14) % 16];
+            tl = wl[(j + 14) % 16];
+            h = (th >>> 19 | tl << 32 - 19) ^ (tl >>> 61 - 32 | th << 32 - (61 - 32)) ^ th >>> 6;
+            l = (tl >>> 19 | th << 32 - 19) ^ (th >>> 61 - 32 | tl << 32 - (61 - 32)) ^ (tl >>> 6 | th << 32 - 6);
+            a += l & 65535;
+            b += l >>> 16;
+            c += h & 65535;
+            d += h >>> 16;
+            b += a >>> 16;
+            c += b >>> 16;
+            d += c >>> 16;
+            wh[j] = c & 65535 | d << 16;
+            wl[j] = a & 65535 | b << 16;
+          }
+        }
+      }
+      h = ah0;
+      l = al0;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[0];
+      l = hl[0];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[0] = ah0 = c & 65535 | d << 16;
+      hl[0] = al0 = a & 65535 | b << 16;
+      h = ah1;
+      l = al1;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[1];
+      l = hl[1];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[1] = ah1 = c & 65535 | d << 16;
+      hl[1] = al1 = a & 65535 | b << 16;
+      h = ah2;
+      l = al2;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[2];
+      l = hl[2];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[2] = ah2 = c & 65535 | d << 16;
+      hl[2] = al2 = a & 65535 | b << 16;
+      h = ah3;
+      l = al3;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[3];
+      l = hl[3];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[3] = ah3 = c & 65535 | d << 16;
+      hl[3] = al3 = a & 65535 | b << 16;
+      h = ah4;
+      l = al4;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[4];
+      l = hl[4];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[4] = ah4 = c & 65535 | d << 16;
+      hl[4] = al4 = a & 65535 | b << 16;
+      h = ah5;
+      l = al5;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[5];
+      l = hl[5];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[5] = ah5 = c & 65535 | d << 16;
+      hl[5] = al5 = a & 65535 | b << 16;
+      h = ah6;
+      l = al6;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[6];
+      l = hl[6];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[6] = ah6 = c & 65535 | d << 16;
+      hl[6] = al6 = a & 65535 | b << 16;
+      h = ah7;
+      l = al7;
+      a = l & 65535;
+      b = l >>> 16;
+      c = h & 65535;
+      d = h >>> 16;
+      h = hh[7];
+      l = hl[7];
+      a += l & 65535;
+      b += l >>> 16;
+      c += h & 65535;
+      d += h >>> 16;
+      b += a >>> 16;
+      c += b >>> 16;
+      d += c >>> 16;
+      hh[7] = ah7 = c & 65535 | d << 16;
+      hl[7] = al7 = a & 65535 | b << 16;
+      pos += 128;
+      n -= 128;
+    }
+    return n;
+  }
+  function crypto_hash(out, m, n) {
+    var hh = new Int32Array(8), hl = new Int32Array(8), x = new Uint8Array(256), i, b = n;
+    hh[0] = 1779033703;
+    hh[1] = 3144134277;
+    hh[2] = 1013904242;
+    hh[3] = 2773480762;
+    hh[4] = 1359893119;
+    hh[5] = 2600822924;
+    hh[6] = 528734635;
+    hh[7] = 1541459225;
+    hl[0] = 4089235720;
+    hl[1] = 2227873595;
+    hl[2] = 4271175723;
+    hl[3] = 1595750129;
+    hl[4] = 2917565137;
+    hl[5] = 725511199;
+    hl[6] = 4215389547;
+    hl[7] = 327033209;
+    crypto_hashblocks_hl(hh, hl, m, n);
+    n %= 128;
+    for (i = 0; i < n; i++)
+      x[i] = m[b - n + i];
+    x[n] = 128;
+    n = 256 - 128 * (n < 112 ? 1 : 0);
+    x[n - 9] = 0;
+    ts64(x, n - 8, b / 536870912 | 0, b << 3);
+    crypto_hashblocks_hl(hh, hl, x, n);
+    for (i = 0; i < 8; i++)
+      ts64(out, 8 * i, hh[i], hl[i]);
+    return 0;
+  }
+  function add(p, q) {
+    var a = gf(), b = gf(), c = gf(), d = gf(), e = gf(), f = gf(), g = gf(), h = gf(), t = gf();
+    Z(a, p[1], p[0]);
+    Z(t, q[1], q[0]);
+    M(a, a, t);
+    A(b, p[0], p[1]);
+    A(t, q[0], q[1]);
+    M(b, b, t);
+    M(c, p[3], q[3]);
+    M(c, c, D2);
+    M(d, p[2], q[2]);
+    A(d, d, d);
+    Z(e, b, a);
+    Z(f, d, c);
+    A(g, d, c);
+    A(h, b, a);
+    M(p[0], e, f);
+    M(p[1], h, g);
+    M(p[2], g, f);
+    M(p[3], e, h);
+  }
+  function cswap(p, q, b) {
+    var i;
+    for (i = 0; i < 4; i++) {
+      sel25519(p[i], q[i], b);
+    }
+  }
+  function pack(r, p) {
+    var tx = gf(), ty = gf(), zi = gf();
+    inv25519(zi, p[2]);
+    M(tx, p[0], zi);
+    M(ty, p[1], zi);
+    pack25519(r, ty);
+    r[31] ^= par25519(tx) << 7;
+  }
+  function scalarmult(p, q, s) {
+    var b, i;
+    set25519(p[0], gf0);
+    set25519(p[1], gf1);
+    set25519(p[2], gf1);
+    set25519(p[3], gf0);
+    for (i = 255; i >= 0; --i) {
+      b = s[i / 8 | 0] >> (i & 7) & 1;
+      cswap(p, q, b);
+      add(q, p);
+      add(p, p);
+      cswap(p, q, b);
+    }
+  }
+  function scalarbase(p, s) {
+    var q = [gf(), gf(), gf(), gf()];
+    set25519(q[0], X);
+    set25519(q[1], Y);
+    set25519(q[2], gf1);
+    M(q[3], X, Y);
+    scalarmult(p, q, s);
+  }
+  var L = new Float64Array([
+    237,
+    211,
+    245,
+    92,
+    26,
+    99,
+    18,
+    88,
+    214,
+    156,
+    247,
+    162,
+    222,
+    249,
+    222,
+    20,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    16
+  ]);
+  function modL(r, x) {
+    var carry, i, j, k;
+    for (i = 63; i >= 32; --i) {
+      carry = 0;
+      for (j = i - 32, k = i - 12; j < k; ++j) {
+        x[j] += carry - 16 * x[i] * L[j - (i - 32)];
+        carry = x[j] + 128 >> 8;
+        x[j] -= carry * 256;
+      }
+      x[j] += carry;
+      x[i] = 0;
+    }
+    carry = 0;
+    for (j = 0; j < 32; j++) {
+      x[j] += carry - (x[31] >> 4) * L[j];
+      carry = x[j] >> 8;
+      x[j] &= 255;
+    }
+    for (j = 0; j < 32; j++)
+      x[j] -= carry * L[j];
+    for (i = 0; i < 32; i++) {
+      x[i + 1] += x[i] >> 8;
+      r[i] = x[i] & 255;
+    }
+  }
+  function reduce(r) {
+    var x = new Float64Array(64), i;
+    for (i = 0; i < 64; i++)
+      x[i] = r[i];
+    for (i = 0; i < 64; i++)
+      r[i] = 0;
+    modL(r, x);
+  }
+  function crypto_sign_direct(sm, m, n, sk) {
+    var h = new Uint8Array(64), r = new Uint8Array(64);
+    var i, j, x = new Float64Array(64);
+    var p = [gf(), gf(), gf(), gf()];
+    for (i = 0; i < n; i++)
+      sm[64 + i] = m[i];
+    for (i = 0; i < 32; i++)
+      sm[32 + i] = sk[i];
+    crypto_hash(r, sm.subarray(32), n + 32);
+    reduce(r);
+    scalarbase(p, r);
+    pack(sm, p);
+    for (i = 0; i < 32; i++)
+      sm[i + 32] = sk[32 + i];
+    crypto_hash(h, sm, n + 64);
+    reduce(h);
+    for (i = 0; i < 64; i++)
+      x[i] = 0;
+    for (i = 0; i < 32; i++)
+      x[i] = r[i];
+    for (i = 0; i < 32; i++) {
+      for (j = 0; j < 32; j++) {
+        x[i + j] += h[i] * sk[j];
+      }
+    }
+    modL(sm.subarray(32), x);
+    return n + 64;
+  }
+  function crypto_sign_direct_rnd(sm, m, n, sk, rnd) {
+    var h = new Uint8Array(64), r = new Uint8Array(64);
+    var i, j, x = new Float64Array(64);
+    var p = [gf(), gf(), gf(), gf()];
+    sm[0] = 254;
+    for (i = 1; i < 32; i++)
+      sm[i] = 255;
+    for (i = 0; i < 32; i++)
+      sm[32 + i] = sk[i];
+    for (i = 0; i < n; i++)
+      sm[64 + i] = m[i];
+    for (i = 0; i < 64; i++)
+      sm[n + 64 + i] = rnd[i];
+    crypto_hash(r, sm, n + 128);
+    reduce(r);
+    scalarbase(p, r);
+    pack(sm, p);
+    for (i = 0; i < 32; i++)
+      sm[i + 32] = sk[32 + i];
+    crypto_hash(h, sm, n + 64);
+    reduce(h);
+    for (i = 0; i < 64; i++)
+      sm[n + 64 + i] = 0;
+    for (i = 0; i < 64; i++)
+      x[i] = 0;
+    for (i = 0; i < 32; i++)
+      x[i] = r[i];
+    for (i = 0; i < 32; i++) {
+      for (j = 0; j < 32; j++) {
+        x[i + j] += h[i] * sk[j];
+      }
+    }
+    modL(sm.subarray(32, n + 64), x);
+    return n + 64;
+  }
+  function curve25519_sign(sm, m, n, sk, opt_rnd) {
+    var edsk = new Uint8Array(64);
+    var p = [gf(), gf(), gf(), gf()];
+    for (var i = 0; i < 32; i++)
+      edsk[i] = sk[i];
+    edsk[0] &= 248;
+    edsk[31] &= 127;
+    edsk[31] |= 64;
+    scalarbase(p, edsk);
+    pack(edsk.subarray(32), p);
+    var signBit = edsk[63] & 128;
+    var smlen;
+    if (opt_rnd) {
+      smlen = crypto_sign_direct_rnd(sm, m, n, edsk, opt_rnd);
+    } else {
+      smlen = crypto_sign_direct(sm, m, n, edsk);
+    }
+    sm[63] |= signBit;
+    return smlen;
+  }
+  function unpackneg(r, p) {
+    var t = gf(), chk = gf(), num = gf(), den = gf(), den2 = gf(), den4 = gf(), den6 = gf();
+    set25519(r[2], gf1);
+    unpack25519(r[1], p);
+    S(num, r[1]);
+    M(den, num, D);
+    Z(num, num, r[2]);
+    A(den, r[2], den);
+    S(den2, den);
+    S(den4, den2);
+    M(den6, den4, den2);
+    M(t, den6, num);
+    M(t, t, den);
+    pow2523(t, t);
+    M(t, t, num);
+    M(t, t, den);
+    M(t, t, den);
+    M(r[0], t, den);
+    S(chk, r[0]);
+    M(chk, chk, den);
+    if (neq25519(chk, num))
+      M(r[0], r[0], I);
+    S(chk, r[0]);
+    M(chk, chk, den);
+    if (neq25519(chk, num))
+      return -1;
+    if (par25519(r[0]) === p[31] >> 7)
+      Z(r[0], gf0, r[0]);
+    M(r[3], r[0], r[1]);
+    return 0;
+  }
+  function crypto_sign_open(m, sm, n, pk) {
+    var i, mlen;
+    var t = new Uint8Array(32), h = new Uint8Array(64);
+    var p = [gf(), gf(), gf(), gf()], q = [gf(), gf(), gf(), gf()];
+    mlen = -1;
+    if (n < 64)
+      return -1;
+    if (unpackneg(q, pk))
+      return -1;
+    for (i = 0; i < n; i++)
+      m[i] = sm[i];
+    for (i = 0; i < 32; i++)
+      m[i + 32] = pk[i];
+    crypto_hash(h, m, n);
+    reduce(h);
+    scalarmult(p, q, h);
+    scalarbase(q, sm.subarray(32));
+    add(p, q);
+    pack(t, p);
+    n -= 64;
+    if (crypto_verify_32(sm, 0, t, 0)) {
+      for (i = 0; i < n; i++)
+        m[i] = 0;
+      return -1;
+    }
+    for (i = 0; i < n; i++)
+      m[i] = sm[i + 64];
+    mlen = n;
+    return mlen;
+  }
+  function convertPublicKey(pk) {
+    var z = new Uint8Array(32), x = gf(), a = gf(), b = gf();
+    unpack25519(x, pk);
+    A(a, x, gf1);
+    Z(b, x, gf1);
+    inv25519(a, a);
+    M(a, a, b);
+    pack25519(z, a);
+    return z;
+  }
+  function curve25519_sign_open(m, sm, n, pk) {
+    var edpk = convertPublicKey(pk);
+    edpk[31] |= sm[63] & 128;
+    sm[63] &= 127;
+    return crypto_sign_open(m, sm, n, edpk);
+  }
+  function checkArrayTypes(...args) {
+    var t, i;
+    for (i = 0; i < arguments.length; i++) {
+      if ((t = Object.prototype.toString.call(arguments[i])) !== "[object Uint8Array]")
+        throw new TypeError("unexpected type " + t + ", use Uint8Array");
+    }
+  }
+  function sharedKey(secretKey, publicKey) {
+    checkArrayTypes(publicKey, secretKey);
+    if (publicKey.length !== 32)
+      throw new Error("wrong public key length");
+    if (secretKey.length !== 32)
+      throw new Error("wrong secret key length");
+    var sharedKey2 = new Uint8Array(32);
+    crypto_scalarmult(sharedKey2, secretKey, publicKey);
+    return sharedKey2;
+  }
+  function signMessage(secretKey, msg, opt_random) {
+    checkArrayTypes(msg, secretKey);
+    if (secretKey.length !== 32)
+      throw new Error("wrong secret key length");
+    if (opt_random) {
+      checkArrayTypes(opt_random);
+      if (opt_random.length !== 64)
+        throw new Error("wrong random data length");
+      var buf = new Uint8Array(128 + msg.length);
+      curve25519_sign(buf, msg, msg.length, secretKey, opt_random);
+      return new Uint8Array(buf.subarray(0, 64 + msg.length));
+    } else {
+      var signedMsg = new Uint8Array(64 + msg.length);
+      curve25519_sign(signedMsg, msg, msg.length, secretKey);
+      return signedMsg;
+    }
+  }
+  function openMessage(publicKey, signedMsg) {
+    checkArrayTypes(signedMsg, publicKey);
+    if (publicKey.length !== 32)
+      throw new Error("wrong public key length");
+    var tmp = new Uint8Array(signedMsg.length);
+    var mlen = curve25519_sign_open(tmp, signedMsg, signedMsg.length, publicKey);
+    if (mlen < 0)
+      return null;
+    var m = new Uint8Array(mlen);
+    for (var i = 0; i < m.length; i++)
+      m[i] = tmp[i];
+    return m;
+  }
+  function sign(secretKey, msg, opt_random) {
+    checkArrayTypes(secretKey, msg);
+    if (secretKey.length !== 32)
+      throw new Error("wrong secret key length");
+    if (opt_random) {
+      checkArrayTypes(opt_random);
+      if (opt_random.length !== 64)
+        throw new Error("wrong random data length");
+    }
+    var buf = new Uint8Array((opt_random ? 128 : 64) + msg.length);
+    curve25519_sign(buf, msg, msg.length, secretKey, opt_random);
+    var signature = new Uint8Array(64);
+    for (var i = 0; i < signature.length; i++)
+      signature[i] = buf[i];
+    return signature;
+  }
+  function verify(publicKey, msg, signature) {
+    checkArrayTypes(msg, signature, publicKey);
+    if (signature.length !== 64)
+      throw new Error("wrong signature length");
+    if (publicKey.length !== 32)
+      throw new Error("wrong public key length");
+    var sm = new Uint8Array(64 + msg.length);
+    var m = new Uint8Array(64 + msg.length);
+    var i;
+    for (i = 0; i < 64; i++)
+      sm[i] = signature[i];
+    for (i = 0; i < msg.length; i++)
+      sm[i + 64] = msg[i];
+    return curve25519_sign_open(m, sm, sm.length, publicKey) >= 0;
+  }
+  function generateKeyPair(seed) {
+    checkArrayTypes(seed);
+    if (seed.length !== 32)
+      throw new Error("wrong seed length");
+    var sk = new Uint8Array(32);
+    var pk = new Uint8Array(32);
+    for (var i = 0; i < 32; i++)
+      sk[i] = seed[i];
+    crypto_scalarmult_base(pk, sk);
+    sk[0] &= 248;
+    sk[31] &= 127;
+    sk[31] |= 64;
+    pk[31] &= 127;
+    return {
+      public: pk,
+      private: sk
+    };
+  }
+  return { generateKeyPair, sharedKey };
+})();
+
+"use strict";
+const Squircle = {
+  path: function(w, h, r, n, steps) {
+    n = n || 5;
+    steps = steps || 24;
+    r = Math.min(r, w / 2, h / 2);
+    function corner(cx, cy, sx, sy, reverse) {
+      const pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = Math.PI / 2 * (i / steps);
+        const px = cx + sx * r * Math.pow(Math.sin(t), 2 / n);
+        const py = cy + sy * r * Math.pow(Math.cos(t), 2 / n);
+        pts.push([px, py]);
+      }
+      return reverse ? pts.reverse() : pts;
+    }
+    const tl = corner(r, r, -1, -1, true);
+    const tr = corner(w - r, r, 1, -1, false);
+    const br = corner(w - r, h - r, 1, 1, true);
+    const bl = corner(r, h - r, -1, 1, false);
+    const all = [...tl, ...tr, ...br, ...bl];
+    let d = "M " + all[0][0].toFixed(2) + " " + all[0][1].toFixed(2) + " ";
+    for (let i = 1; i < all.length; i++) {
+      d += "L " + all[i][0].toFixed(2) + " " + all[i][1].toFixed(2) + " ";
+    }
+    d += "Z";
+    return d;
+  },
+  svg: function(w, h, r, n, color, border) {
+    const d = this.path(w, h, r, n || 5);
+    const fill = color || "white";
+    let svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">';
+    svg += '<path d="' + d + '" fill="' + fill + '"';
+    if (border) {
+      svg += ' stroke="' + border.color + '" stroke-width="' + border.width + '"';
+    }
+    svg += "/></svg>";
+    return svg;
+  },
+  url: function(w, h, r, n, color, border) {
+    return 'url("data:image/svg+xml,' + encodeURIComponent(this.svg(w, h, r, n, color, border)) + '")';
+  },
+  apply: function(el, r, n, border) {
+    const rect = el.getBoundingClientRect();
+    const w = Math.max(rect.width, 1);
+    const h = Math.max(rect.height, 1);
+    const bgColor = getComputedStyle(el).backgroundColor || "#000000";
+    const bgUrl = this.url(w, h, r, n, bgColor, border);
+    el.style.backgroundImage = bgUrl;
+    el.style.backgroundSize = "100% 100%";
+    el.style.backgroundColor = "transparent";
+    el.style.borderRadius = "0";
+    el.style.border = "none";
+  },
+  applyMask: function(el, r, n, border) {
+    const rect = el.getBoundingClientRect();
+    const w = Math.max(rect.width, 1);
+    const h = Math.max(rect.height, 1);
+    const maskUrl = this.url(w, h, r, n, "black", border);
+    el.style.maskImage = maskUrl;
+    el.style.webkitMaskImage = maskUrl;
+    el.style.maskSize = "100% 100%";
+    el.style.webkitMaskSize = "100% 100%";
+    el.style.borderRadius = "0";
+    el.style.border = "none";
+  },
+  applyAll: function(selector, r, n, border) {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach((el) => this.apply(el, r, n, border));
+  },
+  applyMaskAll: function(selector, r, n, border) {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach((el) => this.applyMask(el, r, n, border));
+  }
+};
+
+"use strict";
+const X25519 = (function() {
+  const subtle = crypto.subtle;
+  let _supported = null;
+  async function checkSupport() {
+    if (_supported !== null) return _supported;
+    try {
+      const dummy = new Uint8Array(32);
+      await subtle.importKey(
+        "pkcs8",
+        pkcs8Wrap(dummy),
+        { name: "X25519" },
+        true,
+        ["deriveBits"]
+      );
+      _supported = true;
+    } catch {
+      _supported = false;
+    }
+    return _supported;
+  }
+  function b64ToBytes(b64) {
+    const s = b64.replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(s);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+  function pkcs8Wrap(privKey) {
+    if (privKey.length !== 32) throw "x25519 private key must be 32 bytes";
+    const pkcs8 = new Uint8Array(48);
+    pkcs8[0] = 48;
+    pkcs8[1] = 46;
+    pkcs8[2] = 2;
+    pkcs8[3] = 1;
+    pkcs8[4] = 0;
+    pkcs8[5] = 48;
+    pkcs8[6] = 5;
+    pkcs8[7] = 6;
+    pkcs8[8] = 3;
+    pkcs8[9] = 43;
+    pkcs8[10] = 101;
+    pkcs8[11] = 110;
+    pkcs8[12] = 4;
+    pkcs8[13] = 34;
+    pkcs8[14] = 4;
+    pkcs8[15] = 32;
+    pkcs8.set(privKey, 16);
+    return pkcs8.buffer;
+  }
+  function clamp(seed) {
+    const priv = new Uint8Array(seed);
+    priv[0] &= 248;
+    priv[31] &= 127;
+    priv[31] |= 64;
+    return priv;
+  }
+  async function generateKeyPair(seed) {
+    if (!await checkSupport()) {
+      return X25519JS.generateKeyPair(seed);
+    }
+    const priv = clamp(seed);
+    const privKey = await subtle.importKey(
+      "pkcs8",
+      pkcs8Wrap(priv),
+      { name: "X25519" },
+      true,
+      ["deriveBits"]
+    );
+    const jwk = await subtle.exportKey("jwk", privKey);
+    const pubBytes = b64ToBytes(jwk.x);
+    return { public: pubBytes, private: priv };
+  }
+  async function sharedKey(privateKey, publicKey) {
+    if (!await checkSupport()) {
+      return X25519JS.sharedKey(privateKey, publicKey);
+    }
+    const privKey = await subtle.importKey(
+      "pkcs8",
+      pkcs8Wrap(clamp(privateKey)),
+      { name: "X25519" },
+      false,
+      ["deriveBits"]
+    );
+    const pubKey = await subtle.importKey(
+      "raw",
+      publicKey,
+      { name: "X25519" },
+      true,
+      []
+    );
+    const bits = await subtle.deriveBits(
+      { name: "X25519", public: pubKey },
+      privKey,
+      256
+    );
+    return new Uint8Array(bits);
+  }
+  return { generateKeyPair, sharedKey };
+})();
+
+"use strict";
+const ECC = (function() {
+  var subtle = crypto.subtle;
+  class GZip {
+    async gzip(inputarr) {
+      const inputStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(inputarr);
+          controller.close();
+        }
+      });
+      const gzs = new CompressionStream("gzip");
+      const compressedStream = inputStream.pipeThrough(gzs);
+      const reader = compressedStream.getReader();
+      let chunks = [];
+      while (true) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value !== void 0) chunks.push(value);
+        } catch (error) {
+          break;
+        }
+      }
+      let len = chunks.reduce((s, t) => s + t.length, 0);
+      var gzip = new Uint8Array(len);
+      var idx = 0;
+      chunks.forEach((bytes) => {
+        bytes.forEach((v) => {
+          gzip[idx++] = v;
+        });
+      });
+      return gzip;
+    }
+    async ungzip(inputarr) {
+      const inputStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(inputarr);
+          controller.close();
+        }
+      });
+      const gzs = new DecompressionStream("gzip");
+      const compressedStream = inputStream.pipeThrough(gzs);
+      const reader = compressedStream.getReader();
+      let chunks = [];
+      while (true) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value !== void 0) chunks.push(value);
+        } catch (error) {
+          break;
+        }
+      }
+      let len = chunks.reduce((s, t) => s + t.length, 0);
+      var plain = new Uint8Array(len);
+      var idx = 0;
+      chunks.forEach((bytes) => {
+        bytes.forEach((v) => {
+          plain[idx++] = v;
+        });
+      });
+      return plain;
+    }
+  }
+  class EC {
+    constructor() {
+      this.zlib = new GZip();
+    }
+    toHex(arr) {
+      let strArr = [];
+      arr.forEach((e) => {
+        let s = e.toString(16);
+        strArr.push(s.length == 1 ? "0" + s : s);
+      });
+      return strArr.join("");
+    }
+    async genRandomKeyBuffer(length = 32) {
+      let p = {
+        name: "HMAC",
+        hash: "SHA-512",
+        length: 256
+      };
+      let keyObj = await subtle.generateKey(p, true, ["sign"]);
+      let keyBf = await subtle.exportKey("raw", keyObj);
+      keyObj = await subtle.importKey("raw", keyBf, "PBKDF2", false, ["deriveKey"]);
+      let salt = crypto.getRandomValues(new Uint8Array(64));
+      let pbkdf2 = {
+        name: "PBKDF2",
+        hash: "SHA-512",
+        iterations: 10,
+        salt: salt.buffer
+      };
+      let dk = {
+        name: "HMAC",
+        hash: "SHA-512",
+        length: length * 8
+      };
+      let result = await subtle.deriveKey(pbkdf2, keyObj, dk, true, ["sign"]);
+      return new Uint8Array(await subtle.exportKey("raw", result));
+    }
+    base64Encode(arr, urlsafe = 0, firstLineLess = 0) {
+      let r = base64js.fromByteArray(arr, 76, firstLineLess);
+      if (urlsafe) {
+        r = r.replace(/\+/g, "-");
+        r = r.replace(/\//g, "_");
+        r = r.replace(/=/g, "");
+      }
+      return r;
+    }
+    base64Decode(str, urlsafe = 0) {
+      if (urlsafe) {
+        str = str.replace(/-/g, "+");
+        str = str.replace(/_/g, "/");
+        str = str.replace(/=/g, "");
+      }
+      return base64js.toByteArray(str);
+    }
+    async generateNewKeyPair(seckey) {
+      let a = null;
+      if (seckey) {
+        a = this.base64Decode(seckey);
+        if (a?.length != 32) {
+          throw "private key length must be 32";
+        }
+      } else {
+        a = await this.genRandomKeyBuffer();
+      }
+      let kp = await X25519.generateKeyPair(a);
+      let kp2 = {
+        public: base64js.fromByteArray(kp.public),
+        private: base64js.fromByteArray(kp.private)
+      };
+      return kp2;
+    }
+    async decrypt(privateKeyB64, data) {
+      let byte0 = data[0];
+      let useSha = (byte0 & 8) !== 0;
+      if (!useSha && (byte0 === 4 || byte0 === 5)) {
+        throw "老格式不支持，请使用 legacy 版本";
+      }
+      let isNew = useSha || byte0 !== 4 && byte0 !== 5;
+      if (isNew && (byte0 & 4) !== 4) {
+        throw "data format not support";
+      }
+      let isZip = useSha ? (byte0 & 1) === 0 : byte0 === 4;
+      let format = useSha ? 1 : 0;
+      let type = isNew ? isZip ? 4 : 5 : byte0;
+      if (data.length < 8 + 16 + 32 + 32) {
+        throw "data too short";
+      }
+      let privateKey = base64js.toByteArray(privateKeyB64);
+      if (privateKey.length != 32) {
+        throw "privateKey length must be 32";
+      }
+      let ivLen = data[2] | data[3] << 8;
+      if (ivLen !== 12 && ivLen !== 16) {
+        throw "invalid iv length";
+      }
+      let iv = data.subarray(8, 8 + ivLen);
+      let macStart = 8 + ivLen;
+      let mac = data.subarray(macStart, macStart + 32);
+      let pubStart = macStart + 32;
+      let tmpPub = data.subarray(pubStart, pubStart + 32);
+      let enc = data.subarray(pubStart + 32);
+      let dh = await X25519.sharedKey(privateKey, tmpPub);
+      let kp = await X25519.generateKeyPair(privateKey);
+      let hash64 = new Uint8Array(64);
+      await this.hashDH(dh, kp.public, tmpPub, hash64);
+      let macData = new Uint8Array(iv.length + tmpPub.length + enc.length);
+      macData.set(iv, 0);
+      macData.set(tmpPub, iv.length);
+      macData.set(enc, iv.length + tmpPub.length);
+      let mac2;
+      mac2 = await this.hmacSha512(hash64.subarray(32, 64), macData);
+      for (let i = 0; i < 32; i++) {
+        if (mac[i] != mac2[i]) {
+          throw "MAC NOT FIT";
+        }
+      }
+      let aesKey = hash64.subarray(0, 32);
+      let dec;
+      if (ivLen === 16) {
+        dec = await this.aesDecrypt(aesKey, iv, enc);
+      } else {
+        dec = await this.aesGcmDecrypt(aesKey, iv, enc);
+      }
+      if (type == 4) {
+        return await this.zlib.ungzip(dec);
+      }
+      return dec;
+    }
+    async hashDH(dh, pub1, pub2, dh64) {
+      let shared96 = new Uint8Array(96);
+      dh.forEach((e, i) => {
+        shared96[i] = e;
+      });
+      let flag = 0;
+      for (let i = 31; i >= 0; --i) {
+        const element = pub1[i];
+        const element2 = pub2[i];
+        if (element < element2) {
+          flag = -1;
+          break;
+        } else if (element > element2) {
+          flag = 1;
+          break;
+        }
+      }
+      if (flag == -1) {
+        pub1.forEach((e, i) => {
+          shared96[i + 32] = e;
+        });
+        pub2.forEach((e, i) => {
+          shared96[i + 64] = e;
+        });
+      } else {
+        pub2.forEach((e, i) => {
+          shared96[i + 32] = e;
+        });
+        pub1.forEach((e, i) => {
+          shared96[i + 64] = e;
+        });
+      }
+      let r;
+      r = await this.sha512(shared96);
+      r.forEach((e, i) => {
+        dh64[i] = e;
+      });
+      shared96.fill(0);
+      r.fill(0);
+    }
+    async encrypt(pubBase64, data, zipFirst = true) {
+      if (zipFirst) {
+        let zipdata = await this.zlib.gzip(data);
+        return this._encrypt(pubBase64, zipdata, true);
+      } else {
+        return this._encrypt(pubBase64, data, false);
+      }
+    }
+    async _encrypt(pubBase64, data, isZipData = true) {
+      let pubKey = base64js.toByteArray(pubBase64);
+      if (pubKey.length != 32) {
+        throw "pubkey length error";
+      }
+      let a = await this.genRandomKeyBuffer(32);
+      let kp = await X25519.generateKeyPair(a);
+      let dh = await X25519.sharedKey(kp.private, pubKey);
+      let hash2 = new Uint8Array(64);
+      await this.hashDH(dh, pubKey, kp.public, hash2);
+      kp.private.fill(0);
+      let key = hash2.subarray(0, 32);
+      let iv = await crypto.getRandomValues(new Uint8Array(12));
+      let enc = await this.aesGcmEncrypt(key, iv, data);
+      var tmpPub = kp.public;
+      let macData = new Uint8Array(iv.length + tmpPub.length + enc.length);
+      macData.set(iv, 0);
+      macData.set(tmpPub, iv.length);
+      macData.set(enc, iv.length + tmpPub.length);
+      let mac;
+      mac = await this.hmacSha512(hash2.subarray(32, 64), macData);
+      let result = new Uint8Array(8 + mac.length + iv.length + tmpPub.length + enc.length);
+      result[0] = 4 | (isZipData ? 0 : 1) | 8;
+      result[1] = 0;
+      result[2] = 12;
+      result[3] = 0;
+      result[4] = 32;
+      result[5] = 0;
+      result[6] = 32;
+      result[7] = 0;
+      let start = 8;
+      result.set(iv, start);
+      start += iv.length;
+      result.set(mac, start);
+      start += mac.length;
+      result.set(tmpPub, start);
+      start += tmpPub.length;
+      result.set(enc, start);
+      return result;
+    }
+    async aesDecrypt(key, iv, data) {
+      let p = {
+        name: "AES-CBC",
+        iv
+      };
+      let keyObj = await subtle.importKey("raw", key, "AES-CBC", false, ["decrypt"]);
+      return new Uint8Array(await subtle.decrypt(p, keyObj, data));
+    }
+    async aesGcmDecrypt(key, iv, data) {
+      let keyObj = await subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
+      return new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv }, keyObj, data));
+    }
+    async aesGcmEncrypt(key, iv, data) {
+      let keyObj = await subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
+      return new Uint8Array(await subtle.encrypt({ name: "AES-GCM", iv, length: 256 }, keyObj, data));
+    }
+    async hmacSha512(key, data) {
+      let keyObj = await subtle.importKey(
+        "raw",
+        key,
+        { name: "HMAC", hash: "SHA-512" },
+        false,
+        ["sign"]
+      );
+      let sig = await subtle.sign("HMAC", keyObj, data);
+      return new Uint8Array(sig).subarray(0, 32);
+    }
+    async sha512(data) {
+      let hash = await subtle.digest("SHA-512", data);
+      return new Uint8Array(hash);
+    }
+  }
+  async function initEC() {
+    return new EC();
+  }
+  return { initEC };
+})();
+
+"use strict";
+(() => {
+  // src/html/i18n/cn/js-messages.ts
+  var jsMessages = {
+    modalTitle: "无法自动识别密文类型",
+    modalDesc: "请选择该密文的 Base64 类型：",
+    modalBtnStandard: "标准 base64",
+    modalBtnUrlsafe: "URL-safe base64",
+    errEmptyPlain: "请输入明文",
+    errEmptyCipher: "请输入秘文base64 或选择文件",
+    errDecryptNFormat: "解密 N. 格式需要公钥和 salt（请从书签入口进入）",
+    errDecryptNFailed: "N. 格式解密失败",
+    errEmptyPrivkey: "私钥为空",
+    errPubkeyMismatchPrivkey: "生成的公钥与书签中保存的公钥不匹配，请检查私钥是否正确",
+    errEmptyFile: "文件内容为空",
+    errEmptyPhrase: "请输入密码短语",
+    errPubkeyMismatchPhrase: "生成的公钥与书签中保存的公钥不匹配，请检查短语是否正确",
+    errEmptyPubkey: "公钥为空",
+    errNeedBookmark: "请重新生成书签地址，从书签地址进入",
+    bookmarkHint: "如果你的公钥是通过密码短语派生的，请使用密码短语书签",
+    emailSubjectDefault: "备份",
+    emailBackupTime: "备份时间",
+    emailPubkey: "公钥",
+    emailWebUrl: "网页地址",
+    emailDataBase64: "数据base64",
+    inputDataLabel: "从书签链接带入的信息",
+    historyLoading: "加载中...",
+    historyFetchFailed: "获取历史记录失败",
+    historyFetchFailedCors: "无法连接云端（CORS 限制）",
+    gdriveAuthRequired: "请先登录 Google Drive",
+    gdriveAuthFailed: "Google 授权失败",
+    gdriveSaveSuccess: "已保存到 Google Drive",
+    gdriveSaveFailed: "保存失败",
+    gdriveLoadSuccess: "已从 Google Drive 加载",
+    gdriveLoadFailed: "加载失败",
+    gdriveLoadCanceled: "已取消选择文件",
+    gdriveNoFiles: "Google Drive 上未找到备份",
+    gdriveDescRequired: "请输入描述"
+  };
+
+  // src/ipaste/common.ts
+  async function computePhash(ec, plainText, salt) {
+    const encoder = new TextEncoder();
+    const phashKeyData = encoder.encode("phash" + salt);
+    const phashKey = await crypto.subtle.importKey(
+      "raw",
+      phashKeyData,
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const phashBuffer = await crypto.subtle.sign("HMAC", phashKey, encoder.encode(plainText));
+    const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
+    return ec.base64Encode(phashArray, 1);
+  }
+
+  // src/ipaste/gdrive.ts
+  function getPubkeyFolderName(pubkey) {
+    const safe = pubkey.replace(/[+/=]/g, (m) => m === "+" ? "-" : m === "/" ? "_" : "");
+    return "P-" + safe.slice(0, 13);
+  }
+  var GoogleDriveManager = class {
+    constructor(clientId, callbackPath = "./gdrive-callback.html", folderName = "ipaste") {
+      this.accessToken = null;
+      this.clientId = clientId;
+      this.callbackPath = callbackPath;
+      this.folderName = folderName;
+    }
+    // Auth: opens a popup to gdrive-callback.html which handles the OAuth flow.
+    // The callback page uses postMessage to send the access_token back.
+    async authorize() {
+      if (this.accessToken) return;
+      const stored = localStorage.getItem("gdrive_access_token");
+      if (stored) {
+        this.accessToken = stored;
+        return;
+      }
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        const handler = (event) => {
+          if (event.data && event.data.type === "gdrive-auth-success") {
+            settled = true;
+            this.accessToken = event.data.token;
+            localStorage.setItem("gdrive_access_token", this.accessToken);
+            resolve();
+          }
+        };
+        window.addEventListener("message", handler);
+        const callbackUrl = this.callbackPath;
+        const popup = window.open(
+          `${callbackUrl}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent("https://www.googleapis.com/auth/drive.file")}`,
+          "gdrive-auth",
+          "width=500,height=600,left=200,top=100"
+        );
+        if (!popup) {
+          window.removeEventListener("message", handler);
+          reject(new Error("Popup blocked. Please allow popups for this site."));
+          return;
+        }
+        setTimeout(() => {
+          const checkClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener("message", handler);
+              if (!settled) {
+                reject(new Error("Authorization canceled"));
+              }
+            }
+          }, 500);
+        }, 2e3);
+      });
+    }
+    async ensureAuthorized() {
+      if (this.isAuthorized()) return;
+      await this.authorize();
+    }
+    isAuthorized() {
+      if (this.accessToken !== null && this.accessToken !== "") {
+        return true;
+      }
+      const stored = localStorage.getItem("gdrive_access_token");
+      if (stored) {
+        this.accessToken = stored;
+        return true;
+      }
+      return false;
+    }
+    signOut() {
+      this.accessToken = null;
+    }
+    // --- Drive API ---
+    async driveFetch(endpoint, options = {}) {
+      if (!this.accessToken) {
+        throw new Error("Not authorized");
+      }
+      const url = endpoint.startsWith("http") ? endpoint : `https://www.googleapis.com/drive/v3${endpoint}`;
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          "Authorization": `Bearer ${this.accessToken}`,
+          ...options.headers
+        }
+      });
+      if (response.status === 401) {
+        this.accessToken = null;
+        throw new Error("Token expired, please sign in again");
+      }
+      return response;
+    }
+    async saveBackup(ec, plainText, ciphertext, pubkey, salt, description) {
+      await this.ensureAuthorized();
+      const phash = await computePhash(ec, plainText, salt);
+      const fileName = `i-${phash}.txt`;
+      const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
+      const existingFile = await this.findBackupByPhash(phash, pubkeyFolderId);
+      const metadata = {
+        name: fileName,
+        mimeType: "text/plain",
+        description,
+        ...existingFile ? {} : { parents: [pubkeyFolderId] }
+      };
+      const fileId = existingFile ? existingFile.id : null;
+      const uploadUrl = await this.startResumableUpload(fileId, metadata);
+      const newFileId = await this.uploadContent(uploadUrl, ciphertext);
+      return fileId || newFileId;
+    }
+    async listBackups(pubkey, salt, ec) {
+      await this.ensureAuthorized();
+      const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
+      const query = `name contains 'i-' and trashed=false and '${pubkeyFolderId}' in parents`;
+      const params = new URLSearchParams({
+        q: query,
+        fields: "files(id,name,modifiedTime,description)",
+        orderBy: "modifiedTime desc",
+        pageSize: "50"
+      });
+      const response = await this.driveFetch(`/files?${params.toString()}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to list files: ${response.status} ${errText}`);
+      }
+      const data = await response.json();
+      return data.files || [];
+    }
+    async readBackup(fileId) {
+      await this.ensureAuthorized();
+      const response = await this.driveFetch(`/files/${fileId}?alt=media`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to read file: ${response.status} ${errText}`);
+      }
+      const text = await response.text();
+      return text.trim();
+    }
+    // --- Resumable Upload ---
+    async startResumableUpload(fileId, metadata) {
+      const isUpdate = !!fileId;
+      const url = isUpdate ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=resumable` : "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
+      const response = await this.driveFetch(url, {
+        method: isUpdate ? "PATCH" : "POST",
+        headers: {
+          "Authorization": `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(metadata)
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to start upload: ${response.status} ${errText}`);
+      }
+      const sessionUrl = response.headers.get("Location");
+      if (!sessionUrl) {
+        throw new Error("No resumable upload session URL returned");
+      }
+      return sessionUrl;
+    }
+    async uploadContent(sessionUrl, content) {
+      const CHUNK_SIZE = 2 * 1024 * 1024;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(content);
+      const total = data.length;
+      const MAX_RETRIES = 3;
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const isRetryable = (status) => status === 0 || status >= 500;
+      if (total <= CHUNK_SIZE) {
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          try {
+            const response = await fetch(sessionUrl, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/octet-stream",
+                "Content-Length": String(total)
+              },
+              body: content
+            });
+            if (response.ok) {
+              const result = await response.json();
+              return result.id;
+            }
+            if (!isRetryable(response.status) || attempt === MAX_RETRIES - 1) {
+              const errText = await response.text();
+              throw new Error(`Failed to upload: ${response.status} ${errText}`);
+            }
+          } catch (e) {
+            if (attempt === MAX_RETRIES - 1) throw e;
+          }
+          await sleep(1e3 * (attempt + 1));
+        }
+      }
+      let offset = 0;
+      while (offset < total) {
+        const end = Math.min(offset + CHUNK_SIZE, total) - 1;
+        const chunk = data.slice(offset, end + 1);
+        const chunkSize = chunk.length;
+        const isLast = end + 1 >= total;
+        let uploaded = false;
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          const headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Length": String(chunkSize)
+          };
+          if (isLast) {
+            headers["Content-Range"] = `bytes ${offset}-${end}/${total}`;
+          } else {
+            headers["Content-Range"] = `bytes ${offset}-${end}/*`;
+          }
+          try {
+            const response = await fetch(sessionUrl, {
+              method: "PUT",
+              headers,
+              body: chunk
+            });
+            if (response.ok) {
+              const result = await response.json();
+              return result.id;
+            }
+            if (response.status === 308) {
+              uploaded = true;
+              break;
+            }
+            if (!isRetryable(response.status) || attempt === MAX_RETRIES - 1) {
+              const errText = await response.text();
+              throw new Error(`Failed to upload chunk: ${response.status} ${errText}`);
+            }
+          } catch (e) {
+            if (attempt === MAX_RETRIES - 1) throw e;
+          }
+          await sleep(1e3 * (attempt + 1));
+        }
+        if (!uploaded) {
+          throw new Error(`Chunk at offset ${offset} failed after ${MAX_RETRIES} retries`);
+        }
+        offset += CHUNK_SIZE;
+      }
+      throw new Error("Upload completed without server response");
+    }
+    // --- Helpers ---
+    async findLatestBackup(pubkey) {
+      return null;
+    }
+    async findBackupByPhash(phash, folderId) {
+      const fileName = `i-${phash}.txt`;
+      const query = `name='${fileName}' and trashed=false and '${folderId}' in parents`;
+      const response = await this.driveFetch(`/files?q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime)`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.files && data.files.length > 0 ? data.files[0] : null;
+    }
+    async ensurePubkeyFolder(pubkey) {
+      const folderName = getPubkeyFolderName(pubkey);
+      const ipasteFolderId = await this.ensureRootFolder();
+      const response = await this.driveFetch(`/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${ipasteFolderId}' in parents&fields=files(id,name)`);
+      if (!response.ok) throw new Error("Failed to find pubkey folder");
+      const data = await response.json();
+      if (data.files && data.files.length > 0) {
+        return data.files[0].id;
+      }
+      const createResp = await this.driveFetch("/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: folderName, mimeType: "application/vnd.google-apps.folder", parents: [ipasteFolderId] })
+      });
+      if (!createResp.ok) throw new Error("Failed to create pubkey folder");
+      const folder = await createResp.json();
+      return folder.id;
+    }
+    async ensureRootFolder() {
+      const response = await this.driveFetch(`/files?q=name='${this.folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`);
+      if (!response.ok) throw new Error(`Failed to find ${this.folderName} folder`);
+      const data = await response.json();
+      if (data.files && data.files.length > 0) {
+        return data.files[0].id;
+      }
+      const createResp = await this.driveFetch("/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: this.folderName, mimeType: "application/vnd.google-apps.folder" })
+      });
+      if (!createResp.ok) throw new Error(`Failed to create ${this.folderName} folder`);
+      const folder = await createResp.json();
+      return folder.id;
+    }
+    getStatusText() {
+      if (this.isAuthorized()) {
+        return "Google Drive: Connected";
+      }
+      return "Google Drive: Not connected";
+    }
+  };
+
+  // src/index.ts
+  var GDRIVE_CLIENT_ID = "181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com";
+  var App = /* @__PURE__ */ (function() {
+    async function init() {
+      function detectBase64Type(str) {
+        const trimmed = str.replace(/\s/g, "");
+        if (!trimmed) return null;
+        const hasUrlSafe = /[-_]/.test(trimmed);
+        const hasStandard = /[+/]/.test(trimmed);
+        if (hasUrlSafe && !hasStandard) return "urlsafe";
+        if (hasStandard && !hasUrlSafe) return "standard";
+        if (!hasUrlSafe && !hasStandard) {
+          if (trimmed.endsWith("=")) return "standard";
+          return null;
+        }
+        return "standard";
+      }
+      function showBase64TypeModal() {
+        return new Promise((resolve) => {
+          const overlay = document.createElement("div");
+          overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999";
+          const box = document.createElement("div");
+          box.style.cssText = "background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2)";
+          const title = document.createElement("h3");
+          title.textContent = jsMessages.modalTitle;
+          title.style.cssText = "margin:0 0 0.75rem;font-size:1rem;font-weight:600";
+          const desc = document.createElement("p");
+          desc.textContent = jsMessages.modalDesc;
+          desc.style.cssText = "margin:0 0 1rem;font-size:0.9375rem;color:var(--text-muted,#666)";
+          const btnRow = document.createElement("div");
+          btnRow.style.cssText = "display:flex;gap:0.75rem;justify-content:flex-end";
+          const makeBtn = (label, type, primary = false) => {
+            const btn = document.createElement("button");
+            btn.textContent = label;
+            btn.style.cssText = primary ? "padding:0.5rem 1.25rem;border:none;border-radius:8px;background:#000;color:#fff;font-size:0.9375rem;cursor:pointer" : "padding:0.5rem 1.25rem;border:1px solid #ccc;border-radius:8px;background:#fff;font-size:0.9375rem;cursor:pointer";
+            btn.onclick = () => {
+              document.body.removeChild(overlay);
+              resolve(type);
+            };
+            return btn;
+          };
+          btnRow.appendChild(makeBtn(jsMessages.modalBtnStandard, "standard"));
+          btnRow.appendChild(makeBtn(jsMessages.modalBtnUrlsafe, "urlsafe", true));
+          box.appendChild(title);
+          box.appendChild(desc);
+          box.appendChild(btnRow);
+          overlay.appendChild(box);
+          overlay.onclick = (e) => {
+            if (e.target === overlay) {
+              document.body.removeChild(overlay);
+              resolve("standard");
+            }
+          };
+          document.body.appendChild(overlay);
+        });
+      }
+      const FIXED_SALT = "The California sea lion (Zalophus californianus) is a coastal species of eared seal native to western North America. It is one of six species of sea lion. Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California. This female sea lion was photographed next to a western gull in Scripps Park in the neighborhood of La Jolla in San Diego, California. [2022-04-07 wikipedia]";
+      const KDF_V1 = {
+        ver: "1.0",
+        hash: "SHA-256",
+        iterations: 123456
+      };
+      const KDF_V2 = {
+        ver: "2.0",
+        hash: "SHA-512",
+        iterations: 21e4
+      };
+      let G_Input;
+      let currentSalt;
+      function openUrl(url) {
+        if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          location.href = url;
+        } else {
+          window.open(url, "_blank");
+        }
+      }
+      function maskKey(key) {
+        if (key.length <= 6) return key;
+        return key.slice(0, 3) + "*".repeat(key.length - 6) + key.slice(-3);
+      }
+      let currentKdf;
+      let ec = await ECC.initEC();
+      function syncKeyphraseInputs() {
+        const keyphraseBookmark = document.getElementById("keyphraseBookmark");
+        const keyphrase = document.getElementById("keyphrase");
+        if (!keyphraseBookmark || !keyphrase) return;
+        let isSyncing = false;
+        const syncFromBookmark = () => {
+          if (isSyncing) return;
+          isSyncing = true;
+          keyphrase.value = keyphraseBookmark.value;
+          isSyncing = false;
+        };
+        const syncFromKeyphrase = () => {
+          if (isSyncing) return;
+          isSyncing = true;
+          keyphraseBookmark.value = keyphrase.value;
+          isSyncing = false;
+        };
+        keyphraseBookmark.addEventListener("input", syncFromBookmark);
+        keyphrase.addEventListener("input", syncFromKeyphrase);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", syncKeyphraseInputs);
+      } else {
+        syncKeyphraseInputs();
+      }
+      function getPirvateKey() {
+        let input = document.getElementById("private");
+        if (!input) return "";
+        const raw = input.getAttribute("data-raw");
+        return (raw || input.value).trim();
+      }
+      function getPublicKey() {
+        let input = document.getElementById("public");
+        return input?.value.trim();
+      }
+      function setPirvateKey(str) {
+        let input = document.getElementById("private");
+        input.value = str;
+        input.removeAttribute("data-raw");
+        input.dispatchEvent(new Event("blur"));
+      }
+      function setPublicKey(str) {
+        let input = document.getElementById("public");
+        input.value = str;
+      }
+      function setPlainText(str) {
+        let input = document.getElementById("plaintext");
+        return input.value = str;
+      }
+      function setCipherText(str) {
+        let input = document.getElementById("ciphertext");
+        return input.value = str;
+      }
+      function getCipherText() {
+        let input = document.getElementById("ciphertext");
+        return input.value;
+      }
+      function getPlainText() {
+        let input = document.getElementById("plaintext");
+        return input?.value;
+      }
+      function setErrMsg(str) {
+        alert(str);
+      }
+      async function encryptClick() {
+        let p = getPublicKey();
+        let text = getPlainText();
+        if (!text) {
+          setErrMsg(jsMessages.errEmptyPlain);
+          return false;
+        }
+        try {
+          let te = new TextEncoder();
+          let enc = await ec.encrypt(p, te.encode(text));
+          setCipherText(ec.base64Encode(enc, 0));
+          return true;
+        } catch (error) {
+          setErrMsg(error);
+          return false;
+        }
+      }
+      document.getElementById("encrypt").onclick = async () => {
+        await encryptClick();
+      };
+      document.getElementById("decrypt").onclick = async () => {
+        let p = getPirvateKey();
+        let fileInput = document.getElementById("cipherfile");
+        let file = fileInput.files?.item(0);
+        if (file) {
+          try {
+            let reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = async () => {
+              try {
+                let aaa = new Uint8Array(reader.result);
+                let dec = await ec.decrypt(p, aaa);
+                let te = new TextDecoder();
+                setPlainText(te.decode(dec));
+              } catch (error) {
+                setErrMsg(error);
+              }
+            };
+          } catch (error) {
+            setErrMsg(error);
+          }
+          return;
+        }
+        let base64 = getCipherText().trim();
+        if (!base64) {
+          setErrMsg(jsMessages.errEmptyCipher);
+          return;
+        }
+        try {
+          if (base64.startsWith("N.")) {
+            const pubkey = getPublicKey();
+            const salt = G_Input?.salt;
+            if (!pubkey || !salt) {
+              setErrMsg(jsMessages.errDecryptNFormat);
+              return;
+            }
+            try {
+              const contentKey = await generateContentKey(pubkey, salt);
+              const nBase64 = base64.slice(2);
+              const encryptedData = ec.base64Decode(nBase64);
+              const iv = encryptedData.slice(0, 12);
+              const ciphertext = encryptedData.slice(12);
+              const decryptedBuffer = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv },
+                contentKey,
+                ciphertext
+              );
+              const decryptedCipher = new Uint8Array(decryptedBuffer);
+              let dec = await ec.decrypt(p, decryptedCipher);
+              let te = new TextDecoder();
+              setPlainText(te.decode(dec));
+            } catch (e) {
+              setErrMsg(jsMessages.errDecryptNFailed + ": " + e);
+            }
+          } else {
+            const detected = detectBase64Type(base64);
+            let urlsafe;
+            if (detected !== null) {
+              urlsafe = detected === "urlsafe" ? 1 : 0;
+            } else {
+              const chosen = await showBase64TypeModal();
+              urlsafe = chosen === "urlsafe" ? 1 : 0;
+            }
+            let arr = ec.base64Decode(base64, urlsafe);
+            let dec = await ec.decrypt(p, arr);
+            let te = new TextDecoder();
+            setPlainText(te.decode(dec));
+          }
+        } catch (error) {
+          setErrMsg(error);
+        }
+      };
+      document.getElementById("genpubkey").onclick = async () => {
+        let seckey = getPirvateKey();
+        if (!seckey) {
+          setErrMsg(jsMessages.errEmptyPrivkey);
+          return;
+        }
+        try {
+          let kp = await ec.generateNewKeyPair(seckey);
+          if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
+            setErrMsg(jsMessages.errPubkeyMismatchPrivkey);
+            return;
+          }
+          setPirvateKey(kp.private);
+          setPublicKey(kp.public);
+        } catch (error) {
+          setErrMsg(error.toString());
+        }
+      };
+      function generateRandomSalt() {
+        const bytes = crypto.getRandomValues(new Uint8Array(33));
+        return ec.base64Encode(bytes);
+      }
+      function resolveSalt() {
+        if (G_Input?.salt) {
+          return G_Input.salt;
+        }
+        if (G_Input) {
+          return FIXED_SALT;
+        }
+        if (currentSalt) return currentSalt;
+        currentSalt = generateRandomSalt();
+        return currentSalt;
+      }
+      function kdfFromInput(input) {
+        if (!input) return void 0;
+        if (input.kdfHash && input.kdfIterations) {
+          return {
+            ver: input.ver ?? KDF_V1.ver,
+            hash: input.kdfHash,
+            iterations: input.kdfIterations
+          };
+        }
+        if (input.ver === KDF_V2.ver) return { ...KDF_V2 };
+        if (input.ver === KDF_V1.ver) return { ...KDF_V1 };
+        return void 0;
+      }
+      function resolveKdfParams() {
+        const fromBookmark = kdfFromInput(G_Input);
+        if (fromBookmark) return fromBookmark;
+        if (!G_Input) return { ...KDF_V2 };
+        return { ...KDF_V1 };
+      }
+      function resolveKdfForBookmark() {
+        const fromBookmark = kdfFromInput(G_Input);
+        if (fromBookmark) return fromBookmark;
+        if (G_Input) return { ...KDF_V1 };
+        if (currentKdf) return { ...currentKdf };
+        return { ...KDF_V2 };
+      }
+      function getAvailableSalt() {
+        return G_Input?.salt ?? currentSalt;
+      }
+      function showSaltInfo(salt) {
+        currentSalt = salt;
+        const row = document.getElementById("saltRow");
+        const el = document.getElementById("salt");
+        if (!row || !el) return;
+        el.textContent = salt;
+        row.style.display = "flex";
+        const hint = document.getElementById("saltSaveHint");
+        if (hint) {
+          hint.style.display = G_Input ? "none" : "block";
+        }
+      }
+      async function pbkdf2(phrase, saltStr, kdf) {
+        var substl = crypto.subtle;
+        let keyRaw = new TextEncoder().encode(phrase);
+        let key = await substl.importKey("raw", keyRaw, "PBKDF2", false, [
+          "deriveBits"
+        ]);
+        let salt = saltStr ?? FIXED_SALT;
+        let iterations = kdf?.iterations ?? KDF_V1.iterations;
+        let hash = kdf?.hash ?? KDF_V1.hash;
+        let pbkdf22 = {
+          name: "PBKDF2",
+          hash,
+          iterations,
+          salt: new TextEncoder().encode(salt)
+        };
+        let af = await substl.deriveBits(pbkdf22, key, 256);
+        let arrPri = new Uint8Array(af);
+        let bf64 = ec.base64Encode(arrPri);
+        let kp = await ec.generateNewKeyPair(bf64);
+        return kp;
+      }
+      document.getElementById("genkeyfrompharse").onclick = async () => {
+        let input = document.getElementById("keyphrase");
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(jsMessages.errEmptyPhrase);
+          return;
+        }
+        const salt = resolveSalt();
+        if (G_Input?.prefix && !G_Input.salt) {
+          phrase = `${G_Input.prefix}${phrase}`;
+        }
+        const kdf = resolveKdfParams();
+        currentKdf = kdf;
+        let kp = await pbkdf2(phrase, salt, { hash: kdf.hash, iterations: kdf.iterations });
+        if (G_Input?.pubkey && kp.public !== G_Input.pubkey) {
+          setErrMsg(jsMessages.errPubkeyMismatchPhrase);
+          return;
+        }
+        setPirvateKey(kp.private);
+        setPublicKey(kp.public);
+        showSaltInfo(salt);
+      };
+      document.getElementById("downloadPlain").onclick = async () => {
+        let s = getPlainText();
+        if (!s) {
+          setErrMsg(jsMessages.errEmptyFile);
+          return;
+        }
+        let te = new TextEncoder();
+        let blob = new Blob([te.encode(s)]);
+        const fileName = `dec_${filename()}.txt`;
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      };
+      function beijingtime() {
+        return new Date(Date.now() + 8 * 36e5).toISOString().replace("T", " ").replace("Z", "") + " +0800";
+      }
+      function filename() {
+        return beijingtime().replace(/:/g, "_").substring(0, 19);
+      }
+      document.getElementById("downloadCipher").onclick = async () => {
+        let s = getCipherText().trim();
+        if (!s) {
+          setErrMsg(jsMessages.errEmptyFile);
+          return;
+        }
+        let cipher = ec.base64Decode(s);
+        let blob = new Blob([cipher]);
+        const fileName = `enc_${filename()}.txt.ec`;
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      };
+      document.getElementById("clearfile").onclick = async () => {
+        let obj = document.getElementById("clearfileform");
+        obj.reset();
+      };
+      document.getElementById("sendemail2").onclick = async () => {
+        let cipher = getCipherText().trim();
+        if (!cipher) {
+          let t = await encryptClick();
+          if (!t) {
+            return;
+          }
+          cipher = getCipherText().trim();
+          if (!cipher) {
+            return;
+          }
+        }
+        let checkbox = document.getElementById("newline");
+        let newLine = checkbox.checked ? "          <br><br>        " : "\n";
+        let log = console.log;
+        log("newLine " + newLine + "--");
+        let msg = `
+${G_Input?.prefix || ""} ${newLine}
+${jsMessages.emailBackupTime}:${beijingtime()} ${newLine}
+
+${jsMessages.emailPubkey}:${getPublicKey()}    ${newLine}
+
+${jsMessages.emailWebUrl}:     ${newLine}
+   ${location.href}         ${newLine}
+${jsMessages.emailDataBase64}:
+
+
+   `;
+        let mailto = `mailto:${G_Input.toEmail}?subject=${encodeURIComponent(
+          G_Input.emailSubject || jsMessages.emailSubjectDefault
+        )}&body=${encodeURIComponent(msg)}`;
+        window.open(mailto, "target", "");
+      };
+      document.getElementById("sendemail").onclick = async () => {
+        let cipher = getCipherText().trim();
+        if (!cipher) {
+          let t = await encryptClick();
+          if (!t) {
+            return;
+          }
+          cipher = getCipherText().trim();
+          if (!cipher) {
+            return;
+          }
+        }
+        let checkbox = document.getElementById("newline");
+        let newLine = checkbox.checked ? "          <br><br>        " : "\n";
+        let log = console.log;
+        log("newLine " + newLine + "--");
+        let msg = `
+${G_Input?.prefix || ""}  ${newLine}
+${jsMessages.emailBackupTime}:${beijingtime()} ${newLine}
+
+${jsMessages.emailPubkey}:${getPublicKey()} ${newLine}
+
+${jsMessages.emailWebUrl}: ${newLine}
+${location.href}  ${newLine}
+
+${jsMessages.emailDataBase64}: ${newLine}
+
+   ${cipher}
+
+
+
+   `;
+        let mailto = `mailto:${G_Input.toEmail}?subject=${encodeURIComponent(
+          G_Input.emailSubject || jsMessages.emailSubjectDefault
+        )}&body=${encodeURIComponent(msg)}`;
+        window.open(mailto, "target", "");
+      };
+      async function generateKey(pubkey, salt) {
+        const encoder = new TextEncoder();
+        const prkKey = await crypto.subtle.importKey(
+          "raw",
+          encoder.encode(pubkey),
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const prk = await crypto.subtle.sign("HMAC", prkKey, encoder.encode(salt));
+        const keyKey = await crypto.subtle.importKey(
+          "raw",
+          new Uint8Array(prk),
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const keyBuffer = await crypto.subtle.sign("HMAC", keyKey, encoder.encode("cloudflare-d1-access"));
+        const keyArray = new Uint8Array(keyBuffer).slice(0, 33);
+        return ec.base64Encode(keyArray, 1);
+      }
+      async function generateContentKey(pubkey, salt) {
+        const encoder = new TextEncoder();
+        const prkKey = await crypto.subtle.importKey(
+          "raw",
+          encoder.encode(pubkey),
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const prk = await crypto.subtle.sign("HMAC", prkKey, encoder.encode(salt));
+        const keyKey = await crypto.subtle.importKey(
+          "raw",
+          new Uint8Array(prk),
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const keyBuffer = await crypto.subtle.sign("HMAC", keyKey, encoder.encode("d1_content"));
+        const keyArray = new Uint8Array(keyBuffer).slice(0, 32);
+        return crypto.subtle.importKey(
+          "raw",
+          keyArray,
+          { name: "AES-GCM" },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+      async function aesGcmEncrypt(data, key) {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          key,
+          data
+        );
+        const result = new Uint8Array(iv.length + encrypted.byteLength);
+        result.set(iv, 0);
+        result.set(new Uint8Array(encrypted), iv.length);
+        return result;
+      }
+      async function aesGcmDecrypt(data, key) {
+        const iv = data.slice(0, 12);
+        const ciphertext = data.slice(12);
+        return crypto.subtle.decrypt(
+          { name: "AES-GCM", iv },
+          key,
+          ciphertext
+        );
+      }
+      document.getElementById("saveToCloudflare").onclick = async () => {
+        const pubkey = getPublicKey();
+        if (!pubkey) {
+          setErrMsg(jsMessages.errEmptyPubkey);
+          return;
+        }
+        if (!G_Input?.salt) {
+          setErrMsg(jsMessages.errNeedBookmark);
+          return;
+        }
+        const t = await encryptClick();
+        if (!t) return;
+        const cipher = getCipherText().trim();
+        if (!cipher) return;
+        const salt = G_Input.salt;
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const emailSubjectEle = document.getElementById("emailsubject");
+        const subject = emailSubjectEle.value.trim() || jsMessages.emailSubjectDefault;
+        const contentKey = await generateContentKey(pubkey, salt);
+        const cipherBytes = ec.base64Decode(cipher, 0);
+        const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+        const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+        const finalTxt = "N." + e2;
+        let content = finalTxt;
+        const note = encodeURIComponent(subject);
+        const encodedContent = encodeURIComponent(content);
+        const plainTxt = getPlainText();
+        const encoder = new TextEncoder();
+        const phashKeyData = encoder.encode("phash" + salt);
+        const phashKey = await crypto.subtle.importKey(
+          "raw",
+          phashKeyData,
+          { name: "HMAC", hash: "SHA-512" },
+          false,
+          ["sign"]
+        );
+        const phashBuffer = await crypto.subtle.sign("HMAC", phashKey, encoder.encode(plainTxt));
+        const phashArray = new Uint8Array(phashBuffer).slice(0, 32);
+        const phash = encodeURIComponent(ec.base64Encode(phashArray, 1));
+        const url = `https://msgbrd.vercel.app/#key=${key}&note=${note}&phash=${phash}&content=${encodedContent}&expire=-1`;
+        openUrl(url);
+      };
+      document.getElementById("saveToGDrive").onclick = async () => {
+        const pubkey = getPublicKey();
+        if (!pubkey) {
+          setErrMsg(jsMessages.errEmptyPubkey);
+          return;
+        }
+        if (!G_Input?.salt) {
+          setErrMsg(jsMessages.errNeedBookmark);
+          return;
+        }
+        const description = document.getElementById("gdriveDesc")?.value?.trim();
+        if (!description) {
+          setErrMsg(jsMessages.gdriveDescRequired);
+          return;
+        }
+        try {
+          const t = await encryptClick();
+          if (!t) return;
+          const cipher = getCipherText().trim();
+          if (!cipher) return;
+          const salt = G_Input.salt;
+          const contentKey = await generateContentKey(pubkey, salt);
+          const cipherBytes = ec.base64Decode(cipher, 0);
+          const encryptedCipher = await aesGcmEncrypt(cipherBytes, contentKey);
+          const e2 = ec.base64Encode(encryptedCipher, 0, 2);
+          const finalTxt = "N." + e2;
+          const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, "./gdrive-callback.html", "webecc");
+          const toast = document.getElementById("gdriveToast");
+          if (toast) {
+            toast.textContent = "Saving to Google Drive...";
+            toast.style.display = "block";
+          }
+          await manager.saveBackup(ec, getPlainText() || "", finalTxt, pubkey, salt, description);
+          if (toast) {
+            toast.textContent = jsMessages.gdriveSaveSuccess;
+            setTimeout(() => {
+              toast.style.display = "none";
+            }, 3e3);
+          }
+        } catch (error) {
+          const errMsg = error.message;
+          setErrMsg(errMsg.includes("Google authorization") ? jsMessages.gdriveAuthFailed : `${jsMessages.gdriveSaveFailed}: ${errMsg}`);
+        }
+      };
+      document.getElementById("loadFromGDrive").onclick = async () => {
+        const pubkey = getPublicKey();
+        if (!pubkey) {
+          setErrMsg(jsMessages.errEmptyPubkey);
+          return;
+        }
+        if (!G_Input?.salt) {
+          setErrMsg(jsMessages.errNeedBookmark);
+          return;
+        }
+        try {
+          const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, "./gdrive-callback.html", "webecc");
+          const files = await manager.listBackups(pubkey, G_Input.salt, ec);
+          if (!files.length) {
+            setErrMsg(jsMessages.gdriveNoFiles);
+            return;
+          }
+          const overlay = document.createElement("div");
+          overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999";
+          const box = document.createElement("div");
+          box.style.cssText = "background:#fff;border-radius:12px;padding:1.5rem 1.5rem 1rem;max-width:420px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2)";
+          const title = document.createElement("h3");
+          title.textContent = "Google Drive Backups";
+          title.style.cssText = "margin:0 0 0.75rem;font-size:1rem;font-weight:600";
+          box.appendChild(title);
+          files.forEach((f) => {
+            const item = document.createElement("div");
+            item.style.cssText = "padding:10px 12px;border:1px solid #e3e6ea;border-radius:8px;cursor:pointer;margin-bottom:6px;transition:background-color 0.15s";
+            const date = new Date(f.modifiedTime).toLocaleString();
+            item.innerHTML = `<div style="font-size:0.875rem;font-weight:500;color:#333">${f.description || f.name}</div><div style="font-size:0.75rem;color:#999;margin-top:2px">${date}</div>`;
+            item.onmouseenter = () => {
+              item.style.background = "#f5f7fa";
+            };
+            item.onmouseleave = () => {
+              item.style.background = "";
+            };
+            item.onclick = async () => {
+              overlay.remove();
+              try {
+                const content = await manager.readBackup(f.id);
+                if (content) setCipherText(content);
+              } catch (e) {
+                setErrMsg(`${jsMessages.gdriveLoadFailed}: ${e.message}`);
+              }
+            };
+            box.appendChild(item);
+          });
+          overlay.appendChild(box);
+          overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.remove();
+          };
+          document.body.appendChild(overlay);
+        } catch (e) {
+          const errMsg = e.message;
+          setErrMsg(errMsg.includes("Google authorization") ? jsMessages.gdriveAuthFailed : `${jsMessages.gdriveLoadFailed}: ${errMsg}`);
+        }
+      };
+      document.getElementById("restoreFromCloudflare").onclick = async () => {
+        const pubkey = getPublicKey();
+        if (!pubkey) {
+          setErrMsg(jsMessages.errEmptyPubkey);
+          return;
+        }
+        if (!G_Input?.salt) {
+          setErrMsg(jsMessages.errNeedBookmark);
+          return;
+        }
+        const salt = G_Input.salt;
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const url = `https://msgbrd.vercel.app/list#key=${key}`;
+        openUrl(url);
+      };
+      let webPrivate = "yNmVrcoS5D4xMTvjAPSkZe57HZqPZoIUxznm+SqWKFo=";
+      let webPublic = "dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=";
+      async function genbookmark(pubkey, toEmail, prefix, emailSubject, salt, options) {
+        let s = { prefix, pubkey, toEmail, emailSubject };
+        if (salt) {
+          s.salt = salt;
+        }
+        if (options?.kdf) {
+          s.ver = options.kdf.ver;
+          s.kdfHash = options.kdf.hash;
+          s.kdfIterations = options.kdf.iterations;
+        }
+        if (options?.type) {
+          s.type = options.type;
+        }
+        let jsonstring = JSON.stringify(s);
+        let arr = new TextEncoder().encode(jsonstring);
+        let dataBuff = await ec.encrypt(webPublic, arr);
+        let data = ec.base64Encode(dataBuff, 1).replace(/[\r\n]/g, "");
+        let bookmark = `${location.origin}${location.pathname}?t=${(/* @__PURE__ */ new Date()).toISOString()}#&data2=${encodeURIComponent(data)}`;
+        let a = document.createElement("a");
+        a.innerText = bookmark;
+        a.href = bookmark;
+        let holder = document.getElementById("bookmark");
+        holder?.replaceChildren(a);
+        if (options?.phraseHint) {
+          const hint = document.createElement("p");
+          hint.className = "bookmark-hint";
+          hint.textContent = jsMessages.bookmarkHint;
+          holder?.appendChild(hint);
+        }
+        const bmPubkey = document.getElementById("bmPubkey");
+        const bmEmail = document.getElementById("bmEmail");
+        const bmSubject = document.getElementById("bmSubject");
+        const bmPrefix = document.getElementById("bmPrefix");
+        const bmSalt = document.getElementById("bmSalt");
+        const bmSaltRow = document.getElementById("bmSaltRow");
+        const bookmarkInfo = document.getElementById("bookmarkInfo");
+        if (bmPubkey) bmPubkey.textContent = pubkey;
+        if (bmEmail) bmEmail.textContent = toEmail;
+        if (bmSubject) bmSubject.textContent = emailSubject || "";
+        if (bmPrefix) bmPrefix.textContent = prefix;
+        if (bmSalt && salt) {
+          bmSalt.textContent = salt;
+          bmSaltRow.style.display = "flex";
+        }
+        if (bookmarkInfo) bookmarkInfo.style.display = "block";
+      }
+      document.getElementById("genbookmark2").onclick = async () => {
+        let input = document.getElementById("keyphrase");
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(jsMessages.errEmptyPhrase);
+          return;
+        }
+        let prefixE = document.getElementById("prefix");
+        let prefix = prefixE.value.trim();
+        const saltStr = generateRandomSalt();
+        let pubkey = (await pbkdf2(phrase, saltStr, {
+          hash: KDF_V2.hash,
+          iterations: KDF_V2.iterations
+        })).public;
+        let emailEle = document.getElementById("email");
+        let toEmail = emailEle.value.trim();
+        let emailSubjectEle = document.getElementById(
+          "emailsubject"
+        );
+        let subject = emailSubjectEle.value.trim();
+        await genbookmark(pubkey, toEmail, prefix, subject, saltStr, {
+          kdf: { ...KDF_V2 },
+          type: "phrase"
+        });
+        showSaltInfo(saltStr);
+      };
+      let btime = document.getElementById("build");
+      btime.innerText = "Package:Release  cmt: 3380408\n 2026-08-07T08:51:37.933Z";
+      (async function initDefaultValues() {
+        let search = new URLSearchParams(location.hash);
+        let data = search.get("data");
+        let data2 = search.get("data2");
+        if (data2) {
+          data = data2;
+        }
+        if (!data) {
+          return;
+        }
+        try {
+          let plainBf = await ec.decrypt(webPrivate, ec.base64Decode(data, data2 ? 1 : 0));
+          let plain = new TextDecoder().decode(plainBf);
+          let jsonObj = JSON.parse(plain);
+          if (jsonObj && !jsonObj.salt) {
+            window.location.href = `./index-legacy.html${location.hash}`;
+            return;
+          }
+          if (jsonObj) {
+            G_Input = jsonObj;
+            let inputDataElement = document.getElementById("inputData");
+            inputDataElement.style.display = "block";
+            const displayData = { ...G_Input };
+            if (displayData.salt) displayData.salt = maskKey(displayData.salt);
+            inputDataElement.innerHTML = `
+          <div class="inputData-header">
+            <span class="inputData-label">${jsMessages.inputDataLabel}</span>
+            <span class="inputData-pubkey">${maskKey(G_Input.pubkey)}</span>
+            <span class="inputData-toggle">▶</span>
+          </div>
+          <pre class="inputData-details" style="display:none;margin:0.75rem 0 0;white-space:pre-wrap;word-wrap:break-word;">${JSON.stringify(displayData, null, "	")}</pre>
+        `;
+            const header = inputDataElement.querySelector(".inputData-header");
+            const details = inputDataElement.querySelector(".inputData-details");
+            const toggle = inputDataElement.querySelector(".inputData-toggle");
+            header.addEventListener("click", () => {
+              const open = details.style.display !== "none";
+              details.style.display = open ? "none" : "";
+              toggle.textContent = open ? "▶" : "▼";
+            });
+            setPublicKey(jsonObj.pubkey);
+            const kdf = kdfFromInput(jsonObj);
+            if (kdf) {
+              currentKdf = kdf;
+            }
+            if (jsonObj.salt) {
+              showSaltInfo(jsonObj.salt);
+            }
+            autoFetchHistory();
+          }
+        } catch (error) {
+        }
+      })();
+      const refreshBtn = document.getElementById("historyRefreshBtn");
+      if (refreshBtn) {
+        refreshBtn.onclick = () => autoFetchHistory();
+      }
+      async function fetchHistoryList(pubkey, salt) {
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const url = `https://msgbrd.vercel.app/${key}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch history");
+        const data = await response.json();
+        return data.data || [];
+      }
+      async function fetchHistoryDetail(pubkey, salt, timeString) {
+        const key = encodeURIComponent(await generateKey(pubkey, salt));
+        const url = `https://msgbrd.vercel.app/${key}/${encodeURIComponent(timeString)}?fmt=json`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch detail");
+        const data = await response.json();
+        return data.content || "";
+      }
+      function formatTime(isoStr) {
+        try {
+          const d = new Date(isoStr);
+          const pad = (n) => String(n).padStart(2, "0");
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } catch {
+          return isoStr;
+        }
+      }
+      function formatExpire(timeString, expire) {
+        if (expire == null || expire <= 0) return null;
+        const pad = (n) => String(n).padStart(2, "0");
+        const d = new Date(expire * 1e3);
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+      function renderHistoryList(items) {
+        const container = document.getElementById("historyList");
+        if (!container) return;
+        if (!items.length) {
+          container.innerHTML = `<div class="history-empty">${jsMessages.loadEmpty || "暂无数据"}</div>`;
+          return;
+        }
+        container.innerHTML = "";
+        items.forEach((item) => {
+          const expireStr = formatExpire(item.timeString, item.expire);
+          const div = document.createElement("div");
+          div.className = "history-item";
+          div.innerHTML = `
+        <div class="history-item-time">${formatTime(item.timeString)}</div>
+        <div class="history-item-note">${item.note || "(no note)"}</div>
+        ${expireStr ? `<div class="history-item-expire">过期: ${expireStr}</div>` : ""}
+      `;
+          div.onclick = () => handleHistoryClick(item, div);
+          container.appendChild(div);
+        });
+      }
+      async function handleHistoryClick(item, el) {
+        if (!G_Input?.pubkey || !G_Input?.salt) {
+          setErrMsg(jsMessages.errNeedBookmark);
+          return;
+        }
+        document.querySelectorAll(".history-item").forEach((e) => e.classList.remove("active"));
+        el.classList.add("active");
+        const btnTitle = el.querySelector(".history-item-note");
+        const originalText = btnTitle?.textContent;
+        if (btnTitle) btnTitle.textContent = "Loading...";
+        el.style.pointerEvents = "none";
+        try {
+          const content = await fetchHistoryDetail(G_Input.pubkey, G_Input.salt, item.timeString);
+          if (content) {
+            setCipherText(content);
+          }
+        } catch (error) {
+          setErrMsg("Failed to load: " + error.message);
+        } finally {
+          if (btnTitle) btnTitle.textContent = originalText;
+          el.style.pointerEvents = "";
+        }
+      }
+      async function autoFetchHistory() {
+        const container = document.getElementById("historyList");
+        if (!container) return;
+        if (!G_Input?.pubkey || !G_Input?.salt) {
+          container.innerHTML = `<div class="history-empty">${jsMessages.errNeedBookmark}</div>`;
+          return;
+        }
+        const panel = document.getElementById("historyPanel");
+        if (panel) panel.style.display = "";
+        container.innerHTML = `<div class="history-loading">${jsMessages.historyLoading || "加载中..."}</div>`;
+        try {
+          const historyItems = await fetchHistoryList(G_Input.pubkey, G_Input.salt);
+          renderHistoryList(historyItems);
+        } catch (error) {
+          const err = error;
+          let msg = jsMessages.historyFetchFailed || "Failed to load history";
+          if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError") || err.message.includes("Network request failed")) {
+            msg = jsMessages.historyFetchFailedCors || "Cannot reach cloud (CORS blocked)";
+          }
+          container.innerHTML = `<div class="history-empty">${msg}</div>`;
+        }
+      }
+    }
+    return { init };
+  })();
+  App.init();
+  (function initSquircle() {
+    function applySquircle() {
+      Squircle.applyAll(".btn, .btn-gdrive", 30, 5);
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", applySquircle);
+    } else {
+      applySquircle();
+    }
+  })();
+})();
+
+})();
+</script>
+  <script>
+    (function () {
+      function hasHashParams() {
+        var h = window.location.hash.slice(1).trim();
+        return h.length > 0 && h.indexOf('=') !== -1;
+      }
+      var contain = document.querySelector('.contain');
+      var usageSection = document.querySelector('.usage-section');
+      var browserSection = document.querySelector('.browser-requirements-section');
+      if (hasHashParams() && contain && usageSection && browserSection) {
+        var keySection = document.getElementById('keySection');
+        var encryptSection = document.getElementById('encryptSection');
+        if (keySection) keySection.style.display = '';
+        if (encryptSection) encryptSection.style.display = '';
+        usageSection.style.display = 'none';
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      var currentLang = document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+      var container = document.getElementById('langSwitcher');
+      if (!container) return;
+      var hash = location.hash || '';
+      var rand = Math.floor(Math.random() * 90000) + 10000;
+      var langs = [
+        { code: 'zh-CN', label: '中文', dir: 'cn' },
+        { code: 'en', label: 'English', dir: 'en' }
+      ];
+      langs.forEach(function(item, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.textContent = '|';
+          sep.style.color = '#ccc';
+          container.appendChild(sep);
+        }
+        var a = document.createElement('a');
+        a.textContent = item.label;
+        if (item.code === currentLang) {
+          a.className = 'active';
+        } else {
+          a.href = './' + item.dir + '/?_=' + rand + hash;
+        }
+        container.appendChild(a);
+      });
+    })();
+  </script>
+  <script>
+    (function() {
+      var eyeBtn = document.getElementById('eyeBtn');
+      var keyphrase = document.getElementById('keyphrase');
+      if (eyeBtn && keyphrase) {
+        var eyeOpen = eyeBtn.querySelector('.eye-open');
+        var eyeClosed = eyeBtn.querySelector('.eye-closed');
+        eyeBtn.addEventListener('click', function() {
+          var isPassword = keyphrase.type === 'password';
+          keyphrase.type = isPassword ? 'text' : 'password';
+          eyeOpen.style.display = isPassword ? 'none' : '';
+          eyeClosed.style.display = isPassword ? '' : 'none';
+        });
+      }
+      var eyeBtnBm = document.getElementById('eyeBtnBookmark');
+      var keyphraseBm = document.getElementById('keyphraseBookmark');
+      if (eyeBtnBm && keyphraseBm) {
+        var eyeOpenBm = eyeBtnBm.querySelector('.eye-open');
+        var eyeClosedBm = eyeBtnBm.querySelector('.eye-closed');
+        eyeBtnBm.addEventListener('click', function() {
+          var isPassword = keyphraseBm.type === 'password';
+          keyphraseBm.type = isPassword ? 'text' : 'password';
+          eyeOpenBm.style.display = isPassword ? 'none' : '';
+          eyeClosedBm.style.display = isPassword ? '' : 'none';
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      function maskValue(val) {
+        if (!val || val.length <= 6) return val;
+        return val.slice(0, 3) + '-'.repeat(val.length - 6) + val.slice(-3);
+      }
+      var privateInput = document.getElementById('private');
+      if (privateInput) {
+        privateInput.addEventListener('blur', function() {
+          var raw = this.value;
+          if (!raw) return;
+          this.setAttribute('data-raw', raw);
+          this.value = maskValue(raw);
+        });
+        privateInput.addEventListener('focus', function() {
+          var raw = this.getAttribute('data-raw');
+          if (raw) this.value = raw;
+        });
+        if (privateInput.value && !privateInput.getAttribute('data-raw')) {
+          privateInput.setAttribute('data-raw', privateInput.value);
+          privateInput.value = maskValue(privateInput.value);
+        }
+      }
+    })();
+  </script>
+
+</html>
