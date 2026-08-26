@@ -18,6 +18,17 @@ export interface GDriveFile {
   appProperties?: Record<string, string>;
 }
 
+// 独立 OAuth 服务（msgbrd.vercel.app 转发到 vault10 Worker；refresh_token 只存在该服务端）
+const GDRIVE_API_BASE = 'https://msgbrd.vercel.app';
+const GDRIVE_WORKER_ORIGIN = 'https://vault10.kr7y.workers.dev';
+const GDRIVE_SESSION_KEY = 'gdrive_api_session';
+const GDRIVE_AUTH_STORAGE_KEY = 'gdrive_auth_message';
+const GDRIVE_AUTH_CHANNEL = 'gdrive-auth';
+
+function normalizeApiBase(base: string): string {
+  return base.replace(/\/+$/, '');
+}
+
 // --- GoogleDriveManager ---
 
 export class GoogleDriveManager {
@@ -25,67 +36,51 @@ export class GoogleDriveManager {
   private accessToken: string | null = null;
   private callbackPath: string;
   private folderName: string;
+  private apiBase: string;
+  private apiOrigin: string | null = null;
+  private backendAvailable: boolean | null = null;
+  private userEmail: string | null = null;
 
-  constructor(clientId: string, callbackPath = './gdrive-callback.html', folderName = 'ipaste') {
+  constructor(clientId: string, callbackPath = './gdrive-callback.html', folderName = 'ipaste', apiBase = GDRIVE_API_BASE) {
     this.clientId = clientId;
     this.callbackPath = callbackPath;
     this.folderName = folderName;
+    this.apiBase = normalizeApiBase(apiBase || '');
+    try {
+      this.apiOrigin = this.apiBase ? new URL(this.apiBase).origin : null;
+    } catch {
+      this.apiOrigin = null;
+      this.apiBase = '';
+    }
   }
 
-  // Auth: opens a popup to gdrive-callback.html which handles the OAuth flow.
-  // The callback page uses postMessage to send the access_token back.
+  async restoreSession(): Promise<boolean> {
+    if (this.accessToken) return true;
+    return this.tryRefresh();
+  }
+
   async authorize(): Promise<void> {
     if (this.accessToken) return;
+    if (await this.tryRefresh()) return;
 
-    // Try to restore token from localStorage
+    if (await this.detectBackend()) {
+      await this.authorizeCodePopup();
+      if (this.accessToken) return;
+      if (await this.tryRefresh()) return;
+      throw new Error('Google authorization failed');
+    }
+
     const stored = localStorage.getItem('gdrive_access_token');
     if (stored) {
       this.accessToken = stored;
       return;
     }
 
-    await new Promise<void>((resolve, reject) => {
-      let settled = false;
-      const handler = (event: MessageEvent) => {
-        if (event.data && event.data.type === 'gdrive-auth-success') {
-          settled = true;
-          this.accessToken = event.data.token;
-          localStorage.setItem('gdrive_access_token', this.accessToken);
-          resolve();
-        }
-      };
-
-      window.addEventListener('message', handler);
-
-      const callbackUrl = this.callbackPath;
-      const popup = window.open(
-        `${callbackUrl}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`,
-        'gdrive-auth',
-        'width=500,height=600,left=200,top=100'
-      );
-
-      if (!popup) {
-        window.removeEventListener('message', handler);
-        reject(new Error('Popup blocked. Please allow popups for this site.'));
-        return;
-      }
-
-      setTimeout(() => {
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handler);
-            if (!settled) {
-              reject(new Error('Authorization canceled'));
-            }
-          }
-        }, 500);
-      }, 2000);
-    });
+    await this.authorizeImplicitPopup();
   }
 
   async ensureAuthorized(): Promise<void> {
-    if (this.isAuthorized()) return;
+    if (this.accessToken) return;
     await this.authorize();
   }
 
@@ -93,7 +88,7 @@ export class GoogleDriveManager {
     if (this.accessToken !== null && this.accessToken !== '') {
       return true;
     }
-    // Check localStorage for persisted token
+    if (this.backendAvailable) return false;
     const stored = localStorage.getItem('gdrive_access_token');
     if (stored) {
       this.accessToken = stored;
@@ -103,12 +98,170 @@ export class GoogleDriveManager {
   }
 
   signOut(): void {
+    const headers = this.apiHeaders();
     this.accessToken = null;
+    this.userEmail = null;
+    localStorage.removeItem('gdrive_access_token');
+    localStorage.removeItem(GDRIVE_SESSION_KEY);
+    if (!this.apiBase) return;
+    void fetch(`${this.apiBase}/api/gdrive/logout`, {
+      method: 'POST',
+      headers,
+    }).catch(() => {});
+  }
+
+  private apiHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'X-Requested-With': 'XmlHttpRequest' };
+    const session = localStorage.getItem(GDRIVE_SESSION_KEY);
+    if (session) headers['X-GDrive-Session'] = session;
+    return headers;
+  }
+
+  private rememberSession(data: any): void {
+    if (data && typeof data.session === 'string' && data.session) {
+      localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
+    }
+    if (data && data.email) this.userEmail = data.email;
+    if (data && (data.access_token || data.token)) {
+      this.accessToken = data.access_token || data.token;
+    }
+  }
+
+  private async detectBackend(): Promise<boolean> {
+    if (!this.apiBase || !this.apiOrigin) {
+      this.backendAvailable = false;
+      return false;
+    }
+    if (this.backendAvailable !== null) return this.backendAvailable;
+    try {
+      const response = await fetch(`${this.apiBase}/api/gdrive/status`, {
+        headers: this.apiHeaders(),
+      });
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        this.backendAvailable = false;
+        return false;
+      }
+      const data = await response.json();
+      this.backendAvailable = !!(data && data.backend === true && data.configured !== false);
+      if (this.backendAvailable && data.email) this.userEmail = data.email;
+      if (data && data.session) localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
+      return this.backendAvailable;
+    } catch {
+      this.backendAvailable = false;
+      return false;
+    }
+  }
+
+  private async tryRefresh(): Promise<boolean> {
+    if (!(await this.detectBackend())) return false;
+    if (!localStorage.getItem(GDRIVE_SESSION_KEY)) return false;
+    try {
+      const response = await fetch(`${this.apiBase}/api/gdrive/refresh`, {
+        method: 'POST',
+        headers: this.apiHeaders(),
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (!data.access_token) return false;
+      this.rememberSession(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private authMessageOrigins(): string[] {
+    const origins = new Set<string>([location.origin, GDRIVE_API_BASE, GDRIVE_WORKER_ORIGIN]);
+    if (this.apiOrigin) origins.add(this.apiOrigin);
+    return Array.from(origins);
+  }
+
+  private waitForAuthPopup(popupUrl: string, onSuccess: (data: any) => void, allowedOrigins?: string[] | null): Promise<void> {
+    const origins = new Set(allowedOrigins && allowedOrigins.length ? allowedOrigins : [location.origin]);
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let channel: BroadcastChannel | null = null;
+
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener('message', onMessage);
+        window.removeEventListener('storage', onStorage);
+        try { channel?.close(); } catch { /* ignore */ }
+        fn();
+      };
+
+      const accept = (data: any) => {
+        if (!data || typeof data.type !== 'string') return;
+        if (data.type === 'gdrive-auth-success') {
+          finish(() => {
+            onSuccess(data);
+            resolve();
+          });
+        } else if (data.type === 'gdrive-auth-error') {
+          finish(() => reject(new Error(data.error || 'Google authorization failed')));
+        }
+      };
+
+      const onMessage = (event: MessageEvent) => {
+        if (!origins.has(event.origin)) return;
+        accept(event.data);
+      };
+
+      const onStorage = (event: StorageEvent) => {
+        if (event.key !== GDRIVE_AUTH_STORAGE_KEY || !event.newValue) return;
+        try { accept(JSON.parse(event.newValue)); } catch { /* ignore */ }
+      };
+
+      window.addEventListener('message', onMessage);
+      window.addEventListener('storage', onStorage);
+      try {
+        channel = new BroadcastChannel(GDRIVE_AUTH_CHANNEL);
+        channel.onmessage = (event) => { accept(event.data); };
+      } catch { /* ignore */ }
+
+      console.log('[gdrive] 打开新窗口', popupUrl);
+      const popup = window.open(popupUrl, 'gdrive-auth', 'width=500,height=600,left=200,top=100');
+      if (!popup) {
+        finish(() => reject(new Error('Popup blocked. Please allow popups for this site.')));
+        return;
+      }
+
+      setTimeout(() => {
+        const checkClosed = setInterval(() => {
+          if (!popup.closed) return;
+          clearInterval(checkClosed);
+          // Google COOP 可能让 closed 提前为 true；给本站回跳的 postMessage / storage 留时间
+          setTimeout(() => {
+            finish(() => reject(new Error('Authorization canceled')));
+          }, 1500);
+        }, 500);
+      }, 2000);
+    });
+  }
+
+  private async authorizeCodePopup(): Promise<void> {
+    const returnPage = new URL(this.callbackPath, location.href).href;
+    const popupUrl = `${this.apiBase}/api/gdrive/authorize?return_origin=${encodeURIComponent(location.origin)}&return_url=${encodeURIComponent(returnPage)}`;
+    await this.waitForAuthPopup(popupUrl, (data) => {
+      this.rememberSession(data);
+    }, this.authMessageOrigins());
+  }
+
+  private async authorizeImplicitPopup(): Promise<void> {
+    await this.waitForAuthPopup(
+      `${this.callbackPath}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`,
+      (data) => {
+        this.accessToken = data.token;
+        if (this.accessToken) localStorage.setItem('gdrive_access_token', this.accessToken);
+      }
+    );
   }
 
   // --- Drive API ---
 
-  private async driveFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async driveFetch(endpoint: string, options: RequestInit = {}, didRefresh = false): Promise<Response> {
     if (!this.accessToken) {
       throw new Error('Not authorized');
     }
@@ -117,13 +270,23 @@ export class GoogleDriveManager {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
         ...options.headers,
+        'Authorization': `Bearer ${this.accessToken}`,
       },
     });
 
+    if (response.status === 401 && !didRefresh) {
+      this.accessToken = null;
+      if (await this.tryRefresh()) {
+        return this.driveFetch(endpoint, options, true);
+      }
+      localStorage.removeItem('gdrive_access_token');
+      throw new Error('Token expired, please sign in again');
+    }
+
     if (response.status === 401) {
       this.accessToken = null;
+      localStorage.removeItem('gdrive_access_token');
       throw new Error('Token expired, please sign in again');
     }
 

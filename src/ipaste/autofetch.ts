@@ -252,9 +252,10 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
 
   try {
     const manager = getGDriveManager();
+    const restored = await manager.restoreSession();
 
-    // If not authorized, just show status (don't trigger auth)
-    if (!manager.isAuthorized()) {
+    // 未恢复会话且本地也没有 token 时，只显示未连接（不弹授权）
+    if (!restored && !manager.isAuthorized()) {
       container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
       return;
     }

@@ -49,6 +49,42 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     (function () {
+      function showError(msg) {
+        document.getElementById('spinner').style.display = 'none';
+        const el = document.getElementById('msg');
+        el.textContent = msg;
+        el.classList.add('error');
+      }
+
+      function deliver(payload) {
+        try { if (window.opener) window.opener.postMessage(payload, location.origin); } catch (e) {}
+        try {
+          localStorage.setItem('gdrive_auth_message', JSON.stringify(payload));
+          setTimeout(function () { try { localStorage.removeItem('gdrive_auth_message'); } catch (e) {} }, 500);
+        } catch (e) {}
+        try {
+          const ch = new BroadcastChannel('gdrive-auth');
+          ch.postMessage(payload);
+          ch.close();
+        } catch (e) {}
+      }
+
+      if (location.hash.indexOf('#gdrive-auth=') === 0) {
+        try {
+          const payload = JSON.parse(decodeURIComponent(location.hash.slice('#gdrive-auth='.length)));
+          try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+          deliver(payload);
+          document.getElementById('msg').textContent = payload && payload.type === 'gdrive-auth-error'
+            ? (payload.error || 'Authorization failed')
+            : 'Authorization successful! Closing...';
+          if (payload && payload.type === 'gdrive-auth-error') showError(payload.error || 'Authorization failed');
+          setTimeout(function () { window.close(); }, 400);
+        } catch (e) {
+          showError('Invalid authorization result');
+        }
+        return;
+      }
+
       const params = new URLSearchParams(location.search);
       const clientId = params.get('client_id');
       const scope = params.get('scope') || 'https://www.googleapis.com/auth/drive.file';
@@ -62,13 +98,6 @@
       if (!opener) {
         showError('No opener window found. Please allow popups.');
         return;
-      }
-
-      function showError(msg) {
-        document.getElementById('spinner').style.display = 'none';
-        const el = document.getElementById('msg');
-        el.textContent = msg;
-        el.classList.add('error');
       }
 
       function sendToken(token) {
@@ -101,7 +130,7 @@
             },
           });
 
-          tokenClient.requestAccessToken({ prompt: 'consent' });
+          tokenClient.requestAccessToken({ prompt: '' });
         } catch (e) {
           showError('Authorization error: ' + e.message);
         }

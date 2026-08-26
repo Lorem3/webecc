@@ -53,6 +53,7 @@ export interface HtmlMessages {
   gdriveDescLabel: string;
   gdriveDescPlaceholder: string;
   gdriveNote: string;
+  gdriveStatusReady: string;
   filePreviewTitle: string;
   fileRemove: string;
   fileNotePlaceholder: string;

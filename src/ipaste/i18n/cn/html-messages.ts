@@ -55,6 +55,7 @@ export const htmlMessages: HtmlMessages = {
   gdriveDescLabel: '文件名',
   gdriveDescPlaceholder: '请输入文件名（必填）',
   gdriveNote: '数据保存在您的 Google Drive，适合大文件 > 250KB',
+  gdriveStatusReady: 'Google Drive：未连接',
   filePreviewTitle: '文件预览',
   fileRemove: '移除',
   fileNotePlaceholder: '文件名（将作为 Google Drive 文件描述）',
