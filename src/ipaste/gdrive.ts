@@ -22,8 +22,24 @@ export interface GDriveFile {
 const GDRIVE_API_BASE = 'https://msgbrd.vercel.app';
 const GDRIVE_WORKER_ORIGIN = 'https://vault10.kr7y.workers.dev';
 const GDRIVE_SESSION_KEY = 'gdrive_api_session';
+const GDRIVE_EMAIL_KEY = 'gdrive_user_email';
 const GDRIVE_AUTH_STORAGE_KEY = 'gdrive_auth_message';
 const GDRIVE_AUTH_CHANNEL = 'gdrive-auth';
+
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '***';
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  if (!domain) return '***';
+  let maskedLocal: string;
+  if (local.length <= 2) {
+    maskedLocal = (local[0] || '*') + '***';
+  } else {
+    maskedLocal = local[0] + '***' + local[local.length - 1];
+  }
+  return maskedLocal + '@' + domain;
+}
 
 function normalizeApiBase(base: string): string {
   return base.replace(/\/+$/, '');
@@ -52,31 +68,54 @@ export class GoogleDriveManager {
       this.apiOrigin = null;
       this.apiBase = '';
     }
+    try {
+      this.userEmail = localStorage.getItem(GDRIVE_EMAIL_KEY) || null;
+    } catch {
+      this.userEmail = null;
+    }
+  }
+
+  getUserEmail(): string | null {
+    return this.userEmail;
   }
 
   async restoreSession(): Promise<boolean> {
-    if (this.accessToken) return true;
-    return this.tryRefresh();
+    if (!this.accessToken) {
+      if (await this.tryRefresh()) {
+        // refreshed via backend session
+      } else if (!this.backendAvailable) {
+        const stored = localStorage.getItem('gdrive_access_token');
+        if (stored) this.accessToken = stored;
+      }
+    }
+    if (!this.accessToken) return false;
+    if (!this.userEmail) {
+      await this.fetchUserEmail();
+    }
+    return true;
   }
 
   async authorize(): Promise<void> {
-    if (this.accessToken) return;
-    if (await this.tryRefresh()) return;
-
-    if (await this.detectBackend()) {
-      await this.authorizeCodePopup();
-      if (this.accessToken) return;
-      if (await this.tryRefresh()) return;
-      throw new Error('Google authorization failed');
+    if (!this.accessToken) {
+      if (await this.tryRefresh()) {
+        // session restored
+      } else if (await this.detectBackend()) {
+        await this.authorizeCodePopup();
+        if (!this.accessToken && !(await this.tryRefresh())) {
+          throw new Error('Google authorization failed');
+        }
+      } else {
+        const stored = localStorage.getItem('gdrive_access_token');
+        if (stored) {
+          this.accessToken = stored;
+        } else {
+          await this.authorizeImplicitPopup();
+        }
+      }
     }
-
-    const stored = localStorage.getItem('gdrive_access_token');
-    if (stored) {
-      this.accessToken = stored;
-      return;
+    if (this.accessToken && !this.userEmail) {
+      await this.fetchUserEmail();
     }
-
-    await this.authorizeImplicitPopup();
   }
 
   async ensureAuthorized(): Promise<void> {
@@ -103,6 +142,7 @@ export class GoogleDriveManager {
     this.userEmail = null;
     localStorage.removeItem('gdrive_access_token');
     localStorage.removeItem(GDRIVE_SESSION_KEY);
+    localStorage.removeItem(GDRIVE_EMAIL_KEY);
     if (!this.apiBase) return;
     void fetch(`${this.apiBase}/api/gdrive/logout`, {
       method: 'POST',
@@ -121,7 +161,10 @@ export class GoogleDriveManager {
     if (data && typeof data.session === 'string' && data.session) {
       localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
     }
-    if (data && data.email) this.userEmail = data.email;
+    if (data && typeof data.email === 'string' && data.email) {
+      this.userEmail = data.email;
+      try { localStorage.setItem(GDRIVE_EMAIL_KEY, data.email); } catch { /* ignore */ }
+    }
     if (data && (data.access_token || data.token)) {
       this.accessToken = data.access_token || data.token;
     }
@@ -144,8 +187,15 @@ export class GoogleDriveManager {
       }
       const data = await response.json();
       this.backendAvailable = !!(data && data.backend === true && data.configured !== false);
-      if (this.backendAvailable && data.email) this.userEmail = data.email;
-      if (data && data.session) localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
+      if (this.backendAvailable) {
+        if (typeof data.session === 'string' && data.session) {
+          localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
+        }
+        if (typeof data.email === 'string' && data.email) {
+          this.userEmail = data.email;
+          try { localStorage.setItem(GDRIVE_EMAIL_KEY, data.email); } catch { /* ignore */ }
+        }
+      }
       return this.backendAvailable;
     } catch {
       this.backendAvailable = false;
@@ -155,7 +205,6 @@ export class GoogleDriveManager {
 
   private async tryRefresh(): Promise<boolean> {
     if (!(await this.detectBackend())) return false;
-    if (!localStorage.getItem(GDRIVE_SESSION_KEY)) return false;
     try {
       const response = await fetch(`${this.apiBase}/api/gdrive/refresh`, {
         method: 'POST',
@@ -168,6 +217,23 @@ export class GoogleDriveManager {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async fetchUserEmail(): Promise<string | null> {
+    if (this.userEmail) return this.userEmail;
+    if (!this.accessToken) return null;
+    try {
+      const response = await this.driveFetch('/about?fields=user(emailAddress)');
+      if (!response.ok) return null;
+      const data = await response.json();
+      const email = data?.user?.emailAddress;
+      if (typeof email === 'string' && email) {
+        this.rememberSession({ email });
+      }
+      return this.userEmail;
+    } catch {
+      return null;
     }
   }
 

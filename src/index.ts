@@ -1,8 +1,25 @@
 
 import { jsMessages as messages } from '@i18n/js-messages';
-import { GoogleDriveManager } from './ipaste/gdrive';
+import { GoogleDriveManager, maskEmail } from './ipaste/gdrive';
 
 const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
+
+let gdriveManager: GoogleDriveManager | null = null;
+
+function getGDriveManager(): GoogleDriveManager {
+  if (!gdriveManager) {
+    gdriveManager = new GoogleDriveManager(GDRIVE_CLIENT_ID, './gdrive-callback.html', 'webecc');
+  }
+  return gdriveManager;
+}
+
+function updateGDriveEmailUI(email: string | null) {
+  const masked = email ? maskEmail(email) : '';
+  document.querySelectorAll('.gdrive-email').forEach((el) => {
+    el.textContent = masked;
+    (el as HTMLElement).title = masked;
+  });
+}
 
 const App = (function () {
 
@@ -790,10 +807,11 @@ ${messages.emailDataBase64}: ${newLine}
       const e2 = ec.base64Encode(encryptedCipher, 0, 2);
       const finalTxt = 'N.' + e2;
 
-      const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, './gdrive-callback.html', 'webecc');
+      const manager = getGDriveManager();
       const toast = document.getElementById('gdriveToast');
       if (toast) { toast.textContent = 'Saving to Google Drive...'; toast.style.display = 'block'; }
       await manager.saveBackup(ec, getPlainText() || '', finalTxt, pubkey, salt, description);
+      updateGDriveEmailUI(manager.getUserEmail());
       if (toast) { toast.textContent = messages.gdriveSaveSuccess; setTimeout(() => { toast.style.display = 'none'; }, 3000); }
     } catch (error) {
       const errMsg = (error as Error).message;
@@ -814,8 +832,9 @@ ${messages.emailDataBase64}: ${newLine}
     }
 
     try {
-      const manager = new GoogleDriveManager(GDRIVE_CLIENT_ID, './gdrive-callback.html', 'webecc');
+      const manager = getGDriveManager();
       const files = await manager.listBackups(pubkey, G_Input.salt, ec);
+      updateGDriveEmailUI(manager.getUserEmail());
       if (!files.length) {
         setErrMsg(messages.gdriveNoFiles);
         return;
@@ -1070,6 +1089,13 @@ ${messages.emailDataBase64}: ${newLine}
   if (refreshBtn) {
     refreshBtn.onclick = () => autoFetchHistory();
   }
+
+  void (async () => {
+    const manager = getGDriveManager();
+    updateGDriveEmailUI(manager.getUserEmail());
+    const restored = await manager.restoreSession();
+    updateGDriveEmailUI((restored || manager.isAuthorized()) ? manager.getUserEmail() : null);
+  })();
 
   // --- History ---
 

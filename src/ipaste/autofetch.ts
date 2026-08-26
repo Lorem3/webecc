@@ -6,7 +6,7 @@ import {
   hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI, exitFileMode,
   fireD1Init,
 } from './common';
-import { GoogleDriveManager } from './gdrive';
+import { GoogleDriveManager, maskEmail } from './gdrive';
 
 // --- History ---
 
@@ -246,19 +246,34 @@ export function bindHistoryRefreshBtn(ec: any, state: any) {
 
 // --- Google Drive History ---
 
+function updateGDriveEmailUI(email: string | null) {
+  const masked = email ? maskEmail(email) : '';
+  document.querySelectorAll('.gdrive-email').forEach((el) => {
+    el.textContent = masked;
+    (el as HTMLElement).title = masked;
+  });
+}
+
 export async function autoFetchGDriveHistory(ec: any, state: any) {
   const container = document.getElementById('gdriveHistoryList');
   if (!container) return;
 
+  const manager = getGDriveManager();
+  updateGDriveEmailUI(manager.getUserEmail());
+
   try {
-    const manager = getGDriveManager();
     const restored = await manager.restoreSession();
 
-    // 未恢复会话且本地也没有 token 时，只显示未连接（不弹授权）
     if (!restored && !manager.isAuthorized()) {
+      updateGDriveEmailUI(null);
       container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
       return;
     }
+
+    if (!manager.getUserEmail()) {
+      await manager.fetchUserEmail();
+    }
+    updateGDriveEmailUI(manager.getUserEmail());
 
     container.innerHTML = `<div class="history-loading">${messages.historyLoading}</div>`;
     const files = await manager.listBackups(state.G_Input.pubkey, state.G_Input.salt, ec);
@@ -299,6 +314,7 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
       const manager = getGDriveManager();
       manager.signOut();
       localStorage.removeItem('gdrive_access_token');
+      updateGDriveEmailUI(null);
       container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
     } else {
       container.innerHTML = `<div class="history-empty">${messages.gdriveLoadFailed}</div>`;
@@ -358,6 +374,7 @@ export function bindGDriveHistoryRefreshBtn(ec: any, state: any) {
     if (!manager.isAuthorized()) {
       try {
         await manager.authorize();
+        updateGDriveEmailUI(manager.getUserEmail());
       } catch {
         return;
       }
@@ -405,6 +422,7 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
         await manager.saveBackup(ec, descInput, ciphertext, pubkey, salt, desc);
         showFileLocked();
         setSyncStatus(messages.gdriveSaveSuccessFile);
+        autoFetchGDriveHistory(ec, state);
       } else {
         // === Text mode ===
         const plainText = getPlainText()?.trim();
@@ -422,6 +440,7 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
         const description = JSON.stringify({ note: descInput, ft: "N" });
         await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
         setSyncStatus(messages.gdriveSaveSuccess);
+        autoFetchGDriveHistory(ec, state);
       }
     } catch (error) {
       const errMsg = (error as Error).message;
@@ -482,7 +501,6 @@ const App = (function () {
     await autoFetchHistory(ec, state);
     bindHistoryRefreshBtn(ec, state);
 
-    // GDrive history - only show status, don't auto-fetch (requires manual refresh to authorize)
     bindGDriveHistoryRefreshBtn(ec, state);
     autoFetchGDriveHistory(ec, state);
 
