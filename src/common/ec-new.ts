@@ -283,7 +283,7 @@ class EC{
 
     }
 
-    /** ECDH 派生流密钥（与现有 hashDH 相同），12 字节 ChaCha20-Poly1305 IV 之后再组 MAC */
+    /** ECDH 派生流密钥（与现有 hashDH 相同），24 字节 XChaCha20-Poly1305 IV 之后再组 MAC */
     async deriveEcdhStreamKeys(pubBase64: string): Promise<{ streamKey: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array }> {
         let pubKey = base64js.toByteArray(pubBase64);
         if (pubKey.length != 32) throw "pubkey length error";
@@ -302,17 +302,17 @@ class EC{
     }
 
     async assembleEcdhStreamHead(streamIv: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array): Promise<Uint8Array> {
-        if (streamIv.length !== 12) throw "stream iv must be 12 bytes";
+        if (streamIv.length !== 24) throw "stream iv must be 24 bytes";
         if (tmpPub.length !== 32) throw "tmpPub length must be 32";
         let macData = new Uint8Array(streamIv.length + tmpPub.length);
         macData.set(streamIv, 0);
         macData.set(tmpPub, streamIv.length);
         let mac = await this.hmacSha512(macKey, macData);
-        // 固定 96 字节头：8 + 24 槽位(仅用前 12 存 IV) + 32 MAC + 32 tmpPub
+        // 固定 96 字节头：8 + 24 IV + 32 MAC + 32 tmpPub
         let head = new Uint8Array(8 + 24 + 32 + 32);
         head[0] = 0x0F;
         head[1] = 0;
-        head[2] = 12; head[3] = 0;
+        head[2] = 24; head[3] = 0;
         head[4] = 32; head[5] = 0;
         head[6] = 32; head[7] = 0;
         head.set(streamIv, 8);
@@ -327,7 +327,7 @@ class EC{
         let ivLen = head[2] | (head[3] << 8);
         let macLen = head[4] | (head[5] << 8);
         let pubLen = head[6] | (head[7] << 8);
-        if (ivLen !== 12 || macLen !== 32 || pubLen !== 32) throw "invalid stream head lengths";
+        if (ivLen !== 24 || macLen !== 32 || pubLen !== 32) throw "invalid stream head lengths";
 
         let privateKey = base64js.toByteArray(privateKeyB64);
         if (privateKey.length != 32) throw "privateKey length must be 32";

@@ -4,17 +4,17 @@ type SodiumModule = {
   _free(p: number): void;
   _sodium_init(): number;
   _randombytes_buf(ptr: number, n: number): void;
-  _crypto_aead_chacha20poly1305_ietf_encrypt(
+  _crypto_aead_xchacha20poly1305_ietf_encrypt(
     c: number, clen_p: number, m: number, mlen: bigint, ad: number, adlen: bigint,
     nsec: number, npub: number, k: number
   ): number;
-  _crypto_aead_chacha20poly1305_ietf_decrypt(
+  _crypto_aead_xchacha20poly1305_ietf_decrypt(
     m: number, mlen_p: number, nsec: number, c: number, clen: bigint, ad: number, adlen: bigint,
     npub: number, k: number
   ): number;
-  _crypto_aead_chacha20poly1305_ietf_keybytes(): number;
-  _crypto_aead_chacha20poly1305_ietf_npubbytes(): number;
-  _crypto_aead_chacha20poly1305_ietf_abytes(): number;
+  _crypto_aead_xchacha20poly1305_ietf_keybytes(): number;
+  _crypto_aead_xchacha20poly1305_ietf_npubbytes(): number;
+  _crypto_aead_xchacha20poly1305_ietf_abytes(): number;
 };
 
 let sodiumReady: Promise<SodiumModule> | null = null;
@@ -61,9 +61,9 @@ export function randomBytes(m: SodiumModule, n: number): Uint8Array {
   }
 }
 
-/** ChaCha20-Poly1305 IETF via libsodium.wasm */
+/** XChaCha20-Poly1305 IETF via libsodium.wasm */
 export const AEAD_KEYBYTES = 32;
-export const AEAD_NPUBBYTES = 12;
+export const AEAD_NPUBBYTES = 24;
 export const AEAD_ABYTES = 16;
 export const AEAD_EMPTY_AD = new Uint8Array(0);
 export const STREAM_CHUNK_OVERHEAD = AEAD_ABYTES;
@@ -71,8 +71,8 @@ export const STREAM_CHUNK_OVERHEAD = AEAD_ABYTES;
 export function aeadEncrypt(
   m: SodiumModule, msg: Uint8Array, ad: Uint8Array, npub: Uint8Array, key: Uint8Array
 ): Uint8Array {
-  if (npub.length !== AEAD_NPUBBYTES) throw new Error('bad chacha nonce length');
-  if (key.length !== AEAD_KEYBYTES) throw new Error('bad chacha key length');
+  if (npub.length !== AEAD_NPUBBYTES) throw new Error('bad xchacha nonce length');
+  if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
   const clenMax = msg.length + AEAD_ABYTES;
   const mPtr = m._malloc(Math.max(msg.length, 1));
   const adPtr = m._malloc(Math.max(ad.length, 1));
@@ -85,7 +85,7 @@ export function aeadEncrypt(
     if (ad.length) m.HEAPU8.set(ad, adPtr);
     m.HEAPU8.set(npub, nPtr);
     m.HEAPU8.set(key, kPtr);
-    const rc = m._crypto_aead_chacha20poly1305_ietf_encrypt(
+    const rc = m._crypto_aead_xchacha20poly1305_ietf_encrypt(
       cPtr, clenPtr, mPtr, BigInt(msg.length), adPtr, BigInt(ad.length), 0, nPtr, kPtr
     );
     if (rc !== 0) throw new Error('aead encrypt failed');
@@ -98,8 +98,8 @@ export function aeadEncrypt(
 export function aeadDecrypt(
   m: SodiumModule, cipher: Uint8Array, ad: Uint8Array, npub: Uint8Array, key: Uint8Array
 ): Uint8Array {
-  if (npub.length !== AEAD_NPUBBYTES) throw new Error('bad chacha nonce length');
-  if (key.length !== AEAD_KEYBYTES) throw new Error('bad chacha key length');
+  if (npub.length !== AEAD_NPUBBYTES) throw new Error('bad xchacha nonce length');
+  if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
   if (cipher.length < AEAD_ABYTES) throw new Error('cipher too short');
   const mPtr = m._malloc(Math.max(cipher.length - AEAD_ABYTES, 1));
   const adPtr = m._malloc(Math.max(ad.length, 1));
@@ -112,7 +112,7 @@ export function aeadDecrypt(
     if (ad.length) m.HEAPU8.set(ad, adPtr);
     m.HEAPU8.set(npub, nPtr);
     m.HEAPU8.set(key, kPtr);
-    const rc = m._crypto_aead_chacha20poly1305_ietf_decrypt(
+    const rc = m._crypto_aead_xchacha20poly1305_ietf_decrypt(
       mPtr, mlenPtr, 0, cPtr, BigInt(cipher.length), adPtr, BigInt(ad.length), nPtr, kPtr
     );
     if (rc !== 0) throw new Error('Stream decrypt failed');
@@ -149,12 +149,12 @@ export type ChaChaStreamPull = {
 
 /**
  * 流式 API：分块收集，最终调用 libsodium.wasm 的
- * crypto_aead_chacha20poly1305_ietf_*（与一次性加解密结果一致）。
+ * crypto_aead_xchacha20poly1305_ietf_*（与一次性加解密结果一致）。
  */
 export function openChaChaStreamPush(
   m: SodiumModule, key: Uint8Array, iv?: Uint8Array
 ): ChaChaStreamPush {
-  if (key.length !== AEAD_KEYBYTES) throw new Error('bad chacha key length');
+  if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
   const header = iv && iv.length === AEAD_NPUBBYTES
     ? iv.slice()
     : randomBytes(m, AEAD_NPUBBYTES);
@@ -204,8 +204,8 @@ export function openChaChaStreamPush(
 export function openChaChaStreamPull(
   m: SodiumModule, key: Uint8Array, header: Uint8Array
 ): ChaChaStreamPull {
-  if (key.length !== AEAD_KEYBYTES) throw new Error('bad chacha key length');
-  if (header.length !== AEAD_NPUBBYTES) throw new Error('bad chacha iv length');
+  if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
+  if (header.length !== AEAD_NPUBBYTES) throw new Error('bad xchacha iv length');
   const parts: Uint8Array[] = [];
   let total = 0;
   let done = false;

@@ -210,9 +210,9 @@ const TestApp = (function () {
     const na = await getSodium();
     const toHexC = (arr: Uint8Array) => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // ========== 测试12: 流式 == 一次性 ChaCha20-Poly1305 ==========
+    // ========== 测试12: 流式 == 一次性 XChaCha20-Poly1305 ==========
     log('')
-    log('=== 测试12: crypto_aead_chacha20poly1305_ietf 流式与一次性一致 ===')
+    log('=== 测试12: crypto_aead_xchacha20poly1305_ietf 流式与一次性一致 ===')
     const ssKey = randomBytes(na, 32);
     const ssPtText = [
       "The California sea lion (Zalophus californianus) is a coastal eared seal native to western North America.",
@@ -222,7 +222,7 @@ const TestApp = (function () {
       "They hunt fish and cephalopods, diving repeatedly and using whiskers to sense prey in murky water.",
       "Conservation status improved after hunting bans, though they still face entanglement, pollution, and climate-driven prey shifts.",
       "Researchers track movement with tags and study how shipping noise and warming oceans affect foraging and breeding.",
-      "This long plaintext is used to exercise multi-chunk crypto_aead_chacha20poly1305_ietf push/pull without loading a one-shot AEAD path.",
+      "This long plaintext is used to exercise multi-chunk crypto_aead_xchacha20poly1305_ietf push/pull without loading a one-shot AEAD path.",
       "附加中文段落：流式加密按块推送，末尾一个 16 字节 tag，密文须与一次性 encrypt 完全一致。",
       "再补一段内容以保证长度足够：0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz !@#$%^&*()_+-=[]{}|;:',.<>/?~`",
     ].join(' ');
@@ -283,11 +283,11 @@ const TestApp = (function () {
     log('  流式解密==明文:', ssOutText === ssPtText ? '✅' : '❌')
     log('  一次性解密==明文:', eqBytes(oneShotPt, ssPt) ? '✅' : '❌')
     log('  流式解密==一次性解密:', eqBytes(ssOut, oneShotPt) ? '✅' : '❌')
-    log('  加密引擎: libsodium.wasm crypto_aead_chacha20poly1305_ietf')
+    log('  加密引擎: libsodium.wasm crypto_aead_xchacha20poly1305_ietf')
 
-    // ========== 测试13: ChaCha20-Poly1305 往返 / 空消息 / 篡改 ==========
+    // ========== 测试13: XChaCha20-Poly1305 往返 / 空消息 / 篡改 ==========
     log('')
-    log('=== 测试13: crypto_aead_chacha20poly1305_ietf 往返与篡改 ===')
+    log('=== 测试13: crypto_aead_xchacha20poly1305_ietf 往返与篡改 ===')
     const rndKey = randomBytes(na, 32);
     const rndPt = new TextEncoder().encode(ssPtText + ' | ' + plaintext);
     const enc1 = openChaChaStreamPush(na, rndKey);
@@ -327,15 +327,15 @@ const TestApp = (function () {
       log('  密文篡改: ✅ 拒绝')
     }
 
-    // ========== 测试14: ChaCha20-Poly1305 流式 + ECDH 头 0x0F ==========
+    // ========== 测试14: XChaCha20-Poly1305 流式 + ECDH 头 0x0F ==========
     log('')
-    log('=== 测试14: crypto_aead_chacha20poly1305_ietf 流式 + ECDH 头 ===')
+    log('=== 测试14: crypto_aead_xchacha20poly1305_ietf 流式 + ECDH 头 ===')
     const keys = await ec.deriveEcdhStreamKeys(kp1.public);
     const ssPush = openChaChaStreamPush(na, keys.streamKey);
     log('  key hex:', toHexC(keys.streamKey))
     log('  iv hex:', toHexC(ssPush.header))
     showKeyIv(keys.streamKey, ssPush.header)
-    log('  header 长度:', ssPush.header.length, '(期望12)', ssPush.header.length === 12 ? '✅' : '❌')
+    log('  header 长度:', ssPush.header.length, '(期望24)', ssPush.header.length === 24 ? '✅' : '❌')
     log('  abytes:', ssPush.abytes, '(期望16)', ssPush.abytes === 16 ? '✅' : '❌')
     const head = await ec.assembleEcdhStreamHead(ssPush.header, keys.tmpPub, keys.macKey);
     log('  Layer1 byte[0]:', head[0], '(期望15/0x0F)', head[0] === 0x0F ? '✅' : '❌')
@@ -387,7 +387,7 @@ const TestApp = (function () {
     }
   } catch (e) {
     log('')
-    log('=== ChaCha20-Poly1305 测试失败 ===')
+    log('=== XChaCha20-Poly1305 测试失败 ===')
     log('  ❌', e)
   }
 

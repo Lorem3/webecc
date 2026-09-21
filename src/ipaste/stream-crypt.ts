@@ -3,7 +3,7 @@ import { getSodium, openChaChaStreamPush, openChaChaStreamPull, STREAM_CHUNK_OVE
 
 export const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;
 export const STREAM_PLAIN_CHUNK = 1024 * 1024;
-/** ChaCha20-Poly1305 IETF：整段一个 16 字节 tag（wasm 一次性 AEAD） */
+/** XChaCha20-Poly1305 IETF：整段一个 16 字节 tag（wasm 一次性 AEAD） */
 export const STREAM_ABYTES = STREAM_CHUNK_OVERHEAD;
 export const LAYER1_HEAD_LEN = 96;
 export const LAYER2_ENC_HEAD_LEN = 12 + LAYER1_HEAD_LEN + 16; // 124
