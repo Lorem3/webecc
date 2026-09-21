@@ -38,6 +38,8 @@ declare interface  EC{
 
 
 declare const __DEBUG__:boolean
+/** 超过此字节数走 X. 流式。由构建注入：发布 50MB，dev/测试 16MB。 */
+declare const __LARGE_FILE_THRESHOLD__:number
 
 declare const __BUILD_TIME__:string
 declare const __BUILD_MOD__:string

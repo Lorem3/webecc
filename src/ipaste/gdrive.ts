@@ -394,7 +394,7 @@ export class GoogleDriveManager {
     return fileId || newFileId;
   }
 
-  /** >50MB：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
+  /** 超过 LARGE_FILE_THRESHOLD（发布 50MB，测试 16MB）：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
   async saveBackupStream(
     ec: any,
     file: File,

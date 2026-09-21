@@ -1,7 +1,8 @@
 import { generateContentKey, aesGcmEncrypt, aesGcmDecrypt } from './common';
 import { getSodium, openChaChaStreamPush, openChaChaStreamPull, STREAM_CHUNK_OVERHEAD } from './sodium';
 
-export const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;
+/** 由构建配置注入：发布 50MB，dev/测试 16MB。 */
+export const LARGE_FILE_THRESHOLD = __LARGE_FILE_THRESHOLD__;
 export const STREAM_PLAIN_CHUNK = 1024 * 1024;
 /** XChaCha20-Poly1305 IETF：整段一个 16 字节 tag（wasm 一次性 AEAD） */
 export const STREAM_ABYTES = STREAM_CHUNK_OVERHEAD;

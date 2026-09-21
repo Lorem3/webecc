@@ -354,7 +354,7 @@ export function showFolderPreview(files: FolderFile[]) {
   shown.forEach((f) => {
     const row = document.createElement('div');
     row.style.cssText = 'padding:2px 0;word-break:break-all;';
-    const streamMark = f.file.size > 50 * 1024 * 1024 ? ' [X]' : '';
+    const streamMark = f.file.size > __LARGE_FILE_THRESHOLD__ ? ' [X]' : '';
     row.textContent = `${f.relPath} (${formatFileSize(f.file.size)})${streamMark}`;
     list.appendChild(row);
   });
