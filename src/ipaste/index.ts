@@ -9,7 +9,7 @@ import {
   encryptContent, bindFilePaste, setSyncStatus,
   showFileLocked, hideFileLocked, setResultText, enterFileModeUI, exitFileMode,
 } from './common';
-import { GoogleDriveManager } from './gdrive';
+import { GoogleDriveManager, isGDriveFolder } from './gdrive';
 
 // --- Google Drive ---
 
@@ -104,7 +104,7 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
     try {
       const manager = getGDriveManager();
       setSyncStatus(messages.gdriveLoading || 'Loading...');
-      const files = await manager.listBackups(pubkey, salt, ec);
+      const files = (await manager.listBackups(pubkey, salt, ec)).filter((f) => !isGDriveFolder(f));
 
       if (files.length === 0) {
         setErrMsg(messages.gdriveNoFiles);

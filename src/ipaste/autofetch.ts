@@ -6,8 +6,8 @@ import {
   hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI, exitFileMode,
   fireD1Init,
 } from './common';
-import { GoogleDriveManager, maskEmail } from './gdrive';
-import { buildHistoryTree, pathBasename, HistoryTreeNode } from './folder';
+import { GoogleDriveManager, maskEmail, isGDriveFolder, GDriveFile } from './gdrive';
+import { pathBasename } from './folder';
 
 // --- History ---
 
@@ -292,18 +292,7 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
     }
 
     container.innerHTML = '';
-    const treeItems = files.map((f) => {
-      let note = f.description || f.name;
-      try {
-        const obj = JSON.parse(f.description || '');
-        if (obj.note) note = obj.note;
-      } catch {}
-      const dateStr = new Date(f.modifiedTime).toLocaleString();
-      const isBackupFile = f.description?.includes('"ft":"F"') || f.description?.includes('"ft":"B"') || f.description?.includes('"ft":"X"') || f.appProperties?.fileType === 'F' || f.appProperties?.fileType === 'B' || f.appProperties?.fileType === 'X';
-      return { note, file: f, dateStr, isBackupFile };
-    });
-    const tree = buildHistoryTree(treeItems);
-    tree.forEach((node) => container.appendChild(renderGDriveTreeNode(ec, state, node)));
+    renderGDriveEntries(ec, state, container, files);
   } catch (error) {
     console.error('Error fetching GDrive history:', error);
     const errMsg = (error as Error).message;
@@ -322,50 +311,101 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
   }
 }
 
-function renderGDriveTreeNode(ec: any, state: any, node: HistoryTreeNode): HTMLElement {
-  if (node.isFolder) {
-    const wrap = document.createElement('div');
-    wrap.className = 'history-tree-wrap';
-    const row = document.createElement('div');
-    row.className = 'history-tree-folder';
-    const chevron = document.createElement('span');
-    chevron.className = 'history-tree-chevron';
-    chevron.textContent = '▶';
-    const nameEl = document.createElement('span');
-    nameEl.className = 'history-tree-folder-name';
-    nameEl.textContent = `📁 ${node.name}`;
-    row.appendChild(chevron);
-    row.appendChild(nameEl);
-    const kids = document.createElement('div');
-    kids.className = 'history-tree-children';
-    node.children.forEach((child) => kids.appendChild(renderGDriveTreeNode(ec, state, child)));
-    row.onclick = (e) => {
-      e.stopPropagation();
+function gdriveFileLabel(file: GDriveFile): string {
+  let note = '';
+  try {
+    const obj = JSON.parse(file.description || '');
+    if (obj.note) note = obj.note;
+  } catch {}
+  if (note) return pathBasename(note);
+  return file.name.replace(/\.ipgd$/i, '');
+}
+
+function renderGDriveEntries(ec: any, state: any, container: HTMLElement, files: GDriveFile[]) {
+  if (!files.length) {
+    const empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = messages.gdriveNoFiles;
+    container.appendChild(empty);
+    return;
+  }
+  files.forEach((file) => {
+    container.appendChild(isGDriveFolder(file)
+      ? renderGDriveFolder(ec, state, file)
+      : renderGDriveFile(ec, state, file));
+  });
+}
+
+function renderGDriveFolder(ec: any, state: any, file: GDriveFile): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'history-tree-wrap';
+  const row = document.createElement('div');
+  row.className = 'history-tree-folder';
+  const chevron = document.createElement('span');
+  chevron.className = 'history-tree-chevron';
+  chevron.textContent = '▶';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'history-tree-folder-name';
+  const folderLabel = `📁 ${file.name}`;
+  nameEl.textContent = folderLabel;
+  row.appendChild(chevron);
+  row.appendChild(nameEl);
+  const kids = document.createElement('div');
+  kids.className = 'history-tree-children';
+  let loaded = false;
+  let loading = false;
+  row.onclick = async (e) => {
+    e.stopPropagation();
+    if (loaded) {
       const open = kids.classList.toggle('open');
       chevron.textContent = open ? '▼' : '▶';
-    };
-    wrap.appendChild(row);
-    wrap.appendChild(kids);
-    return wrap;
-  }
+      return;
+    }
+    if (loading) return;
+    loading = true;
+    nameEl.textContent = messages.historyLoading;
+    try {
+      const children = await getGDriveManager().listChildren(file.id);
+      kids.innerHTML = '';
+      renderGDriveEntries(ec, state, kids, children);
+      loaded = true;
+      kids.classList.add('open');
+      chevron.textContent = '▼';
+    } catch (error) {
+      setErrMsg('Failed to load: ' + (error as Error).message);
+    } finally {
+      loading = false;
+      nameEl.textContent = folderLabel;
+    }
+  };
+  wrap.appendChild(row);
+  wrap.appendChild(kids);
+  return wrap;
+}
 
+function renderGDriveFile(ec: any, state: any, file: GDriveFile): HTMLElement {
   const div = document.createElement('div');
   div.className = 'history-item';
   const timeEl = document.createElement('div');
   timeEl.className = 'history-item-time';
-  timeEl.textContent = node.dateStr || '';
+  timeEl.textContent = file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : '';
   const noteEl = document.createElement('div');
   noteEl.className = 'history-item-note';
-  noteEl.textContent = node.name;
+  noteEl.textContent = gdriveFileLabel(file);
   div.appendChild(timeEl);
   div.appendChild(noteEl);
-  if (node.isBackupFile) {
+  let ft = file.appProperties?.fileType || '';
+  try {
+    const obj = JSON.parse(file.description || '');
+    if (obj.ft) ft = obj.ft;
+  } catch {}
+  if (ft === 'F' || ft === 'B' || ft === 'X') {
     const tag = document.createElement('div');
     tag.className = 'history-item-expire';
     tag.textContent = 'File';
     div.appendChild(tag);
   }
-  div.onclick = () => handleGDriveHistoryClick(ec, state, node.file, div);
+  div.onclick = () => handleGDriveHistoryClick(ec, state, file, div);
   return div;
 }
 

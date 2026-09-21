@@ -10,10 +10,21 @@ function sanitizeFileName(note: string): string {
   return note.replace(/[\/\\:*?"<>|]/g, '_').trim();
 }
 
+function escapeDriveQuery(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+export const GDRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
+
+export function isGDriveFolder(file: { mimeType?: string }): boolean {
+  return file.mimeType === GDRIVE_FOLDER_MIME;
+}
+
 export interface GDriveFile {
   id: string;
   name: string;
   modifiedTime: string;
+  mimeType?: string;
   description?: string;
   appProperties?: Record<string, string>;
 }
@@ -56,6 +67,8 @@ export class GoogleDriveManager {
   private apiOrigin: string | null = null;
   private backendAvailable: boolean | null = null;
   private userEmail: string | null = null;
+  /** parentId + 目录名 → Drive folder id，批量保存时复用 */
+  private childFolderIds = new Map<string, string>();
 
   constructor(clientId: string, callbackPath = './gdrive-callback.html', folderName = 'ipaste', apiBase = GDRIVE_API_BASE) {
     this.clientId = clientId;
@@ -371,13 +384,11 @@ export class GoogleDriveManager {
       note = descObj.note || '';
       ft = descObj.ft || 'N';
     } catch {}
-    const sanitized = sanitizeFileName(note);
-    const fileName = sanitized ? `${sanitized}.ipgd` : `i-${phash}.ipgd`;
+    const { parentId, fileName: locatedName } = await this.resolveSaveLocation(pubkey, note, ft, '');
+    const fileName = locatedName || `i-${phash}.ipgd`;
 
-    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
-
-    // Check if file with same phash already exists
-    const existingFile = await this.findBackupByPhash(phash, pubkeyFolderId);
+    // Check if file with same phash already exists in the leaf folder
+    const existingFile = await this.findBackupByPhash(phash, parentId);
 
     const isBinary = ciphertext instanceof Uint8Array;
     const metadata = {
@@ -385,7 +396,7 @@ export class GoogleDriveManager {
       mimeType: isBinary ? 'application/octet-stream' : 'text/plain',
       description,
       appProperties: { phash, fileType: ft },
-      ...(existingFile ? {} : { parents: [pubkeyFolderId] }),
+      ...(existingFile ? {} : { parents: [parentId] }),
     };
 
     const fileId = existingFile ? existingFile.id : null;
@@ -415,16 +426,15 @@ export class GoogleDriveManager {
     } catch {}
     const phashNote = note || file.name;
     const realPhash = await computePhash(ec, phashNote, salt);
-    const sanitized = sanitizeFileName(phashNote);
-    const fileName = sanitized ? `${sanitized}.ipgd` : `i-${realPhash}.ipgd`;
-    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
-    const existingFile = await this.findBackupByPhash(realPhash, pubkeyFolderId);
+    const { parentId, fileName: locatedName } = await this.resolveSaveLocation(pubkey, phashNote, ft, file.name);
+    const fileName = locatedName || `i-${realPhash}.ipgd`;
+    const existingFile = await this.findBackupByPhash(realPhash, parentId);
     const metadata = {
       name: fileName,
       mimeType: 'application/octet-stream',
       description,
       appProperties: { phash: realPhash, fileType: ft },
-      ...(existingFile ? {} : { parents: [pubkeyFolderId] }),
+      ...(existingFile ? {} : { parents: [parentId] }),
     };
     const fileId = existingFile ? existingFile.id : null;
     const sessionUrl = await this.startResumableUpload(fileId, metadata);
@@ -640,33 +650,16 @@ export class GoogleDriveManager {
     downloadBlob(new Blob([plain], { type: 'application/octet-stream' }), filename);
   }
 
+  async listChildren(folderId: string): Promise<GDriveFile[]> {
+    await this.ensureAuthorized();
+    const query = `'${folderId}' in parents and trashed=false and (mimeType='${GDRIVE_FOLDER_MIME}' or name contains '.ipgd')`;
+    return this.listDriveFiles(query);
+  }
+
   async listBackups(pubkey: string, salt: string, ec: any): Promise<GDriveFile[]> {
     await this.ensureAuthorized();
     const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
-    const query = `name contains '.ipgd' and trashed=false and '${pubkeyFolderId}' in parents`;
-
-    const files: GDriveFile[] = [];
-    let pageToken = '';
-    do {
-      const params = new URLSearchParams({
-        q: query,
-        fields: 'nextPageToken,files(id,name,modifiedTime,description,appProperties)',
-        orderBy: 'modifiedTime desc',
-        pageSize: '200',
-      });
-      if (pageToken) params.set('pageToken', pageToken);
-
-      const response = await this.driveFetch(`/files?${params.toString()}`);
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Failed to list files: ${response.status} ${errText}`);
-      }
-
-      const data = await response.json();
-      if (data.files?.length) files.push(...data.files);
-      pageToken = data.nextPageToken || '';
-    } while (pageToken);
-    return files;
+    return this.listChildren(pubkeyFolderId);
   }
 
   async readBackup(fileId: string): Promise<string | Uint8Array> {
@@ -818,6 +811,84 @@ export class GoogleDriveManager {
 
   private async findLatestBackup(pubkey: string): Promise<GDriveFile | null> {
     return null;
+  }
+
+  private async listDriveFiles(query: string): Promise<GDriveFile[]> {
+    const files: GDriveFile[] = [];
+    let pageToken = '';
+    do {
+      const params = new URLSearchParams({
+        q: query,
+        fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,description,appProperties)',
+        pageSize: '200',
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await this.driveFetch(`/files?${params.toString()}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to list files: ${response.status} ${errText}`);
+      }
+
+      const data = await response.json();
+      if (data.files?.length) files.push(...data.files);
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+
+    files.sort((a, b) => {
+      const af = isGDriveFolder(a) ? 0 : 1;
+      const bf = isGDriveFolder(b) ? 0 : 1;
+      if (af !== bf) return af - bf;
+      return a.name.localeCompare(b.name);
+    });
+    return files;
+  }
+
+  /** 文件（B/F/X）按相对路径建目录，文件名只用最后一段；文本记录仍放在公钥目录。 */
+  private async resolveSaveLocation(pubkey: string, note: string, ft: string, fallbackName: string): Promise<{ parentId: string; fileName: string }> {
+    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
+    const isFile = ft === 'B' || ft === 'F' || ft === 'X';
+    if (!isFile) {
+      const sanitized = sanitizeFileName(note);
+      return { parentId: pubkeyFolderId, fileName: sanitized ? `${sanitized}.ipgd` : '' };
+    }
+    const norm = (note || fallbackName).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    const parts = norm.split('/').filter(Boolean);
+    const base = parts.pop() || fallbackName || 'file';
+    let parentId = pubkeyFolderId;
+    for (const seg of parts) {
+      const name = sanitizeFileName(seg);
+      if (!name) continue;
+      parentId = await this.ensureChildFolder(parentId, name);
+    }
+    const sanitized = sanitizeFileName(base);
+    return { parentId, fileName: sanitized ? `${sanitized}.ipgd` : '' };
+  }
+
+  private async ensureChildFolder(parentId: string, name: string): Promise<string> {
+    const cacheKey = `${parentId}\0${name}`;
+    const cached = this.childFolderIds.get(cacheKey);
+    if (cached) return cached;
+
+    const query = `name='${escapeDriveQuery(name)}' and mimeType='${GDRIVE_FOLDER_MIME}' and trashed=false and '${parentId}' in parents`;
+    const response = await this.driveFetch(`/files?q=${encodeURIComponent(query)}&fields=files(id,name)`);
+    if (!response.ok) throw new Error('Failed to find folder');
+    const data = await response.json();
+    if (data.files && data.files.length > 0) {
+      const id = data.files[0].id as string;
+      this.childFolderIds.set(cacheKey, id);
+      return id;
+    }
+
+    const createResp = await this.driveFetch('/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, mimeType: GDRIVE_FOLDER_MIME, parents: [parentId] }),
+    });
+    if (!createResp.ok) throw new Error('Failed to create folder');
+    const folder = await createResp.json();
+    this.childFolderIds.set(cacheKey, folder.id);
+    return folder.id;
   }
 
   private async findBackupByPhash(phash: string, folderId: string): Promise<GDriveFile | null> {
