@@ -1,12 +1,13 @@
 import { jsMessages as messages } from '@i18n/js-messages';
 import {
   createAppState, bindCommonButtons, initBookmark, setErrMsg,
-  setSyncStatus, setResultText, getResultText, getPlainText, encryptContent, encryptFileContent, encryptFileContentBinary,
+  setSyncStatus, setResultText, getResultText, getPlainText, encryptContent,
   showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
   hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI, exitFileMode,
   fireD1Init,
 } from './common';
 import { GoogleDriveManager, maskEmail } from './gdrive';
+import { buildHistoryTree, pathBasename, HistoryTreeNode } from './folder';
 
 // --- History ---
 
@@ -254,6 +255,12 @@ function updateGDriveEmailUI(email: string | null) {
   });
 }
 
+function setGDriveLoading(on: boolean) {
+  const bar = document.getElementById('gdriveProgress');
+  if (bar) bar.style.display = on ? 'block' : 'none';
+  document.getElementById('saveToGDrive')?.classList.toggle('disabled', on);
+}
+
 export async function autoFetchGDriveHistory(ec: any, state: any) {
   const container = document.getElementById('gdriveHistoryList');
   if (!container) return;
@@ -262,6 +269,7 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
   updateGDriveEmailUI(manager.getUserEmail());
 
   try {
+    setGDriveLoading(true);
     const restored = await manager.restoreSession();
 
     if (!restored && !manager.isAuthorized()) {
@@ -284,28 +292,18 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
     }
 
     container.innerHTML = '';
-    files.forEach((f) => {
-      const div = document.createElement('div');
-      div.className = 'history-item';
-
+    const treeItems = files.map((f) => {
       let note = f.description || f.name;
       try {
         const obj = JSON.parse(f.description || '');
         if (obj.note) note = obj.note;
       } catch {}
-
-      const date = new Date(f.modifiedTime);
-      const dateStr = date.toLocaleString();
-      const isFile = f.description?.includes('"ft":"F"');
-
-      div.innerHTML = `
-        <div class="history-item-time">${dateStr}</div>
-        <div class="history-item-note">${note}</div>
-        ${isFile ? '<div class="history-item-expire">File</div>' : ''}
-      `;
-      div.onclick = () => handleGDriveHistoryClick(ec, state, f, div);
-      container.appendChild(div);
+      const dateStr = new Date(f.modifiedTime).toLocaleString();
+      const isBackupFile = f.description?.includes('"ft":"F"') || f.description?.includes('"ft":"B"') || f.description?.includes('"ft":"X"') || f.appProperties?.fileType === 'F' || f.appProperties?.fileType === 'B' || f.appProperties?.fileType === 'X';
+      return { note, file: f, dateStr, isBackupFile };
     });
+    const tree = buildHistoryTree(treeItems);
+    tree.forEach((node) => container.appendChild(renderGDriveTreeNode(ec, state, node)));
   } catch (error) {
     console.error('Error fetching GDrive history:', error);
     const errMsg = (error as Error).message;
@@ -319,7 +317,56 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
     } else {
       container.innerHTML = `<div class="history-empty">${messages.gdriveLoadFailed}</div>`;
     }
+  } finally {
+    setGDriveLoading(false);
   }
+}
+
+function renderGDriveTreeNode(ec: any, state: any, node: HistoryTreeNode): HTMLElement {
+  if (node.isFolder) {
+    const wrap = document.createElement('div');
+    wrap.className = 'history-tree-wrap';
+    const row = document.createElement('div');
+    row.className = 'history-tree-folder';
+    const chevron = document.createElement('span');
+    chevron.className = 'history-tree-chevron';
+    chevron.textContent = '▶';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'history-tree-folder-name';
+    nameEl.textContent = `📁 ${node.name}`;
+    row.appendChild(chevron);
+    row.appendChild(nameEl);
+    const kids = document.createElement('div');
+    kids.className = 'history-tree-children';
+    node.children.forEach((child) => kids.appendChild(renderGDriveTreeNode(ec, state, child)));
+    row.onclick = (e) => {
+      e.stopPropagation();
+      const open = kids.classList.toggle('open');
+      chevron.textContent = open ? '▼' : '▶';
+    };
+    wrap.appendChild(row);
+    wrap.appendChild(kids);
+    return wrap;
+  }
+
+  const div = document.createElement('div');
+  div.className = 'history-item';
+  const timeEl = document.createElement('div');
+  timeEl.className = 'history-item-time';
+  timeEl.textContent = node.dateStr || '';
+  const noteEl = document.createElement('div');
+  noteEl.className = 'history-item-note';
+  noteEl.textContent = node.name;
+  div.appendChild(timeEl);
+  div.appendChild(noteEl);
+  if (node.isBackupFile) {
+    const tag = document.createElement('div');
+    tag.className = 'history-item-expire';
+    tag.textContent = 'File';
+    div.appendChild(tag);
+  }
+  div.onclick = () => handleGDriveHistoryClick(ec, state, node.file, div);
+  return div;
 }
 
 async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTMLElement) {
@@ -331,8 +378,33 @@ async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTML
   if (btnTitle) btnTitle.textContent = 'Loading...';
   el.style.pointerEvents = 'none';
 
+  setGDriveLoading(true);
   try {
     const manager = getGDriveManager();
+    let ft = file.appProperties?.fileType || '';
+    try {
+      const obj = JSON.parse(file.description || '');
+      if (obj.ft) ft = obj.ft;
+    } catch {}
+
+    if (ft === 'X') {
+      let fileName = 'decrypted-file';
+      try {
+        const obj = JSON.parse(file.description || '');
+        if (obj.note) fileName = pathBasename(obj.note);
+      } catch {}
+      enterFileModeUI(state, fileName, undefined, file.id);
+      hideFileLocked();
+      const decryptBtn = document.getElementById("decryptBtn");
+      if (decryptBtn) {
+        decryptBtn.style.display = '';
+        const btnTitle = decryptBtn.querySelector('.btnTitle');
+        if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+      }
+      setSyncStatus(messages.gdriveLoadSuccessFile);
+      return;
+    }
+
     const content = await manager.readBackup(file.id);
     if (content) {
       const isFileContent = (content instanceof Uint8Array) || (typeof content === 'string' && content.startsWith('F.'));
@@ -340,7 +412,7 @@ async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTML
         let fileName = 'decrypted-file';
         try {
           const obj = JSON.parse(file.description || '');
-          if (obj.note) fileName = obj.note;
+          if (obj.note) fileName = pathBasename(obj.note);
         } catch {}
         enterFileModeUI(state, fileName, content);
         hideFileLocked();
@@ -360,6 +432,7 @@ async function handleGDriveHistoryClick(ec: any, state: any, file: any, el: HTML
   } catch (error) {
     setErrMsg('Failed to load: ' + (error as Error).message);
   } finally {
+    setGDriveLoading(false);
     if (btnTitle) btnTitle.textContent = originalText;
     el.style.pointerEvents = '';
   }
@@ -409,17 +482,36 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
 
     try {
       const manager = getGDriveManager();
+      setGDriveLoading(true);
       setSyncStatus(messages.gdriveLoading || 'Saving...');
 
-      if (state.fileMode && state.fileData) {
+      if (state.folderFiles?.length) {
+        const list = state.folderFiles;
+        let failed = 0;
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName}`);
+          try {
+            await manager.savePlainFile(ec, item.file, pubkey, salt, item.driveName, 'B', (up, tot) => {
+              setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName} (${Math.round(up / tot * 100)}%)`);
+            });
+          } catch (e) {
+            console.error(e);
+            failed++;
+          }
+        }
+        autoFetchGDriveHistory(ec, state);
+        if (failed) {
+          setErrMsg(`${messages.gdriveFolderPartialFail}: ${failed}/${list.length}`);
+        } else {
+          setSyncStatus(messages.gdriveSaveSuccessFile);
+        }
+        exitFileMode(state);
+      } else if (state.fileMode && state.fileData) {
         // === File mode ===
         const file = state.fileData;
-        const fileBytes = new Uint8Array(await file.arrayBuffer());
-        const ciphertext = await encryptFileContentBinary(ec, fileBytes, pubkey, salt);
-
         const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || file.name;
-        const desc = JSON.stringify({ note: descInput, ft: "B" });
-        await manager.saveBackup(ec, descInput, ciphertext, pubkey, salt, desc);
+        await manager.savePlainFile(ec, file, pubkey, salt, descInput, 'B');
         showFileLocked();
         setSyncStatus(messages.gdriveSaveSuccessFile);
         autoFetchGDriveHistory(ec, state);
@@ -445,6 +537,8 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
     } catch (error) {
       const errMsg = (error as Error).message;
       setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveSaveFailed}: ${errMsg}`);
+    } finally {
+      setGDriveLoading(false);
     }
   };
 }
@@ -456,6 +550,10 @@ const App = (function () {
   async function init() {
     let ec = await ECC.initEC();
     const state = createAppState();
+    state.decryptXFile = async (privkey, pubkey, salt, filename) => {
+      if (!state.xFileId) throw new Error('No stream file');
+      await getGDriveManager().decryptXBackup(ec, state.xFileId, privkey, pubkey, salt, filename);
+    };
 
     bindCommonButtons(ec, state);
     bindFilePaste(ec, state);

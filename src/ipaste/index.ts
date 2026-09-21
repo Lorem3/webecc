@@ -6,7 +6,7 @@ import {
   openUrl, getPlainText, setErrMsg, maskKey, showMaskedPrivkey,
   generateRandomSalt, pbkdf2, generateKey, generateContentKey, aesGcmEncrypt,
   bindCommonButtons, initBookmark, showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
-  encryptFileContent, encryptContent, bindFilePaste,
+  encryptContent, bindFilePaste, setSyncStatus,
   showFileLocked, hideFileLocked, setResultText, enterFileModeUI, exitFileMode,
 } from './common';
 import { GoogleDriveManager } from './gdrive';
@@ -39,15 +39,29 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
       const manager = getGDriveManager();
       setSyncStatus(messages.gdriveLoading || 'Saving...');
 
-      if (state.fileMode && state.fileData) {
-        // === File mode ===
+      if (state.folderFiles?.length) {
+        const list = state.folderFiles;
+        let failed = 0;
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName}`);
+          try {
+            await manager.savePlainFile(ec, item.file, pubkey, salt, item.driveName, 'F');
+          } catch (e) {
+            console.error(e);
+            failed++;
+          }
+        }
+        if (failed) {
+          setErrMsg(`${messages.gdriveFolderPartialFail}: ${failed}/${list.length}`);
+        } else {
+          setSyncStatus(messages.gdriveSaveSuccessFile);
+        }
+        exitFileMode(state);
+      } else if (state.fileMode && state.fileData) {
         const file = state.fileData;
-        const fileBytes = new Uint8Array(await file.arrayBuffer());
-        const ciphertext = await encryptFileContent(ec, fileBytes, pubkey, salt);
-
         const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || file.name;
-        const desc = JSON.stringify({ note: descInput, ft: "F" });
-        await manager.saveBackup(ec, descInput, ciphertext, pubkey, salt, desc);
+        await manager.savePlainFile(ec, file, pubkey, salt, descInput, 'F');
         showFileLocked();
         setSyncStatus(messages.gdriveSaveSuccessFile);
       } else {
@@ -101,6 +115,31 @@ async function bindGoogleDriveLoadBtn(ec: any, state: any) {
       const selectedFile = await showFilePicker(files);
       if (!selectedFile) {
         setSyncStatus('');
+        return;
+      }
+
+      let ft = selectedFile.appProperties?.fileType || '';
+      try {
+        const obj = JSON.parse(selectedFile.description || '');
+        if (obj.ft) ft = obj.ft;
+      } catch {}
+
+      let fileName = 'decrypted-file';
+      try {
+        const obj = JSON.parse(selectedFile.description || '');
+        if (obj.note) fileName = obj.note;
+      } catch {}
+
+      if (ft === 'X') {
+        enterFileModeUI(state, fileName, undefined, selectedFile.id);
+        hideFileLocked();
+        const decryptBtn = document.getElementById("decryptBtn");
+        if (decryptBtn) {
+          decryptBtn.style.display = '';
+          const btnTitle = decryptBtn.querySelector('.btnTitle');
+          if (btnTitle) btnTitle.textContent = messages.btnDecryptText;
+        }
+        setSyncStatus(messages.gdriveLoadSuccessFile);
         return;
       }
 
@@ -206,6 +245,10 @@ const App = (function () {
   async function init() {
     let ec = await ECC.initEC();
     const state = createAppState();
+    state.decryptXFile = async (privkey, pubkey, salt, filename) => {
+      if (!state.xFileId) throw new Error('No stream file');
+      await getGDriveManager().decryptXBackup(ec, state.xFileId, privkey, pubkey, salt, filename);
+    };
 
     function bindLoadLatestBtn() {
       const btn = document.getElementById("loadLatest");

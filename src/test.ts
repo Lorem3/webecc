@@ -1,9 +1,17 @@
+import { getSodium, randomBytes, openChaChaStreamPush, openChaChaStreamPull, aeadEncrypt, aeadDecrypt, AEAD_EMPTY_AD, AEAD_ABYTES } from './ipaste/sodium';
 
 const TestApp = (function () {
 
   async function run() {
   let ec = await ECC.initEC();
   let out = document.getElementById('results')!;
+  const showKeyEl = document.getElementById('showKey');
+  const showIvEl = document.getElementById('showIv');
+  function showKeyIv(key?: Uint8Array | null, iv?: Uint8Array | null) {
+    const hex = (arr: Uint8Array) => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (showKeyEl && key) showKeyEl.textContent = hex(key);
+    if (showIvEl && iv) showIvEl.textContent = hex(iv);
+  }
   function log(...args:any[]){
     let s = args.map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' ');
     console.log(s);
@@ -190,6 +198,197 @@ const TestApp = (function () {
     log('  ✅ CBC 解密成功')
   } catch(e) {
     log('  ❌ CBC 解密失败:', e)
+  }
+
+  function eqBytes(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  try {
+    const na = await getSodium();
+    const toHexC = (arr: Uint8Array) => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // ========== 测试12: 流式 == 一次性 ChaCha20-Poly1305 ==========
+    log('')
+    log('=== 测试12: crypto_aead_chacha20poly1305_ietf 流式与一次性一致 ===')
+    const ssKey = randomBytes(na, 32);
+    const ssPtText = [
+      "The California sea lion (Zalophus californianus) is a coastal eared seal native to western North America.",
+      "Its natural habitat ranges from southeast Alaska to central Mexico, including the Gulf of California.",
+      "Sea lions are known for their intelligence, playfulness, and noisy barking; they gather in colonies on docks and beaches.",
+      "Adult males can weigh over 350 kilograms and develop a distinctive sagittal crest as they mature.",
+      "They hunt fish and cephalopods, diving repeatedly and using whiskers to sense prey in murky water.",
+      "Conservation status improved after hunting bans, though they still face entanglement, pollution, and climate-driven prey shifts.",
+      "Researchers track movement with tags and study how shipping noise and warming oceans affect foraging and breeding.",
+      "This long plaintext is used to exercise multi-chunk crypto_aead_chacha20poly1305_ietf push/pull without loading a one-shot AEAD path.",
+      "附加中文段落：流式加密按块推送，末尾一个 16 字节 tag，密文须与一次性 encrypt 完全一致。",
+      "再补一段内容以保证长度足够：0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz !@#$%^&*()_+-=[]{}|;:',.<>/?~`",
+    ].join(' ');
+    const ssPt = new TextEncoder().encode(ssPtText);
+
+    log('  --- 加密 ---')
+    log('  key hex:', toHexC(ssKey))
+    log('  明文长度:', ssPt.length)
+    const ssEnc = openChaChaStreamPush(na, ssKey);
+    log('  iv hex:', toHexC(ssEnc.header))
+    showKeyIv(ssKey, ssEnc.header)
+    const chunkN = 4;
+    const chunkSize = Math.ceil(ssPt.length / chunkN);
+    const cipherChunks: Uint8Array[] = [];
+    for (let i = 0; i < chunkN; i++) {
+      const start = i * chunkSize;
+      if (start >= ssPt.length) break;
+      const end = Math.min(start + chunkSize, ssPt.length);
+      cipherChunks.push(ssEnc.push(ssPt.subarray(start, end), end >= ssPt.length));
+    }
+    const ssCtLen = cipherChunks.reduce((n, c) => n + c.length, 0);
+    const ssCt = new Uint8Array(ssCtLen);
+    { let o = 0; for (const c of cipherChunks) { ssCt.set(c, o); o += c.length; } }
+    const oneShotCt = aeadEncrypt(na, ssPt, AEAD_EMPTY_AD, ssEnc.header, ssKey);
+    log('  密文 hex:', toHexC(ssCt))
+    log('  分块数:', cipherChunks.length, '末尾 tag:', AEAD_ABYTES, '密文长度:', ssCt.length)
+    log('  流式==一次性密文:', eqBytes(ssCt, oneShotCt) ? '✅' : '❌')
+
+    log('  --- 解密 ---')
+    log('  key hex:', toHexC(ssKey))
+    log('  iv hex:', toHexC(ssEnc.header))
+    // 流式拉块缓冲，末块一次性 wasm decrypt（与 aeadDecrypt 一致）
+    const ssDec = openChaChaStreamPull(na, ssKey, ssEnc.header);
+    const bodyLen = ssCt.length - AEAD_ABYTES;
+    let off = 0;
+    const pullStep = Math.ceil(Math.max(bodyLen, 1) / chunkN);
+    let ssOut = new Uint8Array(0);
+    if (bodyLen === 0) {
+      ssOut = ssDec.pull(ssCt, true).message;
+    } else {
+      while (off < bodyLen) {
+        const end = Math.min(off + pullStep, bodyLen);
+        const last = end >= bodyLen;
+        if (last) {
+          const chunk = new Uint8Array(end - off + AEAD_ABYTES);
+          chunk.set(ssCt.subarray(off, end), 0);
+          chunk.set(ssCt.subarray(bodyLen), end - off);
+          ssOut = ssDec.pull(chunk, true).message;
+        } else {
+          ssDec.pull(ssCt.subarray(off, end), false);
+        }
+        off = end;
+      }
+    }
+    const oneShotPt = aeadDecrypt(na, oneShotCt, AEAD_EMPTY_AD, ssEnc.header, ssKey);
+    const ssOutText = new TextDecoder().decode(ssOut);
+    log('  明文:', ssOutText)
+    log('  流式解密==明文:', ssOutText === ssPtText ? '✅' : '❌')
+    log('  一次性解密==明文:', eqBytes(oneShotPt, ssPt) ? '✅' : '❌')
+    log('  流式解密==一次性解密:', eqBytes(ssOut, oneShotPt) ? '✅' : '❌')
+    log('  加密引擎: libsodium.wasm crypto_aead_chacha20poly1305_ietf')
+
+    // ========== 测试13: ChaCha20-Poly1305 往返 / 空消息 / 篡改 ==========
+    log('')
+    log('=== 测试13: crypto_aead_chacha20poly1305_ietf 往返与篡改 ===')
+    const rndKey = randomBytes(na, 32);
+    const rndPt = new TextEncoder().encode(ssPtText + ' | ' + plaintext);
+    const enc1 = openChaChaStreamPush(na, rndKey);
+    log('  key hex:', toHexC(rndKey))
+    log('  iv hex:', toHexC(enc1.header))
+    showKeyIv(rndKey, enc1.header)
+    const rndParts: Uint8Array[] = [];
+    const step = Math.ceil(rndPt.length / 3);
+    for (let i = 0; i < rndPt.length; i += step) {
+      const end = Math.min(i + step, rndPt.length);
+      rndParts.push(enc1.push(rndPt.subarray(i, end), end >= rndPt.length));
+    }
+    const rndCt = new Uint8Array(rndParts.reduce((n, c) => n + c.length, 0));
+    { let o = 0; for (const c of rndParts) { rndCt.set(c, o); o += c.length; } }
+    log('  密文 hex:', toHexC(rndCt))
+    const oneRnd = aeadEncrypt(na, rndPt, AEAD_EMPTY_AD, enc1.header, rndKey);
+    log('  流式==一次性:', eqBytes(rndCt, oneRnd) ? '✅' : '❌')
+    const dec1 = openChaChaStreamPull(na, rndKey, enc1.header);
+    const { message: rndBack } = dec1.pull(rndCt, true);
+    const rndOverhead = rndCt.length - rndPt.length;
+    log('  随机往返:', eqBytes(rndBack, rndPt) ? '✅' : '❌',
+      'overhead', rndOverhead, '(期望' + AEAD_ABYTES + ')')
+
+    const encEmpty = openChaChaStreamPush(na, rndKey);
+    const emptyCt = encEmpty.push(new Uint8Array(0), true);
+    const emptyOne = aeadEncrypt(na, new Uint8Array(0), AEAD_EMPTY_AD, encEmpty.header, rndKey);
+    const decEmpty = openChaChaStreamPull(na, rndKey, encEmpty.header);
+    const emptyPt = decEmpty.pull(emptyCt, true);
+    log('  空消息:', emptyCt.length === AEAD_ABYTES && eqBytes(emptyCt, emptyOne) && emptyPt.message.length === 0 ? '✅' : '❌')
+
+    const badCt = rndCt.slice();
+    badCt[0] ^= 1;
+    try {
+      openChaChaStreamPull(na, rndKey, enc1.header).pull(badCt, true);
+      log('  密文篡改: 应失败但未失败 ❌')
+    } catch {
+      log('  密文篡改: ✅ 拒绝')
+    }
+
+    // ========== 测试14: ChaCha20-Poly1305 流式 + ECDH 头 0x0F ==========
+    log('')
+    log('=== 测试14: crypto_aead_chacha20poly1305_ietf 流式 + ECDH 头 ===')
+    const keys = await ec.deriveEcdhStreamKeys(kp1.public);
+    const ssPush = openChaChaStreamPush(na, keys.streamKey);
+    log('  key hex:', toHexC(keys.streamKey))
+    log('  iv hex:', toHexC(ssPush.header))
+    showKeyIv(keys.streamKey, ssPush.header)
+    log('  header 长度:', ssPush.header.length, '(期望12)', ssPush.header.length === 12 ? '✅' : '❌')
+    log('  abytes:', ssPush.abytes, '(期望16)', ssPush.abytes === 16 ? '✅' : '❌')
+    const head = await ec.assembleEcdhStreamHead(ssPush.header, keys.tmpPub, keys.macKey);
+    log('  Layer1 byte[0]:', head[0], '(期望15/0x0F)', head[0] === 0x0F ? '✅' : '❌')
+    log('  Layer1 长度:', head.length, '(期望96)', head.length === 96 ? '✅' : '❌')
+    const opened = await ec.openEcdhStreamHead(kp1.private, head);
+    log('  打开头 streamKey:', eqBytes(opened.streamKey, keys.streamKey) ? '✅' : '❌')
+    log('  打开头 header:', eqBytes(opened.ssHeader, ssPush.header) ? '✅' : '❌')
+    log('  解密 key hex:', toHexC(opened.streamKey))
+    log('  解密 iv hex:', toHexC(opened.ssHeader))
+
+    const parts = [
+      new Uint8Array(1024).fill(0x11),
+      new Uint8Array(777).fill(0x22),
+      new TextEncoder().encode('last-chunk 你好'),
+    ];
+    const allPlain = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    { let o = 0; for (const p of parts) { allPlain.set(p, o); o += p.length; } }
+    const ciphers: Uint8Array[] = [];
+    for (let i = 0; i < parts.length; i++) {
+      ciphers.push(ssPush.push(parts[i], i === parts.length - 1));
+    }
+    const streamBody = new Uint8Array(ciphers.reduce((n, c) => n + c.length, 0));
+    { let o = 0; for (const c of ciphers) { streamBody.set(c, o); o += c.length; } }
+    const oneBody = aeadEncrypt(na, allPlain, AEAD_EMPTY_AD, ssPush.header, keys.streamKey);
+    log('  每块密文长度:', ciphers.map(c => c.length).join(','))
+    log('  流式body==一次性:', eqBytes(streamBody, oneBody) ? '✅' : '❌')
+    log('  总长=明文+16:', streamBody.length === allPlain.length + 16 ? '✅' : '❌')
+
+    const ssPull = openChaChaStreamPull(na, opened.streamKey, opened.ssHeader);
+    const { message: plainAll } = ssPull.pull(streamBody, true);
+    log('  分块往返:', eqBytes(plainAll, allPlain) ? '✅' : '❌')
+    log('  一次性解密:', eqBytes(aeadDecrypt(na, oneBody, AEAD_EMPTY_AD, opened.ssHeader, opened.streamKey), allPlain) ? '✅' : '❌')
+
+    const badChunk = streamBody.slice();
+    badChunk[0] ^= 1;
+    try {
+      openChaChaStreamPull(na, opened.streamKey, opened.ssHeader).pull(badChunk, true);
+      log('  分块篡改: 应失败但未失败 ❌')
+    } catch {
+      log('  分块篡改: ✅ 拒绝')
+    }
+    const badHead = head.slice();
+    badHead[40] ^= 1;
+    try {
+      await ec.openEcdhStreamHead(kp1.private, badHead);
+      log('  头 MAC 篡改: 应失败但未失败 ❌')
+    } catch (e) {
+      log('  头 MAC 篡改: ✅', e)
+    }
+  } catch (e) {
+    log('')
+    log('=== ChaCha20-Poly1305 测试失败 ===')
+    log('  ❌', e)
   }
 
   }

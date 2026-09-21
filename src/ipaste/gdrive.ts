@@ -394,27 +394,279 @@ export class GoogleDriveManager {
     return fileId || newFileId;
   }
 
+  /** >50MB：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
+  async saveBackupStream(
+    ec: any,
+    file: File,
+    pubkey: string,
+    salt: string,
+    description: string,
+    onProgress?: (uploaded: number, total: number) => void
+  ): Promise<string> {
+    const { createXPush, streamCipherTotalSize, STREAM_PLAIN_CHUNK } = await import('./stream-crypt');
+    await this.ensureAuthorized();
+
+    let note = '';
+    let ft = 'X';
+    try {
+      const descObj = JSON.parse(description);
+      note = descObj.note || '';
+      ft = descObj.ft || 'X';
+    } catch {}
+    const phashNote = note || file.name;
+    const realPhash = await computePhash(ec, phashNote, salt);
+    const sanitized = sanitizeFileName(phashNote);
+    const fileName = sanitized ? `${sanitized}.ipgd` : `i-${realPhash}.ipgd`;
+    const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
+    const existingFile = await this.findBackupByPhash(realPhash, pubkeyFolderId);
+    const metadata = {
+      name: fileName,
+      mimeType: 'application/octet-stream',
+      description,
+      appProperties: { phash: realPhash, fileType: ft },
+      ...(existingFile ? {} : { parents: [pubkeyFolderId] }),
+    };
+    const fileId = existingFile ? existingFile.id : null;
+    const sessionUrl = await this.startResumableUpload(fileId, metadata);
+    const total = streamCipherTotalSize(file.size);
+    const { prefixAndEncHead, push } = await createXPush(ec, pubkey, salt);
+
+    const ALIGN = 256 * 1024;
+    let pending: Uint8Array[] = [];
+    let pendingBytes = 0;
+    let uploaded = 0;
+    const MAX_RETRIES = 3;
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    const concatTake = (n: number): Uint8Array => {
+      const out = new Uint8Array(n);
+      let off = 0;
+      while (off < n) {
+        const head = pending[0];
+        const need = n - off;
+        if (head.length <= need) {
+          out.set(head, off);
+          off += head.length;
+          pending.shift();
+          pendingBytes -= head.length;
+        } else {
+          out.set(head.subarray(0, need), off);
+          pending[0] = head.subarray(need);
+          pendingBytes -= need;
+          off += need;
+        }
+      }
+      return out;
+    };
+
+    const putBytes = async (chunk: Uint8Array, isLast: boolean) => {
+      const start = uploaded;
+      const end = uploaded + chunk.length - 1;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': String(chunk.length),
+          'Content-Range': isLast ? `bytes ${start}-${end}/${total}` : `bytes ${start}-${end}/${total}`,
+        };
+        try {
+          const response = await fetch(sessionUrl, { method: 'PUT', headers, body: chunk });
+          if (response.ok || response.status === 308) {
+            uploaded += chunk.length;
+            onProgress?.(uploaded, total);
+            if (response.ok) {
+              const result = await response.json();
+              return result.id as string;
+            }
+            return null;
+          }
+          if (attempt === MAX_RETRIES - 1) {
+            const errText = await response.text();
+            throw new Error(`Failed to upload chunk: ${response.status} ${errText}`);
+          }
+        } catch (e) {
+          if (attempt === MAX_RETRIES - 1) throw e;
+        }
+        await sleep(1000 * (attempt + 1));
+      }
+      throw new Error('Upload chunk failed');
+    };
+
+    const enqueue = async (data: Uint8Array, isLast: boolean): Promise<string | null> => {
+      pending.push(data);
+      pendingBytes += data.length;
+      let doneId: string | null = null;
+      while (pendingBytes >= ALIGN && (!isLast || pendingBytes > ALIGN)) {
+        const take = Math.floor(pendingBytes / ALIGN) * ALIGN;
+        if (isLast && pendingBytes === take) break;
+        if (take === 0) break;
+        const send = concatTake(take);
+        doneId = await putBytes(send, false);
+      }
+      if (isLast && pendingBytes > 0) {
+        const send = concatTake(pendingBytes);
+        doneId = await putBytes(send, true);
+      }
+      return doneId;
+    };
+
+    let resultId = await enqueue(prefixAndEncHead, false);
+    let offset = 0;
+    if (file.size === 0) {
+      const cipher = push(new Uint8Array(0), true);
+      resultId = await enqueue(cipher, true);
+    } else {
+      while (offset < file.size) {
+        const end = Math.min(offset + STREAM_PLAIN_CHUNK, file.size);
+        const buf = new Uint8Array(await file.slice(offset, end).arrayBuffer());
+        const isFinal = end >= file.size;
+        const cipher = push(buf, isFinal);
+        // 非末块仅缓冲明文；末块 wasm 一次性加密后返回整段密文
+        if (cipher.length > 0) {
+          resultId = await enqueue(cipher, true);
+        }
+        offset = end;
+      }
+    }
+    return fileId || resultId || '';
+  }
+
+  async savePlainFile(
+    ec: any,
+    file: File,
+    pubkey: string,
+    salt: string,
+    driveName: string,
+    smallFt: 'B' | 'F',
+    onProgress?: (uploaded: number, total: number) => void
+  ): Promise<string> {
+    const { isLargeFile } = await import('./stream-crypt');
+    if (isLargeFile(file)) {
+      const desc = JSON.stringify({ note: driveName, ft: 'X' });
+      return this.saveBackupStream(ec, file, pubkey, salt, desc, onProgress);
+    }
+    const { encryptFileContent, encryptFileContentBinary } = await import('./common');
+    const fileBytes = new Uint8Array(await file.arrayBuffer());
+    if (smallFt === 'B') {
+      const ciphertext = await encryptFileContentBinary(ec, fileBytes, pubkey, salt);
+      const desc = JSON.stringify({ note: driveName, ft: 'B' });
+      return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc);
+    }
+    const ciphertext = await encryptFileContent(ec, fileBytes, pubkey, salt);
+    const desc = JSON.stringify({ note: driveName, ft: 'F' });
+    return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc);
+  }
+
+  async decryptXBackup(
+    ec: any,
+    fileId: string,
+    privkey: string,
+    pubkey: string,
+    salt: string,
+    filename: string,
+    onProgress?: (done: number, total: number) => void
+  ): Promise<void> {
+    const {
+      createXPull, X_HEAD_TOTAL, STREAM_PLAIN_CHUNK, STREAM_ABYTES, isXPrefix,
+    } = await import('./stream-crypt');
+    const { downloadBlob } = await import('./common');
+    await this.ensureAuthorized();
+    const response = await this.driveFetch(`/files/${fileId}?alt=media`);
+    if (!response.ok || !response.body) {
+      const errText = await response.text();
+      throw new Error(`Failed to read file: ${response.status} ${errText}`);
+    }
+    const total = Number(response.headers.get('Content-Length') || '0');
+    const reader = response.body.getReader();
+    let leftover = new Uint8Array(0);
+    let received = 0;
+
+    const readExact = async (n: number): Promise<Uint8Array> => {
+      while (leftover.length < n) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (leftover.length === 0) throw new Error('Unexpected end of stream');
+          break;
+        }
+        const next = new Uint8Array(leftover.length + value.length);
+        next.set(leftover, 0);
+        next.set(value, leftover.length);
+        leftover = next;
+        received += value.length;
+        onProgress?.(received, total);
+      }
+      const take = Math.min(n, leftover.length);
+      const out = leftover.subarray(0, take).slice();
+      leftover = leftover.subarray(take);
+      return out;
+    };
+
+    const prefixAndEncHead = await readExact(X_HEAD_TOTAL);
+    if (prefixAndEncHead.length < X_HEAD_TOTAL || !isXPrefix(prefixAndEncHead)) {
+      throw new Error('Invalid X. ciphertext');
+    }
+    const { update, final, pull } = await createXPull(ec, privkey, pubkey, salt, prefixAndEncHead);
+    const bodyTotal = total > 0 ? Math.max(0, total - X_HEAD_TOTAL) : 0;
+    let plain: Uint8Array;
+    if (bodyTotal > 0) {
+      const cipherLen = bodyTotal - STREAM_ABYTES;
+      let cipherRead = 0;
+      while (cipherRead < cipherLen) {
+        const take = Math.min(STREAM_PLAIN_CHUNK, cipherLen - cipherRead);
+        const cipher = await readExact(take);
+        update(cipher);
+        cipherRead += cipher.length;
+      }
+      const tag = await readExact(STREAM_ABYTES);
+      plain = final(tag);
+    } else {
+      const bufParts: Uint8Array[] = leftover.length ? [leftover] : [];
+      let bufLen = leftover.length;
+      leftover = new Uint8Array(0);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bufParts.push(value);
+        bufLen += value.length;
+        received += value.length;
+        onProgress?.(received, total);
+      }
+      const all = new Uint8Array(bufLen);
+      { let o = 0; for (const p of bufParts) { all.set(p, o); o += p.length; } }
+      if (all.length < STREAM_ABYTES) throw new Error('Unexpected end of stream');
+      plain = pull(all, true).message;
+    }
+
+    try { reader.cancel(); } catch { /* ignore */ }
+    downloadBlob(new Blob([plain], { type: 'application/octet-stream' }), filename);
+  }
+
   async listBackups(pubkey: string, salt: string, ec: any): Promise<GDriveFile[]> {
     await this.ensureAuthorized();
     const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
     const query = `name contains '.ipgd' and trashed=false and '${pubkeyFolderId}' in parents`;
 
-    const params = new URLSearchParams({
-      q: query,
-      fields: 'files(id,name,modifiedTime,description,appProperties)',
-      orderBy: 'modifiedTime desc',
-      pageSize: '50',
-    });
+    const files: GDriveFile[] = [];
+    let pageToken = '';
+    do {
+      const params = new URLSearchParams({
+        q: query,
+        fields: 'nextPageToken,files(id,name,modifiedTime,description,appProperties)',
+        orderBy: 'modifiedTime desc',
+        pageSize: '200',
+      });
+      if (pageToken) params.set('pageToken', pageToken);
 
-    const response = await this.driveFetch(`/files?${params.toString()}`);
+      const response = await this.driveFetch(`/files?${params.toString()}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to list files: ${response.status} ${errText}`);
+      }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Failed to list files: ${response.status} ${errText}`);
-    }
-
-    const data = await response.json();
-    return data.files || [];
+      const data = await response.json();
+      if (data.files?.length) files.push(...data.files);
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+    return files;
   }
 
   async readBackup(fileId: string): Promise<string | Uint8Array> {
@@ -430,6 +682,9 @@ export class GoogleDriveManager {
     const buffer = new Uint8Array(await response.arrayBuffer());
     // Detect B. binary format: 0x42='B', 0x2E='.'
     if (buffer.length >= 2 && buffer[0] === 0x42 && buffer[1] === 0x2E) {
+      return buffer;
+    }
+    if (buffer.length >= 2 && buffer[0] === 0x58 && buffer[1] === 0x2E) {
       return buffer;
     }
     return new TextDecoder().decode(buffer).trim();

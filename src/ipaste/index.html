@@ -90,7 +90,10 @@
       <h2>{{i18n:syncTitle}} <span style="font-size:0.5em;font-weight:400;color:#999;margin-left:8px;">{{i18n:syncTitleHint}}</span></h2>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <span style="font-size:0.8125rem;color:#666;font-weight:600;">明文</span>
-        <span id="plainCopyBtn" style="font-size:0.75rem;color:#999;cursor:pointer;user-select:none;">Copy</span>
+        <span style="display:flex;gap:12px;align-items:center;">
+          <span id="pickFolderBtn" style="font-size:0.75rem;color:#2563eb;cursor:pointer;user-select:none;">{{i18n:pickFolder}}</span>
+          <span id="plainCopyBtn" style="font-size:0.75rem;color:#999;cursor:pointer;user-select:none;">Copy</span>
+        </span>
       </div>
       <textarea id="plaintext" class="bigTxtArea" autocomplete="off" spellcheck="false" placeholder="{{i18n:syncPlaceholder}}" style="min-height:200px;"></textarea>
       <div id="filePreview" style="display:none;margin-top:0.5rem;">
@@ -145,6 +148,8 @@
       </table>
     </section>
   </div>
+  <input id="folderPicker" type="file" multiple webkitdirectory style="display:none" />
+  <div id="dropOverlay" style="display:none;position:fixed;inset:0;background:rgba(69,183,135,0.18);border:3px dashed #45b787;z-index:10000;align-items:center;justify-content:center;font-size:1.25rem;color:#2e7d32;font-weight:600;pointer-events:none;">{{i18n:dropOverlayHint}}</div>
   <script src="js/app.js"></script>
   <script>
     (function () {

@@ -180,7 +180,7 @@ async function buildTest() {
   mkdirp('tmp');
   const result = await build({
     entryPoints: ['src/test.ts'],
-    bundle: false,
+    bundle: true,
     write: false,
     ...esbuildOpts,
   });
@@ -635,6 +635,14 @@ async function main() {
   for (const lang of LANGS) {
     cp('src/ipaste/gdrive-callback.html', `www/ipaste/${lang}/gdrive-callback.html`);
   }
+
+  // Trimmed libsodium (js + wasm) next to ipaste pages for dynamic import
+  for (const dest of ['www', 'www/ipaste', 'www/ipaste/cn', 'www/ipaste/en']) {
+    mkdirp(dest);
+    cp('src/lib/libsodium.js', path.join(dest, 'libsodium.js'));
+    cp('src/lib/libsodium.wasm', path.join(dest, 'libsodium.wasm'));
+  }
+  console.log('  libsodium wasm copied');
 
   // Copy ipaste cn files to ipaste root as GitHub Pages fallback
   const ipasteCnDir = 'www/ipaste/cn';

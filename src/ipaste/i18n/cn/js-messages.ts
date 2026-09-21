@@ -47,4 +47,11 @@ export const jsMessages: JsMessages = {
   fileModeExited: '已退出文件模式',
   fileDecryptDownload: '文件已解密并下载',
   btnDecryptText: '解密',
+  folderModeEntered: '已进入文件夹模式，点击 GDrive 按文件保存',
+  folderFileCount: '个文件',
+  errEmptyFolder: '文件夹为空或没有可上传的文件',
+  gdriveSavingFile: '正在保存',
+  gdriveFolderPartialFail: '部分文件保存失败',
+  pickFolder: '选择文件夹',
+  dropOverlayHint: '松开以上传文件夹或文件',
 };

@@ -58,6 +58,8 @@ export interface HtmlMessages {
   fileRemove: string;
   fileNotePlaceholder: string;
   fileLockedLabel: string;
+  pickFolder: string;
+  dropOverlayHint: string;
 }
 
 export interface JsMessages {
@@ -107,4 +109,11 @@ export interface JsMessages {
   fileModeExited: string;
   fileDecryptDownload: string;
   btnDecryptText: string;
+  folderModeEntered: string;
+  folderFileCount: string;
+  errEmptyFolder: string;
+  gdriveSavingFile: string;
+  gdriveFolderPartialFail: string;
+  pickFolder: string;
+  dropOverlayHint: string;
 }

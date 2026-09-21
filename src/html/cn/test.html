@@ -1,10 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>ECC Test</title>
-<style>pre { white-space: pre; overflow-x: auto; }</style>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 1rem; max-width: 1100px; }
+  h3 { margin: 0 0 0.75rem; }
+  .kv-panel {
+    border: 1px solid #c8ccd4;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: #f7f8fa;
+  }
+  .kv-row { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0.35rem 0; }
+  .kv-label { flex: 0 0 4.5rem; color: #555; font-weight: 600; }
+  .kv-value {
+    flex: 1;
+    word-break: break-all;
+    color: #111;
+    background: #fff;
+    border: 1px solid #e3e6ea;
+    border-radius: 4px;
+    padding: 0.35rem 0.5rem;
+    min-height: 1.4em;
+  }
+  pre#results { white-space: pre-wrap; word-break: break-all; overflow-x: auto; border: 1px solid #e3e6ea; border-radius: 8px; padding: 0.75rem; background: #fff; }
+</style>
 </head>
 <body>
 <h3>ECC 加解密测试</h3>
+<div class="kv-panel">
+  <div class="kv-row"><span class="kv-label">Key</span><div id="showKey" class="kv-value">—</div></div>
+  <div class="kv-row"><span class="kv-label">IV</span><div id="showIv" class="kv-value">—</div></div>
+</div>
 <pre id="results"></pre>
 <script src="js/app.js"></script>
 </body>

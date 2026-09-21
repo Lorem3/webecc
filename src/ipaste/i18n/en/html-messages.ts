@@ -23,7 +23,7 @@ export const htmlMessages: HtmlMessages = {
   bmInfoSalt: 'Salt',
   bmInfoPrivkey: 'Private Key',
   syncTitle: 'Clipboard',
-  syncTitleHint: 'Supports file paste',
+  syncTitleHint: 'Supports file paste and folder drop',
   syncPlaceholder: 'Enter plaintext',
   btnSave: 'Encrypt & Save to Cloud',
   btnLoad: 'Cloud Records',
@@ -60,4 +60,6 @@ export const htmlMessages: HtmlMessages = {
   fileRemove: 'Remove',
   fileNotePlaceholder: 'File name (used as Google Drive description)',
   fileLockedLabel: 'File Encrypted',
+  pickFolder: 'Choose folder',
+  dropOverlayHint: 'Drop folder or files to upload',
 };

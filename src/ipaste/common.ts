@@ -1,4 +1,5 @@
 import { jsMessages as messages } from '@i18n/js-messages';
+import { collectFromDataTransfer, collectFromFileList, FolderFile } from './folder';
 
 // --- Constants ---
 
@@ -66,10 +67,23 @@ export interface AppState {
   fileData: File | null;
   fileName: string | null;
   fileCipher: string | Uint8Array | null;
+  folderFiles: FolderFile[] | null;
+  xFileId: string | null;
+  decryptXFile: ((privkey: string, pubkey: string, salt: string, filename: string) => Promise<void>) | null;
 }
 
 export function createAppState(): AppState {
-  return { G_Input: undefined, currentSalt: undefined, fileMode: false, fileData: null, fileName: null, fileCipher: null };
+  return {
+    G_Input: undefined,
+    currentSalt: undefined,
+    fileMode: false,
+    fileData: null,
+    fileName: null,
+    fileCipher: null,
+    folderFiles: null,
+    xFileId: null,
+    decryptXFile: null,
+  };
 }
 
 // --- UI Helpers ---
@@ -150,6 +164,8 @@ export function enterFileMode(state: AppState, file: File) {
   state.fileMode = true;
   state.fileData = file;
   state.fileName = file.name;
+  state.folderFiles = null;
+  state.xFileId = null;
 
   // Hide text mode UI
   const plaintext = document.getElementById("plaintext");
@@ -179,11 +195,43 @@ export function enterFileMode(state: AppState, file: File) {
   setSyncStatus(messages.fileModeEntered);
 }
 
+export function enterFolderMode(state: AppState, files: FolderFile[]) {
+  state.fileMode = true;
+  state.fileData = null;
+  state.fileName = null;
+  state.fileCipher = null;
+  state.folderFiles = files;
+  state.xFileId = null;
+
+  const plaintext = document.getElementById("plaintext");
+  const resultCard = document.getElementById("resultCard");
+  const encryptBtn = document.getElementById("encryptBtn");
+  const decryptBtn = document.getElementById("decryptBtn");
+  const saveToCf = document.getElementById("saveToCloudflare");
+  const restoreFromCf = document.getElementById("restoreFromCloudflare");
+
+  if (plaintext) plaintext.style.display = 'none';
+  if (resultCard) resultCard.style.display = 'none';
+  if (encryptBtn) encryptBtn.style.display = 'none';
+  if (decryptBtn) decryptBtn.style.display = 'none';
+  if (saveToCf) saveToCf.style.display = 'none';
+  if (restoreFromCf) restoreFromCf.style.display = 'none';
+
+  showFolderPreview(files);
+
+  const gdriveDescEl = document.getElementById("gdriveDesc") as HTMLInputElement;
+  if (gdriveDescEl) gdriveDescEl.style.display = 'none';
+
+  setSyncStatus(messages.folderModeEntered);
+}
+
 export function exitFileMode(state: AppState) {
   state.fileMode = false;
   state.fileData = null;
   state.fileName = null;
   state.fileCipher = null;
+  state.folderFiles = null;
+  state.xFileId = null;
 
   // Show text mode UI
   const plaintext = document.getElementById("plaintext");
@@ -207,6 +255,8 @@ export function exitFileMode(state: AppState) {
   if (restoreFromCf) restoreFromCf.style.display = '';
   if (filePreview) filePreview.style.display = 'none';
   if (fileLocked) fileLocked.style.display = 'none';
+  const gdriveDescEl = document.getElementById("gdriveDesc") as HTMLInputElement;
+  if (gdriveDescEl) gdriveDescEl.style.display = '';
 
   // Clear file preview content and revoke blob URLs
   const previewContent = document.getElementById("filePreviewContent");
@@ -274,6 +324,51 @@ export function showFilePreview(file: File) {
   preview.style.display = '';
 }
 
+export function showFolderPreview(files: FolderFile[]) {
+  const preview = document.getElementById("filePreview");
+  const previewContent = document.getElementById("filePreviewContent");
+  if (!preview || !previewContent) return;
+
+  const existingMedia = previewContent.querySelectorAll('img[src^="blob:"], video[src^="blob:"]');
+  existingMedia.forEach(el => {
+    const src = el.getAttribute('src');
+    if (src) URL.revokeObjectURL(src);
+  });
+  previewContent.innerHTML = '';
+
+  const total = files.reduce((s, f) => s + f.file.size, 0);
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:100%;text-align:left;';
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+  head.innerHTML = `<span class="file-icon">📁</span>`;
+  const info = document.createElement('div');
+  info.innerHTML = `<div class="file-info-name">${files.length} ${messages.folderFileCount}</div>
+    <div class="file-info-size">${formatFileSize(total)}</div>`;
+  head.appendChild(info);
+  wrap.appendChild(head);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'max-height:220px;overflow:auto;font-size:0.8125rem;color:#555;';
+  const shown = files.slice(0, 40);
+  shown.forEach((f) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:2px 0;word-break:break-all;';
+    const streamMark = f.file.size > 50 * 1024 * 1024 ? ' [X]' : '';
+    row.textContent = `${f.relPath} (${formatFileSize(f.file.size)})${streamMark}`;
+    list.appendChild(row);
+  });
+  if (files.length > 40) {
+    const more = document.createElement('div');
+    more.style.color = '#999';
+    more.textContent = `… +${files.length - 40}`;
+    list.appendChild(more);
+  }
+  wrap.appendChild(list);
+  previewContent.appendChild(wrap);
+  preview.style.display = '';
+}
+
 export function showFileLocked() {
   const fileLocked = document.getElementById("fileLocked");
   const filePreview = document.getElementById("filePreview");
@@ -286,7 +381,7 @@ export function hideFileLocked() {
   if (fileLocked) fileLocked.style.display = 'none';
 }
 
-export function bindFilePaste(ec: any, state: AppState) {
+export function bindFilePaste(_ec: any, state: AppState) {
   document.addEventListener('paste', (e: ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -301,8 +396,64 @@ export function bindFilePaste(ec: any, state: AppState) {
         return;
       }
     }
-    // No file in clipboard, allow normal text paste
   });
+
+  const overlay = document.getElementById('dropOverlay');
+  let dragDepth = 0;
+  const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+
+  document.addEventListener('dragenter', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    if (overlay) overlay.style.display = 'flex';
+  });
+  document.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'copy';
+  });
+  document.addEventListener('dragleave', (e) => {
+    if (!hasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0 && overlay) overlay.style.display = 'none';
+  });
+  document.addEventListener('drop', async (e) => {
+    if (!e.dataTransfer) return;
+    e.preventDefault();
+    dragDepth = 0;
+    if (overlay) overlay.style.display = 'none';
+    try {
+      const { kind, files } = await collectFromDataTransfer(e.dataTransfer);
+      if (!files.length) {
+        setErrMsg(messages.errEmptyFolder);
+        return;
+      }
+      if (kind === 'file' && files.length === 1) {
+        enterFileMode(state, files[0].file);
+      } else {
+        enterFolderMode(state, files);
+      }
+    } catch (err) {
+      setErrMsg((err as Error).message || messages.errEmptyFolder);
+    }
+  });
+
+  const folderPicker = document.getElementById('folderPicker') as HTMLInputElement | null;
+  const pickFolderBtn = document.getElementById('pickFolderBtn');
+  if (folderPicker && pickFolderBtn) {
+    pickFolderBtn.onclick = () => folderPicker.click();
+    folderPicker.onchange = () => {
+      if (!folderPicker.files?.length) return;
+      const files = collectFromFileList(folderPicker.files);
+      folderPicker.value = '';
+      if (!files.length) {
+        setErrMsg(messages.errEmptyFolder);
+        return;
+      }
+      enterFolderMode(state, files);
+    };
+  }
 }
 
 export function bindFileRemoveBtn(state: AppState) {
@@ -313,11 +464,13 @@ export function bindFileRemoveBtn(state: AppState) {
   };
 }
 
-export function enterFileModeUI(state: AppState, fileName?: string, cipher?: string | Uint8Array) {
+export function enterFileModeUI(state: AppState, fileName?: string, cipher?: string | Uint8Array, xFileId?: string) {
   state.fileMode = true;
   state.fileData = null;
   state.fileName = fileName || null;
   state.fileCipher = cipher || null;
+  state.folderFiles = null;
+  state.xFileId = xFileId || null;
 
   const encryptBtn = document.getElementById("encryptBtn");
   const plaintext = document.getElementById("plaintext");
@@ -517,7 +670,10 @@ export async function decryptFileContentBinary(ec: any, data: Uint8Array, privke
 }
 
 export function downloadFile(bytes: Uint8Array, filename: string) {
-  const blob = new Blob([bytes], { type: 'application/octet-stream' });
+  downloadBlob(new Blob([bytes], { type: 'application/octet-stream' }), filename);
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -567,6 +723,16 @@ export function bindDecryptBtn(ec: any, state: AppState) {
 
     let base64: string | null = null;
     let binaryCipher: Uint8Array | null = null;
+    if (state.xFileId && state.decryptXFile) {
+      try {
+        await state.decryptXFile(privkey, state.G_Input.pubkey, state.G_Input.salt, state.fileName || 'decrypted-file');
+        setSyncStatus(messages.fileDecryptDownload);
+        setTimeout(() => exitFileMode(state), 500);
+      } catch {
+        setErrMsg(messages.errDecryptFile);
+      }
+      return;
+    }
     if (state.fileMode && state.fileCipher) {
       if (state.fileCipher instanceof Uint8Array) {
         binaryCipher = state.fileCipher;

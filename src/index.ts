@@ -21,6 +21,14 @@ function updateGDriveEmailUI(email: string | null) {
   });
 }
 
+function setGDriveLoading(on: boolean) {
+  const bar = document.getElementById('gdriveProgress');
+  if (bar) bar.style.display = on ? 'block' : 'none';
+  ['saveToGDrive', 'loadFromGDrive'].forEach((id) => {
+    document.getElementById(id)?.classList.toggle('disabled', on);
+  });
+}
+
 const App = (function () {
 
   async function init() {
@@ -832,6 +840,7 @@ ${messages.emailDataBase64}: ${newLine}
     }
 
     try {
+      setGDriveLoading(true);
       const manager = getGDriveManager();
       const files = await manager.listBackups(pubkey, G_Input.salt, ec);
       updateGDriveEmailUI(manager.getUserEmail());
@@ -839,6 +848,9 @@ ${messages.emailDataBase64}: ${newLine}
         setErrMsg(messages.gdriveNoFiles);
         return;
       }
+
+      // 用户挑选文件期间不显示进度条
+      setGDriveLoading(false);
 
       // 弹出选择列表
       const overlay = document.createElement('div');
@@ -861,11 +873,14 @@ ${messages.emailDataBase64}: ${newLine}
         item.onmouseleave = () => { item.style.background = ''; };
         item.onclick = async () => {
           overlay.remove();
+          setGDriveLoading(true);
           try {
             const content = await manager.readBackup(f.id);
             if (content) setCipherText(content);
           } catch (e) {
             setErrMsg(`${messages.gdriveLoadFailed}: ${(e as Error).message}`);
+          } finally {
+            setGDriveLoading(false);
           }
         };
         box.appendChild(item);
@@ -877,6 +892,8 @@ ${messages.emailDataBase64}: ${newLine}
     } catch (e) {
       const errMsg = (e as Error).message;
       setErrMsg(errMsg.includes('Google authorization') ? messages.gdriveAuthFailed : `${messages.gdriveLoadFailed}: ${errMsg}`);
+    } finally {
+      setGDriveLoading(false);
     }
   };
 

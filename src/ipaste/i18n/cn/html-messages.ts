@@ -23,7 +23,7 @@ export const htmlMessages: HtmlMessages = {
   bmInfoSalt: 'Salt',
   bmInfoPrivkey: '私钥',
   syncTitle: '粘贴板',
-  syncTitleHint: '支持粘贴文件',
+  syncTitleHint: '支持粘贴文件、拖放文件夹',
   syncPlaceholder: '输入明文内容',
   btnSave: '加密保存到云端',
   btnLoad: '云端记录',
@@ -60,4 +60,6 @@ export const htmlMessages: HtmlMessages = {
   fileRemove: '移除',
   fileNotePlaceholder: '文件名（将作为 Google Drive 文件描述）',
   fileLockedLabel: '文件已加密',
+  pickFolder: '选择文件夹',
+  dropOverlayHint: '松开以上传文件夹或文件',
 };

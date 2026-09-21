@@ -47,4 +47,11 @@ export const jsMessages: JsMessages = {
   fileModeExited: 'Exited file mode',
   fileDecryptDownload: 'File decrypted and downloaded',
   btnDecryptText: 'Decrypt',
+  folderModeEntered: 'Folder mode: save each file to GDrive',
+  folderFileCount: 'files',
+  errEmptyFolder: 'Folder is empty or has no uploadable files',
+  gdriveSavingFile: 'Saving',
+  gdriveFolderPartialFail: 'Some files failed to save',
+  pickFolder: 'Choose folder',
+  dropOverlayHint: 'Drop folder or files to upload',
 };

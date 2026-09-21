@@ -31,6 +31,9 @@ declare interface  EC{
 
     base64Encode(arr:Uint8Array,urlsafe?:1|0,firstLineLess?:number):string
     base64Decode(str:string,urlsafe ?:1|0):Uint8Array
+    deriveEcdhStreamKeys(pubBase64:string):Promise<{streamKey:Uint8Array, tmpPub:Uint8Array, macKey:Uint8Array}>
+    assembleEcdhStreamHead(ssHeader:Uint8Array, tmpPub:Uint8Array, macKey:Uint8Array):Promise<Uint8Array>
+    openEcdhStreamHead(privateKeyB64:string, head:Uint8Array):Promise<{streamKey:Uint8Array, ssHeader:Uint8Array}>
   }
 
 
@@ -38,6 +41,10 @@ declare const __DEBUG__:boolean
 
 declare const __BUILD_TIME__:string
 declare const __BUILD_MOD__:string
+
+interface DataTransferItem {
+  webkitGetAsEntry(): FileSystemEntry | null;
+}
 
 
  

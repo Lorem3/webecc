@@ -7,7 +7,7 @@ function isWellKnown(path) {
 }
 
 function isStaticAsset(path) {
-  return /\.(ico|png|svg|jpg|jpeg|gif|webp|css|js|woff2?|ttf|eot|txt|xml|webmanifest)$/i.test(path);
+  return /\.(ico|png|svg|jpg|jpeg|gif|webp|css|js|wasm|woff2?|ttf|eot|txt|xml|webmanifest)$/i.test(path);
 }
 
 function parseCookie(cookieHeader, name) {

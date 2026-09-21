@@ -283,6 +283,74 @@ class EC{
 
     }
 
+    /** ECDH 派生流密钥（与现有 hashDH 相同），12 字节 ChaCha20-Poly1305 IV 之后再组 MAC */
+    async deriveEcdhStreamKeys(pubBase64: string): Promise<{ streamKey: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array }> {
+        let pubKey = base64js.toByteArray(pubBase64);
+        if (pubKey.length != 32) throw "pubkey length error";
+        let a = await this.genRandomKeyBuffer(32);
+        let kp = await X25519.generateKeyPair(a);
+        let dh = await X25519.sharedKey(kp.private, pubKey);
+        let hash2 = new Uint8Array(64);
+        await this.hashDH(dh, pubKey, kp.public, hash2);
+        kp.private.fill(0);
+        a.fill(0);
+        return {
+            streamKey: hash2.subarray(0, 32).slice(),
+            macKey: hash2.subarray(32, 64).slice(),
+            tmpPub: kp.public,
+        };
+    }
+
+    async assembleEcdhStreamHead(streamIv: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array): Promise<Uint8Array> {
+        if (streamIv.length !== 12) throw "stream iv must be 12 bytes";
+        if (tmpPub.length !== 32) throw "tmpPub length must be 32";
+        let macData = new Uint8Array(streamIv.length + tmpPub.length);
+        macData.set(streamIv, 0);
+        macData.set(tmpPub, streamIv.length);
+        let mac = await this.hmacSha512(macKey, macData);
+        // 固定 96 字节头：8 + 24 槽位(仅用前 12 存 IV) + 32 MAC + 32 tmpPub
+        let head = new Uint8Array(8 + 24 + 32 + 32);
+        head[0] = 0x0F;
+        head[1] = 0;
+        head[2] = 12; head[3] = 0;
+        head[4] = 32; head[5] = 0;
+        head[6] = 32; head[7] = 0;
+        head.set(streamIv, 8);
+        head.set(mac, 32);
+        head.set(tmpPub, 64);
+        return head;
+    }
+
+    async openEcdhStreamHead(privateKeyB64: string, head: Uint8Array): Promise<{ streamKey: Uint8Array, ssHeader: Uint8Array }> {
+        if (head.length < 96) throw "stream head too short";
+        if (head[0] !== 0x0F) throw "data format not support";
+        let ivLen = head[2] | (head[3] << 8);
+        let macLen = head[4] | (head[5] << 8);
+        let pubLen = head[6] | (head[7] << 8);
+        if (ivLen !== 12 || macLen !== 32 || pubLen !== 32) throw "invalid stream head lengths";
+
+        let privateKey = base64js.toByteArray(privateKeyB64);
+        if (privateKey.length != 32) throw "privateKey length must be 32";
+
+        let ssHeader = head.subarray(8, 8 + ivLen);
+        let mac = head.subarray(32, 64);
+        let tmpPub = head.subarray(64, 96);
+
+        let dh = await X25519.sharedKey(privateKey, tmpPub);
+        let kp = await X25519.generateKeyPair(privateKey);
+        let hash64 = new Uint8Array(64);
+        await this.hashDH(dh, kp.public, tmpPub, hash64);
+
+        let macData = new Uint8Array(ssHeader.length + tmpPub.length);
+        macData.set(ssHeader, 0);
+        macData.set(tmpPub, ssHeader.length);
+        let mac2 = await this.hmacSha512(hash64.subarray(32, 64), macData);
+        for (let i = 0; i < 32; i++) {
+            if (mac[i] != mac2[i]) throw "MAC NOT FIT";
+        }
+        return { streamKey: hash64.subarray(0, 32).slice(), ssHeader: ssHeader.slice() };
+    }
+
     private async _encrypt(pubBase64:string,data:Uint8Array,isZipData:boolean = true){
         let pubKey = base64js.toByteArray(pubBase64);
         if (pubKey.length != 32) {
