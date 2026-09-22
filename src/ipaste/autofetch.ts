@@ -7,7 +7,7 @@ import {
   fireD1Init,
 } from './common';
 import { GoogleDriveManager, maskEmail, isGDriveFolder, GDriveFile } from './gdrive';
-import { pathBasename } from './folder';
+import { pathBasename, joinDrivePath } from './folder';
 
 // --- History ---
 
@@ -640,16 +640,18 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
       const manager = getGDriveManager();
       setGDriveLoading(true);
       setSyncStatus(messages.gdriveLoading || 'Saving...');
+      const folderPrefix = (document.getElementById('gdriveFolder') as HTMLInputElement)?.value?.trim() || '';
 
       if (state.folderFiles?.length) {
         const list = state.folderFiles;
         let failed = 0;
         for (let i = 0; i < list.length; i++) {
           const item = list[i];
-          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName}`);
+          const driveName = joinDrivePath(folderPrefix, item.driveName);
+          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${driveName}`);
           try {
-            await manager.savePlainFile(ec, item.file, pubkey, salt, item.driveName, 'B', (up, tot) => {
-              setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName} (${Math.round(up / tot * 100)}%)`);
+            await manager.savePlainFile(ec, item.file, pubkey, salt, driveName, 'B', (up, tot) => {
+              setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${driveName} (${Math.round(up / tot * 100)}%)`);
             });
           } catch (e) {
             console.error(e);
@@ -667,7 +669,8 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
         // === File mode ===
         const file = state.fileData;
         const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || file.name;
-        await manager.savePlainFile(ec, file, pubkey, salt, descInput, 'B');
+        const driveName = joinDrivePath(folderPrefix, descInput);
+        await manager.savePlainFile(ec, file, pubkey, salt, driveName, 'B');
         showFileLocked();
         setSyncStatus(messages.gdriveSaveSuccessFile);
         autoFetchGDriveHistory(ec, state);
@@ -685,7 +688,8 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
           setErrMsg(messages.gdriveDescRequired);
           return;
         }
-        const description = JSON.stringify({ note: descInput, ft: "N" });
+        const note = joinDrivePath(folderPrefix, descInput);
+        const description = JSON.stringify({ note, ft: "N" });
         await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
         setSyncStatus(messages.gdriveSaveSuccess);
         autoFetchGDriveHistory(ec, state);

@@ -10,6 +10,7 @@ import {
   showFileLocked, hideFileLocked, setResultText, enterFileModeUI, exitFileMode,
 } from './common';
 import { GoogleDriveManager, isGDriveFolder } from './gdrive';
+import { joinDrivePath } from './folder';
 
 // --- Google Drive ---
 
@@ -38,15 +39,17 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
     try {
       const manager = getGDriveManager();
       setSyncStatus(messages.gdriveLoading || 'Saving...');
+      const folderPrefix = (document.getElementById('gdriveFolder') as HTMLInputElement)?.value?.trim() || '';
 
       if (state.folderFiles?.length) {
         const list = state.folderFiles;
         let failed = 0;
         for (let i = 0; i < list.length; i++) {
           const item = list[i];
-          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${item.driveName}`);
+          const driveName = joinDrivePath(folderPrefix, item.driveName);
+          setSyncStatus(`${messages.gdriveSavingFile} ${i + 1}/${list.length}: ${driveName}`);
           try {
-            await manager.savePlainFile(ec, item.file, pubkey, salt, item.driveName, 'F');
+            await manager.savePlainFile(ec, item.file, pubkey, salt, driveName, 'F');
           } catch (e) {
             console.error(e);
             failed++;
@@ -61,7 +64,7 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
       } else if (state.fileMode && state.fileData) {
         const file = state.fileData;
         const descInput = (document.getElementById('gdriveDesc') as HTMLInputElement)?.value?.trim() || file.name;
-        await manager.savePlainFile(ec, file, pubkey, salt, descInput, 'F');
+        await manager.savePlainFile(ec, file, pubkey, salt, joinDrivePath(folderPrefix, descInput), 'F');
         showFileLocked();
         setSyncStatus(messages.gdriveSaveSuccessFile);
       } else {
@@ -78,7 +81,7 @@ async function bindGoogleDriveSaveBtn(ec: any, state: any) {
           setErrMsg(messages.gdriveDescRequired);
           return;
         }
-        const description = JSON.stringify({ note: descInput, ft: "N" });
+        const description = JSON.stringify({ note: joinDrivePath(folderPrefix, descInput), ft: "N" });
         await manager.saveBackup(ec, plainText, ciphertext, pubkey, salt, description);
         setSyncStatus(messages.gdriveSaveSuccess);
       }

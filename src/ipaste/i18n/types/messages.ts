@@ -52,6 +52,8 @@ export interface HtmlMessages {
   gdriveTitle: string;
   gdriveDescLabel: string;
   gdriveDescPlaceholder: string;
+  gdriveFolderLabel: string;
+  gdriveFolderPlaceholder: string;
   gdriveNote: string;
   gdriveStatusReady: string;
   filePreviewTitle: string;

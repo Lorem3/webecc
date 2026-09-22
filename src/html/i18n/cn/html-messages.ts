@@ -84,5 +84,7 @@ export const htmlMessages: HtmlMessages = {
   gdriveTitle: 'Google Drive',
   gdriveDescLabel: '文件名',
   gdriveDescPlaceholder: '请输入文件名（必填）',
+  gdriveFolderLabel: '文件夹',
+  gdriveFolderPlaceholder: '可选，如 a/b',
   gdriveNote: '数据保存在您的 Google Drive，适合大文件 > 250KB',
 };

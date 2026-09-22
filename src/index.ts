@@ -1,6 +1,7 @@
 
 import { jsMessages as messages } from '@i18n/js-messages';
 import { GoogleDriveManager, maskEmail } from './ipaste/gdrive';
+import { joinDrivePath } from './ipaste/folder';
 
 const GDRIVE_CLIENT_ID = '181745577501-dj4fpc5lks5seruejnh7ftkvkv4odgit.apps.googleusercontent.com';
 
@@ -907,6 +908,8 @@ ${messages.emailDataBase64}: ${newLine}
       setErrMsg(messages.gdriveDescRequired);
       return;
     }
+    const folderPrefix = (document.getElementById('gdriveFolder') as HTMLInputElement)?.value?.trim() || '';
+    const note = joinDrivePath(folderPrefix, description);
 
     try {
       const t = await encryptClick();
@@ -924,7 +927,7 @@ ${messages.emailDataBase64}: ${newLine}
       const manager = getGDriveManager();
       const toast = document.getElementById('gdriveToast');
       if (toast) { toast.textContent = 'Saving to Google Drive...'; toast.style.display = 'block'; }
-      await manager.saveBackup(ec, getPlainText() || '', finalTxt, pubkey, salt, description);
+      await manager.saveBackup(ec, getPlainText() || '', finalTxt, pubkey, salt, JSON.stringify({ note, ft: 'N' }));
       updateGDriveEmailUI(manager.getUserEmail());
       if (toast) { toast.textContent = messages.gdriveSaveSuccess; setTimeout(() => { toast.style.display = 'none'; }, 3000); }
     } catch (error) {

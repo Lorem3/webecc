@@ -84,5 +84,7 @@ export const htmlMessages: HtmlMessages = {
   gdriveTitle: 'Google Drive',
   gdriveDescLabel: 'Filename',
   gdriveDescPlaceholder: 'Filename (required)',
+  gdriveFolderLabel: 'Folder',
+  gdriveFolderPlaceholder: 'Optional, e.g. a/b',
   gdriveNote: 'Data stored in your Google Drive. Suitable for large files > 250KB.',
 };

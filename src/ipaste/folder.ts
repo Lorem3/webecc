@@ -10,6 +10,15 @@ export function toDriveName(relativePath: string): string {
   return relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
 }
 
+/** 把文件夹前缀与文件名拼成相对路径；folder 为空则原样返回 name。 */
+export function joinDrivePath(folder: string, name: string): string {
+  const f = (folder || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  const n = (name || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!f) return n;
+  if (!n) return f;
+  return `${f}/${n}`;
+}
+
 export function pathBasename(p: string): string {
   const n = toDriveName(p);
   const i = n.lastIndexOf('/');
