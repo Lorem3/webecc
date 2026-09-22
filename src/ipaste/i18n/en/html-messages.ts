@@ -53,7 +53,7 @@ export const htmlMessages: HtmlMessages = {
   btnLoadGdrive: 'Load from Google Drive',
   gdriveTitle: 'Google Drive',
   gdriveDescLabel: 'Filename',
-  gdriveDescPlaceholder: 'Filename (required)',
+  gdriveDescPlaceholder: 'Path OK, e.g. data/a.txt',
   gdriveNote: 'Data stored in your Google Drive. Suitable for large files > 250KB.',
   gdriveStatusReady: 'Google Drive: Not connected',
   filePreviewTitle: 'File Preview',

@@ -34,8 +34,18 @@ const GDRIVE_API_BASE = 'https://msgbrd.vercel.app';
 const GDRIVE_WORKER_ORIGIN = 'https://vault10.kr7y.workers.dev';
 const GDRIVE_SESSION_KEY = 'gdrive_api_session';
 const GDRIVE_EMAIL_KEY = 'gdrive_user_email';
+const GDRIVE_TOKEN_KEY = 'gdrive_access_token';
+const GDRIVE_ACCOUNTS_KEY = 'gdrive_accounts';
+const GDRIVE_ACTIVE_KEY = 'gdrive_active_email';
 const GDRIVE_AUTH_STORAGE_KEY = 'gdrive_auth_message';
 const GDRIVE_AUTH_CHANNEL = 'gdrive-auth';
+
+type GDriveAccountRecord = {
+  session?: string;
+  accessToken?: string;
+};
+
+type GDriveAccountsMap = Record<string, GDriveAccountRecord>;
 
 export function maskEmail(email: string): string {
   const at = email.lastIndexOf('@');
@@ -81,30 +91,87 @@ export class GoogleDriveManager {
       this.apiOrigin = null;
       this.apiBase = '';
     }
-    try {
-      this.userEmail = localStorage.getItem(GDRIVE_EMAIL_KEY) || null;
-    } catch {
-      this.userEmail = null;
-    }
+    this.migrateLegacyAccounts();
+    const active = this.getActiveEmail();
+    if (active) this.applyAccount(active);
   }
 
   getUserEmail(): string | null {
     return this.userEmail;
   }
 
+  listAccounts(): string[] {
+    return Object.keys(this.loadAccounts()).sort((a, b) => a.localeCompare(b));
+  }
+
+  getActiveEmail(): string | null {
+    try {
+      return localStorage.getItem(GDRIVE_ACTIVE_KEY) || localStorage.getItem(GDRIVE_EMAIL_KEY) || this.userEmail;
+    } catch {
+      return this.userEmail;
+    }
+  }
+
+  /** 切换到已保存的账号；会刷新 token 并清空目录缓存。 */
+  async switchAccount(email: string): Promise<void> {
+    const accounts = this.loadAccounts();
+    if (!accounts[email]) throw new Error('Account not found');
+    this.persistActiveAccount();
+    this.childFolderIds.clear();
+    this.applyAccount(email);
+    if (!(await this.tryRefresh()) && !this.accessToken) {
+      // session 失效时仍保留账号记录，由调用方决定是否重新授权
+      return;
+    }
+    if (this.accessToken && !this.userEmail) {
+      await this.fetchUserEmail();
+    }
+  }
+
+  /** 打开授权弹窗添加/切换到另一个 Google 账号（prompt=select_account）。 */
+  async addAccount(): Promise<void> {
+    this.persistActiveAccount();
+    this.childFolderIds.clear();
+    this.accessToken = null;
+    // 暂时清掉当前 session 头，避免 status/refresh 绑回旧账号
+    try { localStorage.removeItem(GDRIVE_SESSION_KEY); } catch { /* ignore */ }
+    this.userEmail = null;
+    if (await this.detectBackend()) {
+      await this.authorizeCodePopup(true);
+      if (!this.accessToken && !(await this.tryRefresh())) {
+        throw new Error('Google authorization failed');
+      }
+    } else {
+      await this.authorizeImplicitPopup(true);
+    }
+    if (this.accessToken && !this.userEmail) {
+      await this.fetchUserEmail();
+    }
+    this.persistActiveAccount();
+  }
+
   async restoreSession(): Promise<boolean> {
+    if (!this.userEmail) {
+      const active = this.getActiveEmail();
+      if (active) this.applyAccount(active);
+    }
     if (!this.accessToken) {
       if (await this.tryRefresh()) {
         // refreshed via backend session
       } else if (!this.backendAvailable) {
-        const stored = localStorage.getItem('gdrive_access_token');
-        if (stored) this.accessToken = stored;
+        const rec = this.activeRecord();
+        if (rec?.accessToken) this.accessToken = rec.accessToken;
+        else {
+          const stored = localStorage.getItem(GDRIVE_TOKEN_KEY);
+          if (stored) this.accessToken = stored;
+        }
       }
     }
     if (!this.accessToken) return false;
     if (!this.userEmail) {
       await this.fetchUserEmail();
     }
+    this.persistActiveAccount();
     return true;
   }
 
@@ -113,22 +180,28 @@ export class GoogleDriveManager {
       if (await this.tryRefresh()) {
         // session restored
       } else if (await this.detectBackend()) {
-        await this.authorizeCodePopup();
+        await this.authorizeCodePopup(false);
         if (!this.accessToken && !(await this.tryRefresh())) {
           throw new Error('Google authorization failed');
         }
       } else {
-        const stored = localStorage.getItem('gdrive_access_token');
-        if (stored) {
-          this.accessToken = stored;
+        const rec = this.activeRecord();
+        if (rec?.accessToken) {
+          this.accessToken = rec.accessToken;
         } else {
-          await this.authorizeImplicitPopup();
+          const stored = localStorage.getItem(GDRIVE_TOKEN_KEY);
+          if (stored) {
+            this.accessToken = stored;
+          } else {
+            await this.authorizeImplicitPopup(false);
+          }
         }
       }
     }
     if (this.accessToken && !this.userEmail) {
       await this.fetchUserEmail();
     }
+    this.persistActiveAccount();
   }
 
   async ensureAuthorized(): Promise<void> {
@@ -141,7 +214,12 @@ export class GoogleDriveManager {
       return true;
     }
     if (this.backendAvailable) return false;
-    const stored = localStorage.getItem('gdrive_access_token');
+    const rec = this.activeRecord();
+    if (rec?.accessToken) {
+      this.accessToken = rec.accessToken;
+      return true;
+    }
+    const stored = localStorage.getItem(GDRIVE_TOKEN_KEY);
     if (stored) {
       this.accessToken = stored;
       return true;
@@ -149,38 +227,161 @@ export class GoogleDriveManager {
     return false;
   }
 
+  /** 仅移除当前账号；若还有其它账号则切到其中一个。 */
   signOut(): void {
-    const headers = this.apiHeaders();
-    this.accessToken = null;
-    this.userEmail = null;
-    localStorage.removeItem('gdrive_access_token');
-    localStorage.removeItem(GDRIVE_SESSION_KEY);
-    localStorage.removeItem(GDRIVE_EMAIL_KEY);
-    if (!this.apiBase) return;
-    void fetch(`${this.apiBase}/api/gdrive/logout`, {
-      method: 'POST',
-      headers,
-    }).catch(() => {});
+    const email = this.userEmail || this.getActiveEmail();
+    if (email) this.removeAccount(email);
+    else {
+      const headers = this.apiHeaders();
+      this.accessToken = null;
+      this.userEmail = null;
+      this.childFolderIds.clear();
+      this.clearLegacyKeys();
+      if (!this.apiBase) return;
+      void fetch(`${this.apiBase}/api/gdrive/logout`, {
+        method: 'POST',
+        headers,
+      }).catch(() => {});
+    }
+  }
+
+  /** 从本地移除指定账号的 session/token；不影响其它账号。 */
+  removeAccount(email: string): void {
+    const accounts = this.loadAccounts();
+    const rec = accounts[email];
+    const headers: Record<string, string> = { 'X-Requested-With': 'XmlHttpRequest' };
+    if (rec?.session) headers['X-GDrive-Session'] = rec.session;
+    delete accounts[email];
+    this.saveAccounts(accounts);
+    this.childFolderIds.clear();
+
+    const wasActive = (this.userEmail || this.getActiveEmail()) === email;
+    if (wasActive) {
+      this.accessToken = null;
+      this.userEmail = null;
+      const rest = Object.keys(accounts).sort((a, b) => a.localeCompare(b));
+      if (rest.length) this.applyAccount(rest[0]);
+      else this.clearLegacyKeys();
+    }
+
+    if (this.apiBase && rec?.session) {
+      void fetch(`${this.apiBase}/api/gdrive/logout`, {
+        method: 'POST',
+        headers,
+      }).catch(() => {});
+    }
+  }
+
+  private loadAccounts(): GDriveAccountsMap {
+    try {
+      const raw = localStorage.getItem(GDRIVE_ACCOUNTS_KEY);
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj as GDriveAccountsMap : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private saveAccounts(accounts: GDriveAccountsMap): void {
+    try {
+      localStorage.setItem(GDRIVE_ACCOUNTS_KEY, JSON.stringify(accounts));
+    } catch { /* ignore */ }
+  }
+
+  private activeRecord(): GDriveAccountRecord | null {
+    const email = this.userEmail || this.getActiveEmail();
+    if (!email) return null;
+    return this.loadAccounts()[email] || null;
+  }
+
+  private clearLegacyKeys(): void {
+    try {
+      localStorage.removeItem(GDRIVE_TOKEN_KEY);
+      localStorage.removeItem(GDRIVE_SESSION_KEY);
+      localStorage.removeItem(GDRIVE_EMAIL_KEY);
+      localStorage.removeItem(GDRIVE_ACTIVE_KEY);
+    } catch { /* ignore */ }
+  }
+
+  private migrateLegacyAccounts(): void {
+    try {
+      const accounts = this.loadAccounts();
+      const email = localStorage.getItem(GDRIVE_EMAIL_KEY);
+      const session = localStorage.getItem(GDRIVE_SESSION_KEY);
+      const token = localStorage.getItem(GDRIVE_TOKEN_KEY);
+      if (email && !accounts[email] && (session || token)) {
+        accounts[email] = {
+          ...(session ? { session } : {}),
+          ...(token ? { accessToken: token } : {}),
+        };
+        this.saveAccounts(accounts);
+      }
+      if (email && !localStorage.getItem(GDRIVE_ACTIVE_KEY)) {
+        localStorage.setItem(GDRIVE_ACTIVE_KEY, email);
+      }
+    } catch { /* ignore */ }
+  }
+
+  private applyAccount(email: string): void {
+    const rec = this.loadAccounts()[email] || {};
+    this.userEmail = email;
+    this.accessToken = rec.accessToken || null;
+    try {
+      localStorage.setItem(GDRIVE_ACTIVE_KEY, email);
+      localStorage.setItem(GDRIVE_EMAIL_KEY, email);
+      if (rec.session) localStorage.setItem(GDRIVE_SESSION_KEY, rec.session);
+      else localStorage.removeItem(GDRIVE_SESSION_KEY);
+      if (rec.accessToken) localStorage.setItem(GDRIVE_TOKEN_KEY, rec.accessToken);
+      else localStorage.removeItem(GDRIVE_TOKEN_KEY);
+    } catch { /* ignore */ }
+  }
+
+  private persistActiveAccount(): void {
+    const email = this.userEmail;
+    if (!email) return;
+    const accounts = this.loadAccounts();
+    const prev = accounts[email] || {};
+    const next: GDriveAccountRecord = { ...prev };
+    try {
+      const session = localStorage.getItem(GDRIVE_SESSION_KEY);
+      if (session) next.session = session;
+    } catch { /* ignore */ }
+    if (this.accessToken) next.accessToken = this.accessToken;
+    accounts[email] = next;
+    this.saveAccounts(accounts);
+    try {
+      localStorage.setItem(GDRIVE_ACTIVE_KEY, email);
+      localStorage.setItem(GDRIVE_EMAIL_KEY, email);
+      if (next.session) localStorage.setItem(GDRIVE_SESSION_KEY, next.session);
+      if (next.accessToken) localStorage.setItem(GDRIVE_TOKEN_KEY, next.accessToken);
+    } catch { /* ignore */ }
   }
 
   private apiHeaders(): Record<string, string> {
     const headers: Record<string, string> = { 'X-Requested-With': 'XmlHttpRequest' };
-    const session = localStorage.getItem(GDRIVE_SESSION_KEY);
+    let session: string | null = null;
+    try {
+      const rec = this.activeRecord();
+      session = rec?.session || localStorage.getItem(GDRIVE_SESSION_KEY);
+    } catch {
+      session = null;
+    }
     if (session) headers['X-GDrive-Session'] = session;
     return headers;
   }
 
   private rememberSession(data: any): void {
     if (data && typeof data.session === 'string' && data.session) {
-      localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
+      try { localStorage.setItem(GDRIVE_SESSION_KEY, data.session); } catch { /* ignore */ }
     }
     if (data && typeof data.email === 'string' && data.email) {
       this.userEmail = data.email;
-      try { localStorage.setItem(GDRIVE_EMAIL_KEY, data.email); } catch { /* ignore */ }
     }
     if (data && (data.access_token || data.token)) {
       this.accessToken = data.access_token || data.token;
     }
+    this.persistActiveAccount();
   }
 
   private async detectBackend(): Promise<boolean> {
@@ -201,13 +402,7 @@ export class GoogleDriveManager {
       const data = await response.json();
       this.backendAvailable = !!(data && data.backend === true && data.configured !== false);
       if (this.backendAvailable) {
-        if (typeof data.session === 'string' && data.session) {
-          localStorage.setItem(GDRIVE_SESSION_KEY, data.session);
-        }
-        if (typeof data.email === 'string' && data.email) {
-          this.userEmail = data.email;
-          try { localStorage.setItem(GDRIVE_EMAIL_KEY, data.email); } catch { /* ignore */ }
-        }
+        this.rememberSession(data);
       }
       return this.backendAvailable;
     } catch {
@@ -320,20 +515,23 @@ export class GoogleDriveManager {
     });
   }
 
-  private async authorizeCodePopup(): Promise<void> {
+  private async authorizeCodePopup(selectAccount = false): Promise<void> {
     const returnPage = new URL(this.callbackPath, location.href).href;
-    const popupUrl = `${this.apiBase}/api/gdrive/authorize?return_origin=${encodeURIComponent(location.origin)}&return_url=${encodeURIComponent(returnPage)}`;
+    let popupUrl = `${this.apiBase}/api/gdrive/authorize?return_origin=${encodeURIComponent(location.origin)}&return_url=${encodeURIComponent(returnPage)}`;
+    if (selectAccount) popupUrl += '&prompt=select_account';
     await this.waitForAuthPopup(popupUrl, (data) => {
       this.rememberSession(data);
     }, this.authMessageOrigins());
   }
 
-  private async authorizeImplicitPopup(): Promise<void> {
+  private async authorizeImplicitPopup(selectAccount = false): Promise<void> {
+    let popupUrl = `${this.callbackPath}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`;
+    if (selectAccount) popupUrl += '&prompt=select_account';
     await this.waitForAuthPopup(
-      `${this.callbackPath}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`,
+      popupUrl,
       (data) => {
         this.accessToken = data.token;
-        if (this.accessToken) localStorage.setItem('gdrive_access_token', this.accessToken);
+        this.persistActiveAccount();
       }
     );
   }
@@ -359,13 +557,15 @@ export class GoogleDriveManager {
       if (await this.tryRefresh()) {
         return this.driveFetch(endpoint, options, true);
       }
-      localStorage.removeItem('gdrive_access_token');
+      localStorage.removeItem(GDRIVE_TOKEN_KEY);
+      this.persistActiveAccount();
       throw new Error('Token expired, please sign in again');
     }
 
     if (response.status === 401) {
       this.accessToken = null;
-      localStorage.removeItem('gdrive_access_token');
+      localStorage.removeItem(GDRIVE_TOKEN_KEY);
+      this.persistActiveAccount();
       throw new Error('Token expired, please sign in again');
     }
 
@@ -856,14 +1056,9 @@ export class GoogleDriveManager {
     return files;
   }
 
-  /** 文件（B/F/X）按相对路径建目录，文件名只用最后一段；文本记录仍放在公钥目录。 */
+  /** 按 note 中的相对路径建目录（如 data/a.txt → 创建 data/，文件 a.txt.ipgd）；无路径则放在公钥目录。 */
   private async resolveSaveLocation(pubkey: string, note: string, ft: string, fallbackName: string): Promise<{ parentId: string; fileName: string }> {
     const pubkeyFolderId = await this.ensurePubkeyFolder(pubkey);
-    const isFile = ft === 'B' || ft === 'F' || ft === 'X';
-    if (!isFile) {
-      const sanitized = sanitizeFileName(note);
-      return { parentId: pubkeyFolderId, fileName: sanitized ? `${sanitized}.ipgd` : '' };
-    }
     const norm = (note || fallbackName).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
     const parts = norm.split('/').filter(Boolean);
     const base = parts.pop() || fallbackName || 'file';

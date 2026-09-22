@@ -118,6 +118,8 @@
         }
 
         try {
+          const params = new URLSearchParams(location.search);
+          const prompt = params.get('prompt') || '';
           const tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: clientId,
             scope: scope,
@@ -130,7 +132,7 @@
             },
           });
 
-          tokenClient.requestAccessToken({ prompt: '' });
+          tokenClient.requestAccessToken({ prompt: prompt === 'select_account' ? 'select_account' : '' });
         } catch (e) {
           showError('Authorization error: ' + e.message);
         }

@@ -251,7 +251,124 @@ function updateGDriveEmailUI(email: string | null) {
   const masked = email ? maskEmail(email) : '';
   document.querySelectorAll('.gdrive-email').forEach((el) => {
     el.textContent = masked;
-    (el as HTMLElement).title = masked;
+    (el as HTMLElement).title = masked || messages.gdriveSwitchTitle;
+  });
+  document.querySelectorAll('.gdrive-switch').forEach((el) => {
+    (el as HTMLElement).title = messages.gdriveSwitchTitle;
+    (el as HTMLElement).style.cursor = 'pointer';
+  });
+}
+
+function showGDriveAccountPicker(ec: any, state: any): void {
+  const manager = getGDriveManager();
+  const existing = document.getElementById('gdriveAccountPicker');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'gdriveAccountPicker';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000;';
+  const dialog = document.createElement('div');
+  dialog.style.cssText = 'background:#fff;border-radius:12px;padding:1.25rem;max-width:420px;width:90%;max-height:80vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,0.18);';
+  const title = document.createElement('h3');
+  title.textContent = messages.gdriveSwitchTitle;
+  title.style.cssText = 'margin:0 0 0.75rem;font-size:1rem;color:#333;';
+  dialog.appendChild(title);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:0.75rem;';
+  const active = manager.getActiveEmail();
+  const accounts = manager.listAccounts();
+  if (!accounts.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:0.5rem 0;color:#888;font-size:0.875rem;';
+    empty.textContent = messages.gdriveStatusReady;
+    list.appendChild(empty);
+  }
+  for (const email of accounts) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e3e6ea;border-radius:8px;';
+    if (email === active) row.style.borderColor = '#45b787';
+    const label = document.createElement('button');
+    label.type = 'button';
+    label.style.cssText = 'flex:1;text-align:left;border:none;background:transparent;cursor:pointer;font-size:0.875rem;color:#333;padding:0;';
+    label.textContent = (email === active ? '✓ ' : '') + email;
+    label.onclick = async () => {
+      try {
+        setGDriveLoading(true);
+        await manager.switchAccount(email);
+        if (!manager.isAuthorized()) {
+          await manager.authorize();
+        }
+        updateGDriveEmailUI(manager.getUserEmail());
+        overlay.remove();
+        await autoFetchGDriveHistory(ec, state);
+      } catch (e) {
+        setErrMsg((e as Error).message);
+      } finally {
+        setGDriveLoading(false);
+      }
+    };
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = messages.gdriveRemoveAccount;
+    remove.style.cssText = 'border:none;background:transparent;color:#999;cursor:pointer;font-size:0.75rem;';
+    remove.onclick = async (ev) => {
+      ev.stopPropagation();
+      manager.removeAccount(email);
+      updateGDriveEmailUI(manager.getUserEmail());
+      overlay.remove();
+      showGDriveAccountPicker(ec, state);
+      autoFetchGDriveHistory(ec, state);
+    };
+    row.appendChild(label);
+    row.appendChild(remove);
+    list.appendChild(row);
+  }
+  dialog.appendChild(list);
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = messages.gdriveAddAccount;
+  addBtn.style.cssText = 'padding:0.5rem 1rem;border:none;border-radius:8px;background:#45b787;color:#fff;cursor:pointer;font-size:0.875rem;';
+  addBtn.onclick = async () => {
+    try {
+      setGDriveLoading(true);
+      await manager.addAccount();
+      updateGDriveEmailUI(manager.getUserEmail());
+      overlay.remove();
+      await autoFetchGDriveHistory(ec, state);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (!/canceled|cancel/i.test(msg)) setErrMsg(msg);
+    } finally {
+      setGDriveLoading(false);
+    }
+  };
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.textContent = 'OK';
+  closeBtn.style.cssText = 'padding:0.5rem 1rem;border:1px solid #e3e6ea;border-radius:8px;background:#fff;cursor:pointer;font-size:0.875rem;';
+  closeBtn.onclick = () => overlay.remove();
+  actions.appendChild(addBtn);
+  actions.appendChild(closeBtn);
+  dialog.appendChild(actions);
+
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+export function bindGDriveAccountSwitch(ec: any, state: any) {
+  document.querySelectorAll('.gdrive-switch, .gdrive-email').forEach((el) => {
+    (el as HTMLElement).style.cursor = 'pointer';
+    (el as HTMLElement).title = messages.gdriveSwitchTitle;
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showGDriveAccountPicker(ec, state);
+    });
   });
 }
 
@@ -300,7 +417,6 @@ export async function autoFetchGDriveHistory(ec: any, state: any) {
     if (errMsg.includes('Token expired') || errMsg.includes('401')) {
       const manager = getGDriveManager();
       manager.signOut();
-      localStorage.removeItem('gdrive_access_token');
       updateGDriveEmailUI(null);
       container.innerHTML = `<div class="history-empty">${messages.gdriveStatusReady}</div>`;
     } else {
@@ -640,6 +756,7 @@ const App = (function () {
     bindHistoryRefreshBtn(ec, state);
 
     bindGDriveHistoryRefreshBtn(ec, state);
+    bindGDriveAccountSwitch(ec, state);
     autoFetchGDriveHistory(ec, state);
 
     showBuildInfo();

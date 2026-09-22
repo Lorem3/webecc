@@ -53,7 +53,7 @@ export const htmlMessages: HtmlMessages = {
   btnLoadGdrive: '从 Google Drive 读取',
   gdriveTitle: 'Google Drive',
   gdriveDescLabel: '文件名',
-  gdriveDescPlaceholder: '请输入文件名（必填）',
+  gdriveDescPlaceholder: '可含路径，如 data/a.txt',
   gdriveNote: '数据保存在您的 Google Drive，适合大文件 > 250KB',
   gdriveStatusReady: 'Google Drive：未连接',
   filePreviewTitle: '文件预览',

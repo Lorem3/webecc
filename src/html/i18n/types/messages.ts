@@ -127,4 +127,7 @@ export interface JsMessages {
   gdriveLoadCanceled: string;
   gdriveNoFiles: string;
   gdriveDescRequired: string;
+  gdriveSwitchTitle: string;
+  gdriveAddAccount: string;
+  gdriveRemoveAccount: string;
 }

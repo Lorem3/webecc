@@ -42,4 +42,7 @@ export const jsMessages: JsMessages = {
   gdriveLoadCanceled: 'File selection canceled',
   gdriveNoFiles: 'No backups found on Google Drive',
   gdriveDescRequired: 'Please enter a filename',
+  gdriveSwitchTitle: 'Switch Google Drive account',
+  gdriveAddAccount: 'Add account',
+  gdriveRemoveAccount: 'Remove',
 };

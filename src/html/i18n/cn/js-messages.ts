@@ -42,4 +42,7 @@ export const jsMessages: JsMessages = {
   gdriveLoadCanceled: '已取消选择文件',
   gdriveNoFiles: 'Google Drive 上未找到备份',
   gdriveDescRequired: '请输入文件名',
+  gdriveSwitchTitle: '切换 Google Drive 账号',
+  gdriveAddAccount: '添加账号',
+  gdriveRemoveAccount: '移除',
 };
