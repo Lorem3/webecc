@@ -147,7 +147,7 @@ a { word-break: break-all; }
 <li>tmpPubKey //随机生成公钥私钥，私钥(tmpSecKey)使用后丢弃</li>
 <li>EncryptData</li>
 </ul>
-<h2 id="x-stream">大文件流式格式 X.（超过配置阈值；发布 &gt;50MB，测试构建 &gt;16MB）</h2>
+<h2 id="x-stream">大文件流式格式 X.（&gt;8MB）</h2>
 <p>前缀 <code>X.</code>。Layer1 第 1 字节 <code>0x0F</code>（bit3=1 bit2=1 bit1=1 bit0=1）：SHA-512、使用 <code>src/lib/libsodium.wasm</code> 的 <code>crypto_aead_xchacha20poly1305_ietf</code>（流式分块收集后一次性 encrypt，与一次性结果一致）、不 gzip。头 96 字节（8 字节长度字段 + 24 字节 IV + 32 字节 MAC + 32 字节临时公钥），MAC 只覆盖 IV 与 tmpPub。密文体长度 = 文件大小 + 16（末尾一个 Poly1305 tag，AAD 为空）。Layer2 仅 AES-GCM 加密这 96 字节头。</p>
 <h2 id="-">过程</h2>
 <pre><code>生成临时公钥私钥 tmpSecKey , tmpPubKey

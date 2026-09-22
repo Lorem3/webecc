@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "esbuild": "^0.25.0",
+    "hash-wasm": "^4.12.0",
     "showdown": "^2.1.0"
   },
   "keywords": [],

@@ -1,5 +1,5 @@
 import { jsMessages as messages } from '@i18n/js-messages';
-import { computePhash } from './common';
+import { computePhash, computeFilePhash } from './common';
 
 export function getPubkeyFolderName(pubkey: string): string {
   const safe = pubkey.replace(/[+/=]/g, m => m === '+' ? '-' : m === '/' ? '_' : '');
@@ -372,10 +372,10 @@ export class GoogleDriveManager {
     return response;
   }
 
-  async saveBackup(ec: any, plainText: string, ciphertext: string | Uint8Array, pubkey: string, salt: string, description: string): Promise<string> {
+  async saveBackup(ec: any, plainText: string, ciphertext: string | Uint8Array, pubkey: string, salt: string, description: string, contentPhash?: string): Promise<string> {
     await this.ensureAuthorized();
 
-    const phash = await computePhash(ec, plainText, salt);
+    const phash = contentPhash || await computePhash(ec, plainText, salt);
 
     let note = '';
     let ft = 'N';
@@ -387,8 +387,11 @@ export class GoogleDriveManager {
     const { parentId, fileName: locatedName } = await this.resolveSaveLocation(pubkey, note, ft, '');
     const fileName = locatedName || `i-${phash}.ipgd`;
 
-    // Check if file with same phash already exists in the leaf folder
     const existingFile = await this.findBackupByPhash(phash, parentId);
+    // 文件内容 phash：已存在则跳过上传
+    if (existingFile && contentPhash) {
+      return existingFile.id;
+    }
 
     const isBinary = ciphertext instanceof Uint8Array;
     const metadata = {
@@ -405,7 +408,7 @@ export class GoogleDriveManager {
     return fileId || newFileId;
   }
 
-  /** 超过 LARGE_FILE_THRESHOLD（发布 50MB，测试 16MB）：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
+  /** 超过 LARGE_FILE_THRESHOLD（8MB）：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
   async saveBackupStream(
     ec: any,
     file: File,
@@ -425,18 +428,21 @@ export class GoogleDriveManager {
       ft = descObj.ft || 'X';
     } catch {}
     const phashNote = note || file.name;
-    const realPhash = await computePhash(ec, phashNote, salt);
+    const realPhash = await computeFilePhash(ec, file, salt);
     const { parentId, fileName: locatedName } = await this.resolveSaveLocation(pubkey, phashNote, ft, file.name);
     const fileName = locatedName || `i-${realPhash}.ipgd`;
     const existingFile = await this.findBackupByPhash(realPhash, parentId);
+    if (existingFile) {
+      return existingFile.id;
+    }
     const metadata = {
       name: fileName,
       mimeType: 'application/octet-stream',
       description,
       appProperties: { phash: realPhash, fileType: ft },
-      ...(existingFile ? {} : { parents: [parentId] }),
+      parents: [parentId],
     };
-    const fileId = existingFile ? existingFile.id : null;
+    const fileId = null;
     const sessionUrl = await this.startResumableUpload(fileId, metadata);
     const total = streamCipherTotalSize(file.size);
     const { prefixAndEncHead, push } = await createXPush(ec, pubkey, salt);
@@ -554,16 +560,22 @@ export class GoogleDriveManager {
       const desc = JSON.stringify({ note: driveName, ft: 'X' });
       return this.saveBackupStream(ec, file, pubkey, salt, desc, onProgress);
     }
+    // 小文件：hash-wasm 算内容 phash，已存在则不加密不上传
+    const phash = await computeFilePhash(ec, file, salt);
+    const { parentId } = await this.resolveSaveLocation(pubkey, driveName, smallFt, file.name);
+    const existing = await this.findBackupByPhash(phash, parentId);
+    if (existing) return existing.id;
+
     const { encryptFileContent, encryptFileContentBinary } = await import('./common');
     const fileBytes = new Uint8Array(await file.arrayBuffer());
     if (smallFt === 'B') {
       const ciphertext = await encryptFileContentBinary(ec, fileBytes, pubkey, salt);
       const desc = JSON.stringify({ note: driveName, ft: 'B' });
-      return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc);
+      return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc, phash);
     }
     const ciphertext = await encryptFileContent(ec, fileBytes, pubkey, salt);
     const desc = JSON.stringify({ note: driveName, ft: 'F' });
-    return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc);
+    return this.saveBackup(ec, driveName, ciphertext, pubkey, salt, desc, phash);
   }
 
   async decryptXBackup(

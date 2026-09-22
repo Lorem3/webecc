@@ -391,6 +391,62 @@ const TestApp = (function () {
     log('  ❌', e)
   }
 
+  // ========== 测试15: hash-wasm 流式 HMAC-SHA512 == WebCrypto ==========
+  log('')
+  log('=== 测试15: hash-wasm 流式 HMAC-SHA512 == WebCrypto ===')
+  try {
+    const { createHMAC, createSHA512 } = await import('hash-wasm');
+    const salt = 'test-salt-hmac';
+    const keyBytes = new TextEncoder().encode('phash' + salt);
+    const chunks = [
+      new Uint8Array(1024).fill(0x41),
+      new TextEncoder().encode('middle chunk 你好 HMAC-SHA512'),
+      new Uint8Array(777).fill(0x5a),
+      new Uint8Array(0),
+      new TextEncoder().encode('tail'),
+    ];
+    const all = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+    { let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; } }
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBytes, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
+    );
+    const webFull = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, all));
+
+    const hmac = await createHMAC(createSHA512(), keyBytes);
+    hmac.init();
+    for (const c of chunks) hmac.update(c);
+    const wasmFull = hmac.digest('binary');
+
+    log('  明文总长:', all.length, '分块数:', chunks.length)
+    log('  WebCrypto digest hex:', toHex(webFull.slice(0, 16)), '...')
+    log('  hash-wasm digest hex:', toHex(wasmFull.slice(0, 16)), '...')
+    log('  全量 64B 一致:', eqBytes(webFull, wasmFull) ? '✅' : '❌')
+    log('  前 32B（phash）一致:', eqBytes(webFull.slice(0, 32), wasmFull.slice(0, 32)) ? '✅' : '❌')
+
+    const hmacEmpty = await createHMAC(createSHA512(), keyBytes);
+    hmacEmpty.init();
+    hmacEmpty.update(new Uint8Array(0));
+    const wasmEmpty = hmacEmpty.digest('binary');
+    const webEmpty = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, new Uint8Array(0)));
+    log('  空消息一致:', eqBytes(webEmpty, wasmEmpty) ? '✅' : '❌')
+
+    // 逐字节流式 vs 一次 update
+    const hmacByte = await createHMAC(createSHA512(), keyBytes);
+    hmacByte.init();
+    for (let i = 0; i < all.length; i++) hmacByte.update(all.subarray(i, i + 1));
+    const wasmByte = hmacByte.digest('binary');
+    log('  逐字节流式==WebCrypto:', eqBytes(webFull, wasmByte) ? '✅' : '❌')
+
+    const allOk = eqBytes(webFull, wasmFull)
+      && eqBytes(webFull.slice(0, 32), wasmFull.slice(0, 32))
+      && eqBytes(webEmpty, wasmEmpty)
+      && eqBytes(webFull, wasmByte);
+    log('  通过:', allOk ? '✅' : '❌')
+  } catch (e) {
+    log('  ❌', e)
+  }
+
   }
 
   return { run };

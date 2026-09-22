@@ -836,6 +836,28 @@ export async function computePhash(ec: any, plainText: string, salt: string): Pr
   return ec.base64Encode(phashArray, 1);
 }
 
+/** 与 computePhash 相同：HMAC-SHA-512(key=`phash`+salt)，取前 32 字节。文件内容用 hash-wasm 流式计算。 */
+export async function computeFilePhash(ec: any, data: Blob | Uint8Array, salt: string): Promise<string> {
+  const { createHMAC, createSHA512 } = await import('hash-wasm');
+  const key = new TextEncoder().encode('phash' + salt);
+  const hmac = await createHMAC(createSHA512(), key);
+  hmac.init();
+  if (data instanceof Uint8Array) {
+    hmac.update(data);
+  } else {
+    const CHUNK = 1024 * 1024;
+    let offset = 0;
+    while (offset < data.size) {
+      const end = Math.min(offset + CHUNK, data.size);
+      const buf = new Uint8Array(await data.slice(offset, end).arrayBuffer());
+      hmac.update(buf);
+      offset = end;
+    }
+  }
+  const digest = hmac.digest('binary').slice(0, 32);
+  return ec.base64Encode(digest, 1);
+}
+
 export function bindSaveBtn(ec: any, state: AppState) {
   const btn = document.getElementById("saveToCloudflare");
   if (!btn) return;

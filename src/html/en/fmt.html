@@ -147,7 +147,7 @@ Public key dTj41nmwoLcguLpM9AntyKgg67xx6K4UAxc27CLIcFw=
 <li>tmpPubKey // Randomly generated public/private key pair, private key (tmpSecKey) is discarded after use</li>
 <li>EncryptData</li>
 </ul>
-<h2 id="x-stream">Streaming format X. (above configured threshold; release &gt;50MB, test build &gt;16MB)</h2>
+<h2 id="x-stream">Streaming format X. (&gt;8MB)</h2>
 <p>Prefix <code>X.</code>. Layer 1 byte 0 is <code>0x0F</code> (bit3=bit2=bit1=bit0=1): SHA-512, <code>crypto_aead_xchacha20poly1305_ietf</code> from <code>src/lib/libsodium.wasm</code> (chunked collect then one-shot encrypt; identical to one-shot), no gzip. 96-byte head (length fields + 24-byte IV + 32-byte MAC + 32-byte ephemeral public key); MAC covers IV and tmpPub only. Body length = file size + 16 (one Poly1305 tag at the end, empty AAD). Layer 2 AES-GCM-encrypts only that head.</p>
 <h2 id="-">Process</h2>
 <pre><code>Generate temporary key pair: tmpSecKey, tmpPubKey

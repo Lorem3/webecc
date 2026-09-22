@@ -62,8 +62,8 @@ const esbuildOpts = {
   logLevel: 'warning',
   define: {
     __DEBUG__: isDev ? 'true' : 'false',
-    // X. 流式阈值：发布 50MB；dev/测试构建 16MB，便于用较小文件走流式路径
-    __LARGE_FILE_THRESHOLD__: String((isDev ? 16 : 50) * 1024 * 1024),
+    // X. 流式阈值：超过 8MB 一律走流式（debug / release 相同）
+    __LARGE_FILE_THRESHOLD__: String(8 * 1024 * 1024),
     __BUILD_TIME__: JSON.stringify(utctime()),
     __BUILD_MOD__: JSON.stringify(`${isDev ? 'DEBUG' : 'Release'}  ${getHash()}`),
   },
