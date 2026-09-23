@@ -437,7 +437,13 @@ function gdriveFileLabel(file: GDriveFile): string {
   return file.name.replace(/\.ipgd$/i, '');
 }
 
-function renderGDriveEntries(ec: any, state: any, container: HTMLElement, files: GDriveFile[]) {
+function setGDriveFolderInput(path: string) {
+  const input = document.getElementById('gdriveFolder') as HTMLInputElement | null;
+  if (!input) return;
+  input.value = path;
+}
+
+function renderGDriveEntries(ec: any, state: any, container: HTMLElement, files: GDriveFile[], pathPrefix = '') {
   if (!files.length) {
     const empty = document.createElement('div');
     empty.className = 'history-empty';
@@ -447,12 +453,13 @@ function renderGDriveEntries(ec: any, state: any, container: HTMLElement, files:
   }
   files.forEach((file) => {
     container.appendChild(isGDriveFolder(file)
-      ? renderGDriveFolder(ec, state, file)
+      ? renderGDriveFolder(ec, state, file, pathPrefix)
       : renderGDriveFile(ec, state, file));
   });
 }
 
-function renderGDriveFolder(ec: any, state: any, file: GDriveFile): HTMLElement {
+function renderGDriveFolder(ec: any, state: any, file: GDriveFile, pathPrefix = ''): HTMLElement {
+  const folderPath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
   const wrap = document.createElement('div');
   wrap.className = 'history-tree-wrap';
   const row = document.createElement('div');
@@ -472,6 +479,9 @@ function renderGDriveFolder(ec: any, state: any, file: GDriveFile): HTMLElement 
   let loading = false;
   row.onclick = async (e) => {
     e.stopPropagation();
+    setGDriveFolderInput(folderPath);
+    document.querySelectorAll('.history-tree-folder.selected').forEach((el) => el.classList.remove('selected'));
+    row.classList.add('selected');
     if (loaded) {
       const open = kids.classList.toggle('open');
       chevron.textContent = open ? '▼' : '▶';
@@ -483,7 +493,7 @@ function renderGDriveFolder(ec: any, state: any, file: GDriveFile): HTMLElement 
     try {
       const children = await getGDriveManager().listChildren(file.id);
       kids.innerHTML = '';
-      renderGDriveEntries(ec, state, kids, children);
+      renderGDriveEntries(ec, state, kids, children, folderPath);
       loaded = true;
       kids.classList.add('open');
       chevron.textContent = '▼';
