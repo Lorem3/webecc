@@ -79,6 +79,8 @@ export class GoogleDriveManager {
   private userEmail: string | null = null;
   /** parentId + 目录名 → Drive folder id，批量保存时复用 */
   private childFolderIds = new Map<string, string>();
+  /** switchAccount 在 await 前预开的占位窗，交给后续 authorize 复用 */
+  private pendingAuthPopup: Window | null = null;
 
   constructor(clientId: string, callbackPath = './gdrive-callback.html', folderName = 'ipaste', apiBase = GDRIVE_API_BASE) {
     this.clientId = clientId;
@@ -119,10 +121,14 @@ export class GoogleDriveManager {
     this.persistActiveAccount();
     this.childFolderIds.clear();
     this.applyAccount(email);
+    // iOS：无本地 token 时可能要重新授权，先同步占位开窗
+    const popup = !this.accessToken ? this.openAuthPopupPlaceholder() : null;
     if (!(await this.tryRefresh()) && !this.accessToken) {
+      this.pendingAuthPopup = popup;
       // session 失效时仍保留账号记录，由调用方决定是否重新授权
       return;
     }
+    this.closeAuthPopup(popup);
     if (this.accessToken && !this.userEmail) {
       await this.fetchUserEmail();
     }
@@ -136,13 +142,20 @@ export class GoogleDriveManager {
     // 暂时清掉当前 session 头，避免 status/refresh 绑回旧账号
     try { localStorage.removeItem(GDRIVE_SESSION_KEY); } catch { /* ignore */ }
     this.userEmail = null;
-    if (await this.detectBackend()) {
-      await this.authorizeCodePopup(true);
-      if (!this.accessToken && !(await this.tryRefresh())) {
-        throw new Error('Google authorization failed');
+    // iOS：必须在 await 之前同步 window.open，否则会被当成非用户手势拦截
+    const popup = this.openAuthPopupPlaceholder();
+    try {
+      if (await this.detectBackend()) {
+        await this.authorizeCodePopup(true, popup);
+        if (!this.accessToken && !(await this.tryRefresh())) {
+          throw new Error('Google authorization failed');
+        }
+      } else {
+        await this.authorizeImplicitPopup(true, popup);
       }
-    } else {
-      await this.authorizeImplicitPopup(true);
+    } catch (err) {
+      this.closeAuthPopup(popup);
+      throw err;
     }
     if (this.accessToken && !this.userEmail) {
       await this.fetchUserEmail();
@@ -177,26 +190,37 @@ export class GoogleDriveManager {
 
   async authorize(): Promise<void> {
     if (!this.accessToken) {
-      if (await this.tryRefresh()) {
-        // session restored
-      } else if (await this.detectBackend()) {
-        await this.authorizeCodePopup(false);
-        if (!this.accessToken && !(await this.tryRefresh())) {
-          throw new Error('Google authorization failed');
-        }
-      } else {
-        const rec = this.activeRecord();
-        if (rec?.accessToken) {
-          this.accessToken = rec.accessToken;
+      // iOS：优先复用 switchAccount 预开的窗；否则在 await 前同步占位开窗
+      const popup = this.takePendingAuthPopup() ?? this.openAuthPopupPlaceholder();
+      let usedPopup = false;
+      try {
+        if (await this.tryRefresh()) {
+          // session restored
+        } else if (await this.detectBackend()) {
+          usedPopup = true;
+          await this.authorizeCodePopup(false, popup);
+          if (!this.accessToken && !(await this.tryRefresh())) {
+            throw new Error('Google authorization failed');
+          }
         } else {
-          const stored = localStorage.getItem(GDRIVE_TOKEN_KEY);
-          if (stored) {
-            this.accessToken = stored;
+          const rec = this.activeRecord();
+          if (rec?.accessToken) {
+            this.accessToken = rec.accessToken;
           } else {
-            await this.authorizeImplicitPopup(false);
+            const stored = localStorage.getItem(GDRIVE_TOKEN_KEY);
+            if (stored) {
+              this.accessToken = stored;
+            } else {
+              usedPopup = true;
+              await this.authorizeImplicitPopup(false, popup);
+            }
           }
         }
+      } catch (err) {
+        this.closeAuthPopup(popup);
+        throw err;
       }
+      if (!usedPopup) this.closeAuthPopup(popup);
     }
     if (this.accessToken && !this.userEmail) {
       await this.fetchUserEmail();
@@ -451,7 +475,39 @@ export class GoogleDriveManager {
     return Array.from(origins);
   }
 
-  private waitForAuthPopup(popupUrl: string, onSuccess: (data: any) => void, allowedOrigins?: string[] | null): Promise<void> {
+  private static readonly AUTH_POPUP_FEATURES = 'width=500,height=600,left=200,top=100';
+
+  /** 在用户点击同步栈内占位开窗，避免 iOS 在 await 后拦截 window.open。 */
+  private openAuthPopupPlaceholder(): Window | null {
+    const popup = window.open('about:blank', 'gdrive-auth', GoogleDriveManager.AUTH_POPUP_FEATURES);
+    if (!popup) return null;
+    try {
+      popup.document.write(
+        '<!doctype html><title>Google</title><body style="font:14px sans-serif;padding:24px;color:#444">Connecting to Google…</body>'
+      );
+      popup.document.close();
+    } catch { /* ignore */ }
+    return popup;
+  }
+
+  private closeAuthPopup(popup: Window | null | undefined): void {
+    if (!popup) return;
+    try { if (!popup.closed) popup.close(); } catch { /* ignore */ }
+  }
+
+  private takePendingAuthPopup(): Window | null {
+    const popup = this.pendingAuthPopup;
+    this.pendingAuthPopup = null;
+    if (popup && !popup.closed) return popup;
+    return null;
+  }
+
+  private waitForAuthPopup(
+    popupUrl: string,
+    onSuccess: (data: any) => void,
+    allowedOrigins?: string[] | null,
+    existingPopup?: Window | null,
+  ): Promise<void> {
     const origins = new Set(allowedOrigins && allowedOrigins.length ? allowedOrigins : [location.origin]);
     return new Promise<void>((resolve, reject) => {
       let settled = false;
@@ -496,7 +552,16 @@ export class GoogleDriveManager {
       } catch { /* ignore */ }
 
       console.log('[gdrive] 打开新窗口', popupUrl);
-      const popup = window.open(popupUrl, 'gdrive-auth', 'width=500,height=600,left=200,top=100');
+      let popup: Window | null = existingPopup && !existingPopup.closed ? existingPopup : null;
+      if (popup) {
+        try {
+          popup.location.href = popupUrl;
+        } catch {
+          popup = window.open(popupUrl, 'gdrive-auth', GoogleDriveManager.AUTH_POPUP_FEATURES);
+        }
+      } else {
+        popup = window.open(popupUrl, 'gdrive-auth', GoogleDriveManager.AUTH_POPUP_FEATURES);
+      }
       if (!popup) {
         finish(() => reject(new Error('Popup blocked. Please allow popups for this site.')));
         return;
@@ -504,7 +569,7 @@ export class GoogleDriveManager {
 
       setTimeout(() => {
         const checkClosed = setInterval(() => {
-          if (!popup.closed) return;
+          if (!popup!.closed) return;
           clearInterval(checkClosed);
           // Google COOP 可能让 closed 提前为 true；给本站回跳的 postMessage / storage 留时间
           setTimeout(() => {
@@ -515,16 +580,16 @@ export class GoogleDriveManager {
     });
   }
 
-  private async authorizeCodePopup(selectAccount = false): Promise<void> {
+  private async authorizeCodePopup(selectAccount = false, existingPopup?: Window | null): Promise<void> {
     const returnPage = new URL(this.callbackPath, location.href).href;
     let popupUrl = `${this.apiBase}/api/gdrive/authorize?return_origin=${encodeURIComponent(location.origin)}&return_url=${encodeURIComponent(returnPage)}`;
     if (selectAccount) popupUrl += '&prompt=select_account';
     await this.waitForAuthPopup(popupUrl, (data) => {
       this.rememberSession(data);
-    }, this.authMessageOrigins());
+    }, this.authMessageOrigins(), existingPopup);
   }
 
-  private async authorizeImplicitPopup(selectAccount = false): Promise<void> {
+  private async authorizeImplicitPopup(selectAccount = false, existingPopup?: Window | null): Promise<void> {
     let popupUrl = `${this.callbackPath}?client_id=${encodeURIComponent(this.clientId)}&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.file')}`;
     if (selectAccount) popupUrl += '&prompt=select_account';
     await this.waitForAuthPopup(
@@ -532,7 +597,9 @@ export class GoogleDriveManager {
       (data) => {
         this.accessToken = data.token;
         this.persistActiveAccount();
-      }
+      },
+      null,
+      existingPopup,
     );
   }
 
