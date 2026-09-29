@@ -301,7 +301,7 @@ class EC{
         };
     }
 
-    async assembleEcdhStreamHead(streamIv: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array): Promise<Uint8Array> {
+    async assembleEcdhStreamHead(streamIv: Uint8Array, tmpPub: Uint8Array, macKey: Uint8Array, isZip: boolean = false): Promise<Uint8Array> {
         if (streamIv.length !== 24) throw "stream iv must be 24 bytes";
         if (tmpPub.length !== 32) throw "tmpPub length must be 32";
         let macData = new Uint8Array(streamIv.length + tmpPub.length);
@@ -309,8 +309,9 @@ class EC{
         macData.set(tmpPub, streamIv.length);
         let mac = await this.hmacSha512(macKey, macData);
         // 固定 96 字节头：8 + 24 IV + 32 MAC + 32 tmpPub
+        // 0x0E = 流式+gzip(bit0=0)，0x0F = 流式+raw(bit0=1)
         let head = new Uint8Array(8 + 24 + 32 + 32);
-        head[0] = 0x0F;
+        head[0] = 0x0E | (isZip ? 0 : 0x01);
         head[1] = 0;
         head[2] = 24; head[3] = 0;
         head[4] = 32; head[5] = 0;
@@ -321,9 +322,11 @@ class EC{
         return head;
     }
 
-    async openEcdhStreamHead(privateKeyB64: string, head: Uint8Array): Promise<{ streamKey: Uint8Array, ssHeader: Uint8Array }> {
+    async openEcdhStreamHead(privateKeyB64: string, head: Uint8Array): Promise<{ streamKey: Uint8Array, ssHeader: Uint8Array, isZip: boolean }> {
         if (head.length < 96) throw "stream head too short";
-        if (head[0] !== 0x0F) throw "data format not support";
+        // 仅允许 0x0E(gzip) / 0x0F(raw)
+        if ((head[0] & ~0x01) !== 0x0E) throw "data format not support";
+        let isZip = (head[0] & 0x01) === 0;
         let ivLen = head[2] | (head[3] << 8);
         let macLen = head[4] | (head[5] << 8);
         let pubLen = head[6] | (head[7] << 8);
@@ -348,7 +351,7 @@ class EC{
         for (let i = 0; i < 32; i++) {
             if (mac[i] != mac2[i]) throw "MAC NOT FIT";
         }
-        return { streamKey: hash64.subarray(0, 32).slice(), ssHeader: ssHeader.slice() };
+        return { streamKey: hash64.subarray(0, 32).slice(), ssHeader: ssHeader.slice(), isZip };
     }
 
     private async _encrypt(pubBase64:string,data:Uint8Array,isZipData:boolean = true){

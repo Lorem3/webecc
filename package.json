@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "test": "node build.mjs dev",
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "serve": "npx --yes serve -l 4173 www"
   },
   "author": "",
   "license": "ISC",

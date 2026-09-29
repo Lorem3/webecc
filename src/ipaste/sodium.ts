@@ -15,6 +15,24 @@ type SodiumModule = {
   _crypto_aead_xchacha20poly1305_ietf_keybytes(): number;
   _crypto_aead_xchacha20poly1305_ietf_npubbytes(): number;
   _crypto_aead_xchacha20poly1305_ietf_abytes(): number;
+  _crypto_aead_xchacha20poly1305_ietf_statebytes(): number;
+  /** init(state, ad, adlen, npub, key) */
+  _crypto_aead_xchacha20poly1305_ietf_encrypt_init(
+    state: number, ad: number, adlen: bigint, npub: number, k: number
+  ): number;
+  /** update(state, c, m, mlen) — |c|==|m| */
+  _crypto_aead_xchacha20poly1305_ietf_encrypt_update(
+    state: number, c: number, m: number, mlen: bigint
+  ): number;
+  /** final(state, tag) — 写入 abytes */
+  _crypto_aead_xchacha20poly1305_ietf_encrypt_final(state: number, tag: number): number;
+  _crypto_aead_xchacha20poly1305_ietf_decrypt_init(
+    state: number, ad: number, adlen: bigint, npub: number, k: number
+  ): number;
+  _crypto_aead_xchacha20poly1305_ietf_decrypt_update(
+    state: number, m: number, c: number, clen: bigint
+  ): number;
+  _crypto_aead_xchacha20poly1305_ietf_decrypt_final(state: number, tag: number): number;
 };
 
 let sodiumReady: Promise<SodiumModule> | null = null;
@@ -61,12 +79,14 @@ export function randomBytes(m: SodiumModule, n: number): Uint8Array {
   }
 }
 
-/** XChaCha20-Poly1305 IETF via libsodium.wasm */
+/** XChaCha20-Poly1305 IETF（一次性与增量流式密文一致） */
 export const AEAD_KEYBYTES = 32;
 export const AEAD_NPUBBYTES = 24;
 export const AEAD_ABYTES = 16;
 export const AEAD_EMPTY_AD = new Uint8Array(0);
-export const STREAM_CHUNK_OVERHEAD = AEAD_ABYTES;
+/** 流式 body 末尾一个 16B tag（与一次性 encrypt 一致） */
+export const STREAM_ABYTES = AEAD_ABYTES;
+export const STREAM_CHUNK_OVERHEAD = STREAM_ABYTES;
 
 export function aeadEncrypt(
   m: SodiumModule, msg: Uint8Array, ad: Uint8Array, npub: Uint8Array, key: Uint8Array
@@ -122,81 +142,128 @@ export function aeadDecrypt(
   }
 }
 
-function concatParts(parts: Uint8Array[], total: number): Uint8Array {
-  const out = new Uint8Array(total);
-  let o = 0;
-  for (const p of parts) { out.set(p, o); o += p.length; }
-  return out;
-}
-
 export type ChaChaStreamPush = {
   header: Uint8Array;
   abytes: number;
   tagFinal: number;
+  /** 立即 encrypt_update；返回与明文等长的密文 */
   update: (plain: Uint8Array) => Uint8Array;
+  /** encrypt_final，返回 16B tag */
   final: () => Uint8Array;
-  /** 非末块返回空；末块用 wasm 一次性 encrypt，结果与 aeadEncrypt 一致 */
+  /**
+   * 增量流式：每块立即出密文（与一次性 encrypt 拼接结果一致）。
+   * isFinal 时在末尾附加 16B tag。
+   */
   push: (plain: Uint8Array, isFinal: boolean) => Uint8Array;
 };
 
 export type ChaChaStreamPull = {
   abytes: number;
   tagFinal: number;
+  /** 立即 decrypt_update；|m|==|c| */
   update: (cipher: Uint8Array) => Uint8Array;
+  /** decrypt_final(tag) */
   final: (tag: Uint8Array) => Uint8Array;
+  /**
+   * isFinal=false：整段视为密文主体，decrypt_update。
+   * isFinal=true：末尾 abytes 为 tag，前面 decrypt_update 后 final。
+   */
   pull: (cipher: Uint8Array, isFinal?: boolean) => { message: Uint8Array; tag: number; isFinal: boolean };
 };
 
 /**
- * 流式 API：分块收集，最终调用 libsodium.wasm 的
- * crypto_aead_xchacha20poly1305_ietf_*（与一次性加解密结果一致）。
+ * 增量 AEAD 流式 API（encrypt_init/update/final）。
+ * 密文 = 各块 update 输出 ‖ final tag，与一次性 crypto_aead_*_encrypt 完全一致。
  */
 export function openChaChaStreamPush(
   m: SodiumModule, key: Uint8Array, iv?: Uint8Array
 ): ChaChaStreamPush {
   if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
+  const stateBytes = m._crypto_aead_xchacha20poly1305_ietf_statebytes();
+  const abytes = m._crypto_aead_xchacha20poly1305_ietf_abytes();
   const header = iv && iv.length === AEAD_NPUBBYTES
     ? iv.slice()
     : randomBytes(m, AEAD_NPUBBYTES);
-  const parts: Uint8Array[] = [];
-  let total = 0;
-  let done = false;
-  let finished: Uint8Array | null = null;
 
-  const runEncrypt = () => {
-    if (finished) return finished;
-    const plain = concatParts(parts, total);
-    parts.length = 0;
-    total = 0;
-    finished = aeadEncrypt(m, plain, AEAD_EMPTY_AD, header, key);
-    done = true;
-    return finished;
+  const statePtr = m._malloc(stateBytes);
+  const nPtr = m._malloc(AEAD_NPUBBYTES);
+  const kPtr = m._malloc(AEAD_KEYBYTES);
+  let done = false;
+  let stateAlive = true;
+
+  try {
+    m.HEAPU8.set(header, nPtr);
+    m.HEAPU8.set(key, kPtr);
+    const rc = m._crypto_aead_xchacha20poly1305_ietf_encrypt_init(statePtr, 0, 0n, nPtr, kPtr);
+    if (rc !== 0) {
+      m._free(statePtr);
+      throw new Error('aead encrypt_init failed');
+    }
+  } finally {
+    m._free(nPtr);
+    m._free(kPtr);
+  }
+
+  const freeState = () => {
+    if (stateAlive) {
+      stateAlive = false;
+      m._free(statePtr);
+    }
+  };
+
+  const updateOne = (plain: Uint8Array): Uint8Array => {
+    if (done) throw new Error('aead stream finished');
+    if (!plain.length) return new Uint8Array(0);
+    const mPtr = m._malloc(plain.length);
+    const cPtr = m._malloc(plain.length);
+    try {
+      m.HEAPU8.set(plain, mPtr);
+      const rc = m._crypto_aead_xchacha20poly1305_ietf_encrypt_update(
+        statePtr, cPtr, mPtr, BigInt(plain.length)
+      );
+      if (rc !== 0) throw new Error('aead encrypt_update failed');
+      return m.HEAPU8.slice(cPtr, cPtr + plain.length);
+    } finally {
+      m._free(mPtr);
+      m._free(cPtr);
+    }
+  };
+
+  const finalTag = (): Uint8Array => {
+    if (done) throw new Error('aead stream finished');
+    const tagPtr = m._malloc(abytes);
+    try {
+      const rc = m._crypto_aead_xchacha20poly1305_ietf_encrypt_final(statePtr, tagPtr);
+      if (rc !== 0) throw new Error('aead encrypt_final failed');
+      done = true;
+      freeState();
+      return m.HEAPU8.slice(tagPtr, tagPtr + abytes);
+    } catch (e) {
+      if (!done) {
+        done = true;
+        freeState();
+      }
+      throw e;
+    } finally {
+      m._free(tagPtr);
+    }
   };
 
   return {
     header,
-    abytes: AEAD_ABYTES,
+    abytes,
     tagFinal: 1,
-    update: (plain) => {
-      if (done) throw new Error('aead stream finished');
-      if (plain.length) {
-        parts.push(plain.slice());
-        total += plain.length;
-      }
-      return new Uint8Array(0);
-    },
-    final: () => {
-      const full = runEncrypt();
-      return full.subarray(full.length - AEAD_ABYTES);
-    },
+    update: updateOne,
+    final: finalTag,
     push: (plain, isFinal) => {
-      if (done) throw new Error('aead stream finished');
-      if (plain.length) {
-        parts.push(plain.slice());
-        total += plain.length;
-      }
-      if (!isFinal) return new Uint8Array(0);
-      return runEncrypt();
+      const body = updateOne(plain);
+      if (!isFinal) return body;
+      const tag = finalTag();
+      if (!body.length) return tag;
+      const out = new Uint8Array(body.length + tag.length);
+      out.set(body, 0);
+      out.set(tag, body.length);
+      return out;
     },
   };
 }
@@ -206,60 +273,90 @@ export function openChaChaStreamPull(
 ): ChaChaStreamPull {
   if (key.length !== AEAD_KEYBYTES) throw new Error('bad xchacha key length');
   if (header.length !== AEAD_NPUBBYTES) throw new Error('bad xchacha iv length');
-  const parts: Uint8Array[] = [];
-  let total = 0;
-  let done = false;
-  let plainOut: Uint8Array | null = null;
+  const stateBytes = m._crypto_aead_xchacha20poly1305_ietf_statebytes();
+  const abytes = m._crypto_aead_xchacha20poly1305_ietf_abytes();
 
-  const runDecrypt = (cipher: Uint8Array) => {
-    if (done && plainOut) return plainOut;
-    plainOut = aeadDecrypt(m, cipher, AEAD_EMPTY_AD, header, key);
-    done = true;
-    parts.length = 0;
-    total = 0;
-    return plainOut;
+  const statePtr = m._malloc(stateBytes);
+  const nPtr = m._malloc(AEAD_NPUBBYTES);
+  const kPtr = m._malloc(AEAD_KEYBYTES);
+  let done = false;
+  let stateAlive = true;
+
+  try {
+    m.HEAPU8.set(header, nPtr);
+    m.HEAPU8.set(key, kPtr);
+    const rc = m._crypto_aead_xchacha20poly1305_ietf_decrypt_init(statePtr, 0, 0n, nPtr, kPtr);
+    if (rc !== 0) {
+      m._free(statePtr);
+      throw new Error('aead decrypt_init failed');
+    }
+  } finally {
+    m._free(nPtr);
+    m._free(kPtr);
+  }
+
+  const freeState = () => {
+    if (stateAlive) {
+      stateAlive = false;
+      m._free(statePtr);
+    }
+  };
+
+  const updateOne = (cipher: Uint8Array): Uint8Array => {
+    if (done) throw new Error('aead stream finished');
+    if (!cipher.length) return new Uint8Array(0);
+    const cPtr = m._malloc(cipher.length);
+    const mPtr = m._malloc(cipher.length);
+    try {
+      m.HEAPU8.set(cipher, cPtr);
+      const rc = m._crypto_aead_xchacha20poly1305_ietf_decrypt_update(
+        statePtr, mPtr, cPtr, BigInt(cipher.length)
+      );
+      if (rc !== 0) throw new Error('Stream decrypt failed');
+      return m.HEAPU8.slice(mPtr, mPtr + cipher.length);
+    } finally {
+      m._free(cPtr);
+      m._free(mPtr);
+    }
+  };
+
+  const finalOne = (tag: Uint8Array): Uint8Array => {
+    if (done) throw new Error('aead stream finished');
+    if (tag.length !== abytes) throw new Error('bad tag length');
+    const tagPtr = m._malloc(abytes);
+    try {
+      m.HEAPU8.set(tag, tagPtr);
+      const rc = m._crypto_aead_xchacha20poly1305_ietf_decrypt_final(statePtr, tagPtr);
+      if (rc !== 0) throw new Error('Stream decrypt failed');
+      done = true;
+      freeState();
+      return new Uint8Array(0);
+    } catch (e) {
+      if (!done) {
+        done = true;
+        freeState();
+      }
+      throw e;
+    } finally {
+      m._free(tagPtr);
+    }
   };
 
   return {
-    abytes: AEAD_ABYTES,
+    abytes,
     tagFinal: 1,
-    update: (cipher) => {
-      if (done) throw new Error('aead stream finished');
-      if (cipher.length) {
-        parts.push(cipher.slice());
-        total += cipher.length;
-      }
-      return new Uint8Array(0);
-    },
-    final: (tag) => {
-      if (done) throw new Error('aead stream finished');
-      if (tag.length !== AEAD_ABYTES) throw new Error('bad tag length');
-      const body = concatParts(parts, total);
-      const full = new Uint8Array(body.length + tag.length);
-      full.set(body, 0);
-      full.set(tag, body.length);
-      return runDecrypt(full);
-    },
+    update: updateOne,
+    final: finalOne,
     pull: (cipher, isFinal = true) => {
-      if (done) throw new Error('aead stream finished');
       if (!isFinal) {
-        if (cipher.length) {
-          parts.push(cipher.slice());
-          total += cipher.length;
-        }
-        return { message: new Uint8Array(0), tag: 0, isFinal: false };
+        const message = updateOne(cipher);
+        return { message, tag: 0, isFinal: false };
       }
-      if (total > 0) {
-        const prev = concatParts(parts, total);
-        const full = new Uint8Array(prev.length + cipher.length);
-        full.set(prev, 0);
-        full.set(cipher, prev.length);
-        parts.length = 0;
-        total = 0;
-        const message = runDecrypt(full);
-        return { message, tag: 1, isFinal: true };
-      }
-      const message = runDecrypt(cipher);
+      if (cipher.length < abytes) throw new Error('cipher too short');
+      const body = cipher.subarray(0, cipher.length - abytes);
+      const tag = cipher.subarray(cipher.length - abytes);
+      const message = updateOne(body);
+      finalOne(tag);
       return { message, tag: 1, isFinal: true };
     },
   };

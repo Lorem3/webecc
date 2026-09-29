@@ -720,9 +720,11 @@ const App = (function () {
   async function init() {
     let ec = await ECC.initEC();
     const state = createAppState();
-    state.decryptXFile = async (privkey, pubkey, salt, filename) => {
+    state.decryptXFile = async (privkey, pubkey, salt, filename, opts) => {
       if (!state.xFileId) throw new Error('No stream file');
-      await getGDriveManager().decryptXBackup(ec, state.xFileId, privkey, pubkey, salt, filename);
+      await getGDriveManager().decryptXBackup(
+        ec, state.xFileId, privkey, pubkey, salt, filename, undefined, opts
+      );
     };
 
     bindCommonButtons(ec, state);

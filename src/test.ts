@@ -1,4 +1,9 @@
 import { getSodium, randomBytes, openChaChaStreamPush, openChaChaStreamPull, aeadEncrypt, aeadDecrypt, AEAD_EMPTY_AD, AEAD_ABYTES } from './ipaste/sodium';
+import {
+  createXPush, createXPull, isTextMime,
+  STREAM_PLAIN_CHUNK, STREAM_ABYTES, X_HEAD_TOTAL, isXPrefix,
+} from './ipaste/stream-crypt';
+import { openDownloadWriter, wrapUngzip } from './ipaste/common';
 
 const TestApp = (function () {
 
@@ -210,9 +215,9 @@ const TestApp = (function () {
     const na = await getSodium();
     const toHexC = (arr: Uint8Array) => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // ========== 测试12: 流式 == 一次性 XChaCha20-Poly1305 ==========
+    // ========== 测试12: 增量 AEAD 流式 == 一次性 ==========
     log('')
-    log('=== 测试12: crypto_aead_xchacha20poly1305_ietf 流式与一次性一致 ===')
+    log('=== 测试12: crypto_aead_xchacha20poly1305_ietf 增量流式与一次性一致 ===')
     const ssKey = randomBytes(na, 32);
     const ssPtText = [
       "The California sea lion (Zalophus californianus) is a coastal eared seal native to western North America.",
@@ -222,15 +227,16 @@ const TestApp = (function () {
       "They hunt fish and cephalopods, diving repeatedly and using whiskers to sense prey in murky water.",
       "Conservation status improved after hunting bans, though they still face entanglement, pollution, and climate-driven prey shifts.",
       "Researchers track movement with tags and study how shipping noise and warming oceans affect foraging and breeding.",
-      "This long plaintext is used to exercise multi-chunk crypto_aead_xchacha20poly1305_ietf push/pull without loading a one-shot AEAD path.",
-      "附加中文段落：流式加密按块推送，末尾一个 16 字节 tag，密文须与一次性 encrypt 完全一致。",
+      "This long plaintext exercises multi-chunk encrypt_init/update/final identical to one-shot encrypt.",
+      "附加中文段落：增量流式每块立即出密文，末尾一个 16 字节 tag，须与一次性 encrypt 完全一致。",
       "再补一段内容以保证长度足够：0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz !@#$%^&*()_+-=[]{}|;:',.<>/?~`",
     ].join(' ');
     const ssPt = new TextEncoder().encode(ssPtText);
 
     log('  --- 加密 ---')
-    log('  key hex:', toHexC(ssKey))
+    log('  明文:', ssPtText)
     log('  明文长度:', ssPt.length)
+    log('  key hex:', toHexC(ssKey))
     const ssEnc = openChaChaStreamPush(na, ssKey);
     log('  iv hex:', toHexC(ssEnc.header))
     showKeyIv(ssKey, ssEnc.header)
@@ -250,47 +256,43 @@ const TestApp = (function () {
     log('  密文 hex:', toHexC(ssCt))
     log('  分块数:', cipherChunks.length, '末尾 tag:', AEAD_ABYTES, '密文长度:', ssCt.length)
     log('  流式==一次性密文:', eqBytes(ssCt, oneShotCt) ? '✅' : '❌')
+    log('  总长=明文+16:', ssCt.length === ssPt.length + AEAD_ABYTES ? '✅' : '❌')
 
     log('  --- 解密 ---')
     log('  key hex:', toHexC(ssKey))
     log('  iv hex:', toHexC(ssEnc.header))
-    // 流式拉块缓冲，末块一次性 wasm decrypt（与 aeadDecrypt 一致）
     const ssDec = openChaChaStreamPull(na, ssKey, ssEnc.header);
-    const bodyLen = ssCt.length - AEAD_ABYTES;
-    let off = 0;
-    const pullStep = Math.ceil(Math.max(bodyLen, 1) / chunkN);
-    let ssOut = new Uint8Array(0);
-    if (bodyLen === 0) {
-      ssOut = ssDec.pull(ssCt, true).message;
-    } else {
-      while (off < bodyLen) {
-        const end = Math.min(off + pullStep, bodyLen);
-        const last = end >= bodyLen;
-        if (last) {
-          const chunk = new Uint8Array(end - off + AEAD_ABYTES);
-          chunk.set(ssCt.subarray(off, end), 0);
-          chunk.set(ssCt.subarray(bodyLen), end - off);
-          ssOut = ssDec.pull(chunk, true).message;
-        } else {
-          ssDec.pull(ssCt.subarray(off, end), false);
+    // 非末块 update；末块含 tag
+    const plainParts: Uint8Array[] = [];
+    for (let i = 0; i < cipherChunks.length; i++) {
+      const last = i === cipherChunks.length - 1;
+      if (!last) {
+        plainParts.push(ssDec.update(cipherChunks[i]));
+      } else {
+        const lastChunk = cipherChunks[i];
+        if (lastChunk.length >= AEAD_ABYTES) {
+          const body = lastChunk.subarray(0, lastChunk.length - AEAD_ABYTES);
+          const tag = lastChunk.subarray(lastChunk.length - AEAD_ABYTES);
+          if (body.length) plainParts.push(ssDec.update(body));
+          ssDec.final(tag);
         }
-        off = end;
       }
     }
+    const ssOut = new Uint8Array(plainParts.reduce((n, p) => n + p.length, 0));
+    { let o = 0; for (const p of plainParts) { ssOut.set(p, o); o += p.length; } }
     const oneShotPt = aeadDecrypt(na, oneShotCt, AEAD_EMPTY_AD, ssEnc.header, ssKey);
-    const ssOutText = new TextDecoder().decode(ssOut);
-    log('  明文:', ssOutText)
-    log('  流式解密==明文:', ssOutText === ssPtText ? '✅' : '❌')
+    log('  解密明文:', new TextDecoder().decode(ssOut))
+    log('  流式解密==明文:', eqBytes(ssOut, ssPt) ? '✅' : '❌')
     log('  一次性解密==明文:', eqBytes(oneShotPt, ssPt) ? '✅' : '❌')
-    log('  流式解密==一次性解密:', eqBytes(ssOut, oneShotPt) ? '✅' : '❌')
-    log('  加密引擎: libsodium.wasm crypto_aead_xchacha20poly1305_ietf')
+    log('  加密引擎: libsodium.wasm encrypt_init/update/final')
 
-    // ========== 测试13: XChaCha20-Poly1305 往返 / 空消息 / 篡改 ==========
+    // ========== 测试13: 增量 AEAD 往返 / 空消息 / 篡改 ==========
     log('')
     log('=== 测试13: crypto_aead_xchacha20poly1305_ietf 往返与篡改 ===')
     const rndKey = randomBytes(na, 32);
     const rndPt = new TextEncoder().encode(ssPtText + ' | ' + plaintext);
     const enc1 = openChaChaStreamPush(na, rndKey);
+    log('  明文长度:', rndPt.length)
     log('  key hex:', toHexC(rndKey))
     log('  iv hex:', toHexC(enc1.header))
     showKeyIv(rndKey, enc1.header)
@@ -302,14 +304,13 @@ const TestApp = (function () {
     }
     const rndCt = new Uint8Array(rndParts.reduce((n, c) => n + c.length, 0));
     { let o = 0; for (const c of rndParts) { rndCt.set(c, o); o += c.length; } }
-    log('  密文 hex:', toHexC(rndCt))
     const oneRnd = aeadEncrypt(na, rndPt, AEAD_EMPTY_AD, enc1.header, rndKey);
+    log('  密文 hex:', toHexC(rndCt))
     log('  流式==一次性:', eqBytes(rndCt, oneRnd) ? '✅' : '❌')
     const dec1 = openChaChaStreamPull(na, rndKey, enc1.header);
     const { message: rndBack } = dec1.pull(rndCt, true);
-    const rndOverhead = rndCt.length - rndPt.length;
     log('  随机往返:', eqBytes(rndBack, rndPt) ? '✅' : '❌',
-      'overhead', rndOverhead, '(期望' + AEAD_ABYTES + ')')
+      'overhead', rndCt.length - rndPt.length, '(期望' + AEAD_ABYTES + ')')
 
     const encEmpty = openChaChaStreamPush(na, rndKey);
     const emptyCt = encEmpty.push(new Uint8Array(0), true);
@@ -327,24 +328,23 @@ const TestApp = (function () {
       log('  密文篡改: ✅ 拒绝')
     }
 
-    // ========== 测试14: XChaCha20-Poly1305 流式 + ECDH 头 0x0F ==========
+    // ========== 测试14: 增量 AEAD + ECDH 头 0x0F ==========
     log('')
-    log('=== 测试14: crypto_aead_xchacha20poly1305_ietf 流式 + ECDH 头 ===')
+    log('=== 测试14: crypto_aead_xchacha20poly1305_ietf 增量流式 + ECDH 头 ===')
     const keys = await ec.deriveEcdhStreamKeys(kp1.public);
     const ssPush = openChaChaStreamPush(na, keys.streamKey);
     log('  key hex:', toHexC(keys.streamKey))
     log('  iv hex:', toHexC(ssPush.header))
     showKeyIv(keys.streamKey, ssPush.header)
     log('  header 长度:', ssPush.header.length, '(期望24)', ssPush.header.length === 24 ? '✅' : '❌')
-    log('  abytes:', ssPush.abytes, '(期望16)', ssPush.abytes === 16 ? '✅' : '❌')
+    log('  abytes:', ssPush.abytes, '(期望16)', ssPush.abytes === AEAD_ABYTES ? '✅' : '❌')
     const head = await ec.assembleEcdhStreamHead(ssPush.header, keys.tmpPub, keys.macKey);
     log('  Layer1 byte[0]:', head[0], '(期望15/0x0F)', head[0] === 0x0F ? '✅' : '❌')
     log('  Layer1 长度:', head.length, '(期望96)', head.length === 96 ? '✅' : '❌')
     const opened = await ec.openEcdhStreamHead(kp1.private, head);
     log('  打开头 streamKey:', eqBytes(opened.streamKey, keys.streamKey) ? '✅' : '❌')
     log('  打开头 header:', eqBytes(opened.ssHeader, ssPush.header) ? '✅' : '❌')
-    log('  解密 key hex:', toHexC(opened.streamKey))
-    log('  解密 iv hex:', toHexC(opened.ssHeader))
+    log('  isZip(raw 0x0F):', opened.isZip === false ? '✅' : '❌')
 
     const parts = [
       new Uint8Array(1024).fill(0x11),
@@ -360,9 +360,13 @@ const TestApp = (function () {
     const streamBody = new Uint8Array(ciphers.reduce((n, c) => n + c.length, 0));
     { let o = 0; for (const c of ciphers) { streamBody.set(c, o); o += c.length; } }
     const oneBody = aeadEncrypt(na, allPlain, AEAD_EMPTY_AD, ssPush.header, keys.streamKey);
+    log('  明文长度:', allPlain.length)
+    log('  key hex:', toHexC(keys.streamKey))
+    log('  iv hex:', toHexC(ssPush.header))
+    log('  密文 hex:', toHexC(streamBody))
     log('  每块密文长度:', ciphers.map(c => c.length).join(','))
     log('  流式body==一次性:', eqBytes(streamBody, oneBody) ? '✅' : '❌')
-    log('  总长=明文+16:', streamBody.length === allPlain.length + 16 ? '✅' : '❌')
+    log('  总长=明文+16:', streamBody.length === allPlain.length + AEAD_ABYTES ? '✅' : '❌')
 
     const ssPull = openChaChaStreamPull(na, opened.streamKey, opened.ssHeader);
     const { message: plainAll } = ssPull.pull(streamBody, true);
@@ -384,6 +388,163 @@ const TestApp = (function () {
       log('  头 MAC 篡改: 应失败但未失败 ❌')
     } catch (e) {
       log('  头 MAC 篡改: ✅', e)
+    }
+
+    // ========== 测试14b: X. 选文件加密/解密（固定密钥；FS Access 或 Blob 回退）==========
+    log('')
+    log('=== 测试14b: X. 流式选文件（文本 MIME → gzip+0x0E）===')
+    const kp14b = {
+      private: 'KJ69pcdMyroehSiBsjS9PWY51zwn5zi5XsZthQFZTFA=',
+      public: '5vuYVbe+b88u/orMF+oHdziovSh+PIfArfiMG2e7NE8=',
+    };
+    const salt14b = 'test14b';
+    const hasSavePicker = typeof (window as any).showSaveFilePicker === 'function';
+    const ua = navigator.userAgent;
+    const isBrave = !!(navigator as any).brave || /Brave/i.test(ua);
+    log('  固定 pubKey:', kp14b.public)
+    log('  固定 priKey:', kp14b.private)
+    log('  固定 salt:', salt14b)
+    log('  先选文件，再点「加密」或「解密」')
+    log('  location:', location.href)
+    log('  isSecureContext:', String(window.isSecureContext))
+    log('  showSaveFilePicker:', hasSavePicker ? '可用 → 另存为流式 (mode=fs)' : '不可用 → 将回退 Blob 下载 (mode=blob)')
+    if (!hasSavePicker) {
+      if (isBrave || /Chrome\//i.test(ua)) {
+        log('  Brave 可开: brave://flags/#file-system-access-api → Enabled → Relaunch')
+      }
+    }
+
+    const logSinkMode = (mode: 'fs' | 'blob') => {
+      if (mode === 'fs') log('  写入模式: fs（showSaveFilePicker + createWritable，流式落盘）')
+      else log('  写入模式: blob 回退（内存拼装 + <a download>，非整文件流式落盘）')
+    };
+
+    const encInput = document.getElementById('test14bEncFile') as HTMLInputElement | null;
+    const decInput = document.getElementById('test14bDecFile') as HTMLInputElement | null;
+    const encBtn = document.getElementById('test14bEncBtn') as HTMLButtonElement | null;
+    const decBtn = document.getElementById('test14bDecBtn') as HTMLButtonElement | null;
+
+    if (encBtn && encInput) {
+      encBtn.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        const file = encInput.files?.[0];
+        if (!file) {
+          log('  请先选择源文件')
+          return;
+        }
+        const outName = file.name + '.xenc';
+        // click 手势内立刻开 writer（有 API 则弹另存为，否则 blob 回退）
+        let sink: Awaited<ReturnType<typeof openDownloadWriter>> | null = null;
+        try {
+          sink = await openDownloadWriter(outName);
+          logSinkMode(sink.mode);
+          const zipFirst = isTextMime(file.type, file.name);
+          log('')
+          log('--- 14b 加密 ---')
+          log('  文件:', file.name, 'size=', file.size, 'type=', file.type || '(empty)')
+          log('  zipFirst(isTextMime):', zipFirst, zipFirst ? '→ Layer1 0x0E' : '→ Layer1 0x0F')
+          const { prefixAndEncHead, push } = await createXPush(ec, kp14b.public, salt14b, zipFirst);
+          const { generateContentKey, aesGcmDecrypt } = await import('./ipaste/common');
+          const contentKey = await generateContentKey(kp14b.public, salt14b);
+          const layer1 = new Uint8Array(await aesGcmDecrypt(prefixAndEncHead.subarray(2), contentKey));
+          log('  Layer1 byte[0]:', layer1[0], zipFirst ? '(期望14/0x0E)' : '(期望15/0x0F)',
+            layer1[0] === (zipFirst ? 0x0E : 0x0F) ? '✅' : '❌')
+
+          await sink.write(prefixAndEncHead);
+          let written = prefixAndEncHead.length;
+          let offset = 0;
+          if (file.size === 0) {
+            const cipher = await push(new Uint8Array(0), true);
+            if (cipher.length) { await sink.write(cipher); written += cipher.length; }
+          } else {
+            while (offset < file.size) {
+              const end = Math.min(offset + STREAM_PLAIN_CHUNK, file.size);
+              const buf = new Uint8Array(await file.slice(offset, end).arrayBuffer());
+              const cipher = await push(buf, end >= file.size);
+              if (cipher.length) { await sink.write(cipher); written += cipher.length; }
+              offset = end;
+            }
+          }
+          const mode = sink.mode;
+          await sink.close();
+          sink = null;
+          log('  密文长度:', written, mode === 'fs' ? '已流式写入' : '已 Blob 下载', outName, '✅')
+        } catch (e: any) {
+          try { await sink?.abort(); } catch { /* ignore */ }
+          if (e?.name === 'AbortError') log('  用户取消另存为')
+          else log('  加密失败 ❌', e?.name || '', e?.message || e)
+        }
+      });
+    } else {
+      log('  ❌ 未找到加密按钮/文件框 (test14bEncBtn / test14bEncFile)')
+    }
+
+    if (decBtn && decInput) {
+      decBtn.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        const file = decInput.files?.[0];
+        if (!file) {
+          log('  请先选择密文文件')
+          return;
+        }
+        let outName = file.name.replace(/\.xenc$/i, '');
+        if (outName === file.name) outName = file.name + '.dec';
+        let sink: Awaited<ReturnType<typeof openDownloadWriter>> | null = null;
+        let out: Awaited<ReturnType<typeof openDownloadWriter>> | null = null;
+        try {
+          sink = await openDownloadWriter(outName);
+          logSinkMode(sink.mode);
+          log('')
+          log('--- 14b 解密 ---')
+          log('  文件:', file.name, 'size=', file.size)
+          if (file.size < X_HEAD_TOTAL) throw new Error('不是有效的 X. 密文（太短）');
+          const prefixAndEncHead = new Uint8Array(await file.slice(0, X_HEAD_TOTAL).arrayBuffer());
+          if (!isXPrefix(prefixAndEncHead)) throw new Error('不是有效的 X. 密文（缺 X. 头）');
+
+          const { update, final, isZip, abytes } = await createXPull(
+            ec, kp14b.private, kp14b.public, salt14b, prefixAndEncHead
+          );
+          log('  isZip:', isZip, isZip ? '(将 ungzip)' : '(raw)', 'abytes=', abytes || STREAM_ABYTES)
+          out = wrapUngzip(sink, isZip);
+          const mode = out.mode;
+          sink = null;
+
+          const tagLen = abytes || STREAM_ABYTES;
+          const bodyLen = file.size - X_HEAD_TOTAL;
+          if (bodyLen < tagLen) throw new Error('密文 body 过短');
+          const cipherLen = bodyLen - tagLen;
+          const CHUNK = 1024 * 1024;
+          let offset = X_HEAD_TOTAL;
+          let plainWritten = 0;
+          let cipherRead = 0;
+          while (cipherRead < cipherLen) {
+            const take = Math.min(CHUNK, cipherLen - cipherRead);
+            const cipher = new Uint8Array(await file.slice(offset, offset + take).arrayBuffer());
+            const msg = update(cipher);
+            if (msg.length) { await out.write(msg); plainWritten += msg.length; }
+            offset += cipher.length;
+            cipherRead += cipher.length;
+          }
+          const tag = new Uint8Array(await file.slice(offset, offset + tagLen).arrayBuffer());
+          const last = final(tag);
+          if (last.length) { await out.write(last); plainWritten += last.length; }
+          await out.close();
+          out = null;
+          log(
+            '  明文写入约:', plainWritten,
+            isZip ? '(gzip 前累计；落盘为解压后)' : '',
+            mode === 'fs' ? '已流式写入' : '已 Blob 下载',
+            outName, '✅'
+          )
+        } catch (e: any) {
+          try { await out?.abort(); } catch { /* ignore */ }
+          try { await sink?.abort(); } catch { /* ignore */ }
+          if (e?.name === 'AbortError') log('  用户取消另存为')
+          else log('  解密失败 ❌', e?.name || '', e?.message || e)
+        }
+      });
+    } else {
+      log('  ❌ 未找到解密按钮/文件框 (test14bDecBtn / test14bDecFile)')
     }
   } catch (e) {
     log('')

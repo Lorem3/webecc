@@ -32,8 +32,8 @@ declare interface  EC{
     base64Encode(arr:Uint8Array,urlsafe?:1|0,firstLineLess?:number):string
     base64Decode(str:string,urlsafe ?:1|0):Uint8Array
     deriveEcdhStreamKeys(pubBase64:string):Promise<{streamKey:Uint8Array, tmpPub:Uint8Array, macKey:Uint8Array}>
-    assembleEcdhStreamHead(ssHeader:Uint8Array, tmpPub:Uint8Array, macKey:Uint8Array):Promise<Uint8Array>
-    openEcdhStreamHead(privateKeyB64:string, head:Uint8Array):Promise<{streamKey:Uint8Array, ssHeader:Uint8Array}>
+    assembleEcdhStreamHead(ssHeader:Uint8Array, tmpPub:Uint8Array, macKey:Uint8Array, isZip?:boolean):Promise<Uint8Array>
+    openEcdhStreamHead(privateKeyB64:string, head:Uint8Array):Promise<{streamKey:Uint8Array, ssHeader:Uint8Array, isZip:boolean}>
   }
 
 
@@ -46,6 +46,17 @@ declare const __BUILD_MOD__:string
 
 interface DataTransferItem {
   webkitGetAsEntry(): FileSystemEntry | null;
+}
+
+/** File System Access API（Chromium）；用于流式另存为 */
+interface FileSystemWritableFileStream extends WritableStream<BufferSource | Blob | string> {
+  write(data: BufferSource | Blob | string | { type: 'write'; data?: BufferSource | Blob | string; position?: number } | { type: 'seek'; position: number } | { type: 'truncate'; size: number }): Promise<void>;
+  seek(position: number): Promise<void>;
+  truncate(size: number): Promise<void>;
+}
+
+interface FileSystemFileHandle {
+  createWritable(options?: { keepExistingData?: boolean }): Promise<FileSystemWritableFileStream>;
 }
 
 

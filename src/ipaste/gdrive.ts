@@ -1,5 +1,5 @@
 import { jsMessages as messages } from '@i18n/js-messages';
-import { computePhash, computeFilePhash } from './common';
+import { computePhash, computeFilePhash, openDownloadWriter, wrapUngzip, DownloadWriter } from './common';
 
 export function getPubkeyFolderName(pubkey: string): string {
   const safe = pubkey.replace(/[+/=]/g, m => m === '+' ? '-' : m === '/' ? '_' : '');
@@ -675,7 +675,7 @@ export class GoogleDriveManager {
     return fileId || newFileId;
   }
 
-  /** 超过 LARGE_FILE_THRESHOLD（8MB）：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。 */
+  /** 超过 LARGE_FILE_THRESHOLD（8MB）：读一块、加密一块、立刻 PUT。Drive 要求非末块为 256KiB 对齐，客户端只多缓冲对齐余量。文本 MIME 先流式 gzip（Layer1=0x0E）。 */
   async saveBackupStream(
     ec: any,
     file: File,
@@ -684,7 +684,7 @@ export class GoogleDriveManager {
     description: string,
     onProgress?: (uploaded: number, total: number) => void
   ): Promise<string> {
-    const { createXPush, streamCipherTotalSize, STREAM_PLAIN_CHUNK } = await import('./stream-crypt');
+    const { createXPush, streamCipherTotalSize, STREAM_PLAIN_CHUNK, isTextMime } = await import('./stream-crypt');
     await this.ensureAuthorized();
 
     let note = '';
@@ -711,8 +711,11 @@ export class GoogleDriveManager {
     };
     const fileId = null;
     const sessionUrl = await this.startResumableUpload(fileId, metadata);
-    const total = streamCipherTotalSize(file.size);
-    const { prefixAndEncHead, push } = await createXPush(ec, pubkey, salt);
+    const zipFirst = isTextMime(file.type, file.name);
+    // gzip 后密文长度未知：中间块用 /*，末块写真实 total
+    const knownTotal = zipFirst ? -1 : streamCipherTotalSize(file.size);
+    const progressTotal = knownTotal >= 0 ? knownTotal : file.size;
+    const { prefixAndEncHead, push } = await createXPush(ec, pubkey, salt, zipFirst);
 
     const ALIGN = 256 * 1024;
     let pending: Uint8Array[] = [];
@@ -745,17 +748,20 @@ export class GoogleDriveManager {
     const putBytes = async (chunk: Uint8Array, isLast: boolean) => {
       const start = uploaded;
       const end = uploaded + chunk.length - 1;
+      const rangeTotal = isLast
+        ? String(uploaded + chunk.length)
+        : (knownTotal >= 0 ? String(knownTotal) : '*');
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         const headers: Record<string, string> = {
           'Content-Type': 'application/octet-stream',
           'Content-Length': String(chunk.length),
-          'Content-Range': isLast ? `bytes ${start}-${end}/${total}` : `bytes ${start}-${end}/${total}`,
+          'Content-Range': `bytes ${start}-${end}/${rangeTotal}`,
         };
         try {
           const response = await fetch(sessionUrl, { method: 'PUT', headers, body: chunk });
           if (response.ok || response.status === 308) {
             uploaded += chunk.length;
-            onProgress?.(uploaded, total);
+            onProgress?.(uploaded, isLast ? uploaded : progressTotal);
             if (response.ok) {
               const result = await response.json();
               return result.id as string;
@@ -795,17 +801,19 @@ export class GoogleDriveManager {
     let resultId = await enqueue(prefixAndEncHead, false);
     let offset = 0;
     if (file.size === 0) {
-      const cipher = push(new Uint8Array(0), true);
+      const cipher = await push(new Uint8Array(0), true);
       resultId = await enqueue(cipher, true);
     } else {
       while (offset < file.size) {
         const end = Math.min(offset + STREAM_PLAIN_CHUNK, file.size);
         const buf = new Uint8Array(await file.slice(offset, end).arrayBuffer());
         const isFinal = end >= file.size;
-        const cipher = push(buf, isFinal);
-        // 非末块仅缓冲明文；末块 wasm 一次性加密后返回整段密文
+        const cipher = await push(buf, isFinal);
+        // 增量 AEAD：每块立即出密文（与一次性结果一致），可边加密边上传
         if (cipher.length > 0) {
-          resultId = await enqueue(cipher, true);
+          resultId = await enqueue(cipher, isFinal);
+        } else if (isFinal) {
+          resultId = await enqueue(new Uint8Array(0), true);
         }
         offset = end;
       }
@@ -852,81 +860,112 @@ export class GoogleDriveManager {
     pubkey: string,
     salt: string,
     filename: string,
-    onProgress?: (done: number, total: number) => void
+    onProgress?: (done: number, total: number) => void,
+    opts?: { sink?: DownloadWriter }
   ): Promise<void> {
-    const {
-      createXPull, X_HEAD_TOTAL, STREAM_PLAIN_CHUNK, STREAM_ABYTES, isXPrefix,
-    } = await import('./stream-crypt');
-    const { downloadBlob } = await import('./common');
-    await this.ensureAuthorized();
-    const response = await this.driveFetch(`/files/${fileId}?alt=media`);
-    if (!response.ok || !response.body) {
-      const errText = await response.text();
-      throw new Error(`Failed to read file: ${response.status} ${errText}`);
-    }
-    const total = Number(response.headers.get('Content-Length') || '0');
-    const reader = response.body.getReader();
-    let leftover = new Uint8Array(0);
-    let received = 0;
+    // 调用方若已在 click 手势内打开 sink 则复用；否则此处再开（可能已失手势 → blob 回退）
+    const sink = opts?.sink ?? await openDownloadWriter(filename);
+    let out = sink;
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    try {
+      const {
+        createXPull, X_HEAD_TOTAL, STREAM_ABYTES, isXPrefix,
+      } = await import('./stream-crypt');
+      await this.ensureAuthorized();
+      const response = await this.driveFetch(`/files/${fileId}?alt=media`);
+      if (!response.ok || !response.body) {
+        const errText = await response.text();
+        throw new Error(`Failed to read file: ${response.status} ${errText}`);
+      }
+      const total = Number(response.headers.get('Content-Length') || '0');
+      reader = response.body.getReader();
+      let leftover = new Uint8Array(0);
+      let received = 0;
 
-    const readExact = async (n: number): Promise<Uint8Array> => {
-      while (leftover.length < n) {
-        const { done, value } = await reader.read();
-        if (done) {
-          if (leftover.length === 0) throw new Error('Unexpected end of stream');
-          break;
+      const readExact = async (n: number): Promise<Uint8Array> => {
+        while (leftover.length < n) {
+          const { done, value } = await reader!.read();
+          if (done) {
+            if (leftover.length === 0) throw new Error('Unexpected end of stream');
+            break;
+          }
+          const next = new Uint8Array(leftover.length + value.length);
+          next.set(leftover, 0);
+          next.set(value, leftover.length);
+          leftover = next;
+          received += value.length;
+          onProgress?.(received, total);
         }
-        const next = new Uint8Array(leftover.length + value.length);
-        next.set(leftover, 0);
-        next.set(value, leftover.length);
-        leftover = next;
-        received += value.length;
-        onProgress?.(received, total);
-      }
-      const take = Math.min(n, leftover.length);
-      const out = leftover.subarray(0, take).slice();
-      leftover = leftover.subarray(take);
-      return out;
-    };
+        const take = Math.min(n, leftover.length);
+        const chunk = leftover.subarray(0, take).slice();
+        leftover = leftover.subarray(take);
+        return chunk;
+      };
 
-    const prefixAndEncHead = await readExact(X_HEAD_TOTAL);
-    if (prefixAndEncHead.length < X_HEAD_TOTAL || !isXPrefix(prefixAndEncHead)) {
-      throw new Error('Invalid X. ciphertext');
-    }
-    const { update, final, pull } = await createXPull(ec, privkey, pubkey, salt, prefixAndEncHead);
-    const bodyTotal = total > 0 ? Math.max(0, total - X_HEAD_TOTAL) : 0;
-    let plain: Uint8Array;
-    if (bodyTotal > 0) {
-      const cipherLen = bodyTotal - STREAM_ABYTES;
-      let cipherRead = 0;
-      while (cipherRead < cipherLen) {
-        const take = Math.min(STREAM_PLAIN_CHUNK, cipherLen - cipherRead);
-        const cipher = await readExact(take);
-        update(cipher);
-        cipherRead += cipher.length;
+      const prefixAndEncHead = await readExact(X_HEAD_TOTAL);
+      if (prefixAndEncHead.length < X_HEAD_TOTAL || !isXPrefix(prefixAndEncHead)) {
+        throw new Error('Invalid X. ciphertext');
       }
-      const tag = await readExact(STREAM_ABYTES);
-      plain = final(tag);
-    } else {
-      const bufParts: Uint8Array[] = leftover.length ? [leftover] : [];
-      let bufLen = leftover.length;
-      leftover = new Uint8Array(0);
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bufParts.push(value);
-        bufLen += value.length;
-        received += value.length;
-        onProgress?.(received, total);
-      }
-      const all = new Uint8Array(bufLen);
-      { let o = 0; for (const p of bufParts) { all.set(p, o); o += p.length; } }
-      if (all.length < STREAM_ABYTES) throw new Error('Unexpected end of stream');
-      plain = pull(all, true).message;
-    }
+      const { update, final, isZip } = await createXPull(ec, privkey, pubkey, salt, prefixAndEncHead);
+      out = wrapUngzip(sink, isZip);
 
-    try { reader.cancel(); } catch { /* ignore */ }
-    downloadBlob(new Blob([plain], { type: 'application/octet-stream' }), filename);
+      const bodyTotal = total > 0 ? Math.max(0, total - X_HEAD_TOTAL) : 0;
+      const CHUNK = 1024 * 1024;
+
+      if (bodyTotal > 0) {
+        if (bodyTotal < STREAM_ABYTES) {
+          throw new Error('Invalid X. ciphertext body (shorter than tag)');
+        }
+        const cipherLen = bodyTotal - STREAM_ABYTES;
+        let cipherRead = 0;
+        while (cipherRead < cipherLen) {
+          const take = Math.min(CHUNK, cipherLen - cipherRead);
+          const cipher = await readExact(take);
+          if (cipher.length < take) throw new Error('Unexpected end of stream');
+          const msg = update(cipher);
+          if (msg.length) await out.write(msg);
+          cipherRead += cipher.length;
+        }
+        const tag = await readExact(STREAM_ABYTES);
+        if (tag.length < STREAM_ABYTES) throw new Error('Unexpected end of stream');
+        final(tag);
+      } else {
+        // 无 Content-Length：滑动保留末尾 16B 作 tag，其余边读边 decrypt_update
+        let hold = leftover;
+        leftover = new Uint8Array(0);
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const next = new Uint8Array(hold.length + value.length);
+          next.set(hold, 0);
+          next.set(value, hold.length);
+          hold = next;
+          received += value.length;
+          onProgress?.(received, total);
+          if (hold.length > STREAM_ABYTES) {
+            const emit = hold.subarray(0, hold.length - STREAM_ABYTES);
+            hold = hold.subarray(hold.length - STREAM_ABYTES).slice();
+            const msg = update(emit);
+            if (msg.length) await out.write(msg);
+          }
+        }
+        if (hold.length < STREAM_ABYTES) throw new Error('Unexpected end of stream');
+        if (hold.length > STREAM_ABYTES) {
+          const emit = hold.subarray(0, hold.length - STREAM_ABYTES);
+          hold = hold.subarray(hold.length - STREAM_ABYTES).slice();
+          const msg = update(emit);
+          if (msg.length) await out.write(msg);
+        }
+        final(hold);
+      }
+
+      await out.close();
+    } catch (e) {
+      try { await out.abort(); } catch { /* ignore */ }
+      throw e;
+    } finally {
+      try { await reader?.cancel(); } catch { /* ignore */ }
+    }
   }
 
   async listChildren(folderId: string): Promise<GDriveFile[]> {

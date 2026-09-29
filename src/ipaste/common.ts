@@ -50,6 +50,16 @@ export function fireD1Init(key: string, secret: string): void {
 
 // --- Types ---
 
+/** 流式下载写入句柄（FS Access 或 Blob 回退） */
+export type DownloadWriter = {
+  write(chunk: Uint8Array): Promise<void>;
+  close(): Promise<void>;
+  /** 中途失败时丢弃未完成文件（FS Access）或取消 Blob 组装 */
+  abort(): Promise<void>;
+  /** fs=另存为流式落盘；blob=内存拼装后 &lt;a download&gt; 回退 */
+  mode: 'fs' | 'blob';
+};
+
 export interface InputData {
   pubkey: string;
   salt?: string;
@@ -69,7 +79,13 @@ export interface AppState {
   fileCipher: string | Uint8Array | null;
   folderFiles: FolderFile[] | null;
   xFileId: string | null;
-  decryptXFile: ((privkey: string, pubkey: string, salt: string, filename: string) => Promise<void>) | null;
+  decryptXFile: ((
+    privkey: string,
+    pubkey: string,
+    salt: string,
+    filename: string,
+    opts?: { sink?: DownloadWriter }
+  ) => Promise<void>) | null;
 }
 
 export function createAppState(): AppState {
@@ -684,6 +700,132 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function createBlobDownloadWriter(filename: string): DownloadWriter {
+  const chunks: Uint8Array[] = [];
+  let done = false;
+  return {
+    mode: 'blob',
+    write: async (chunk) => {
+      if (chunk.length) chunks.push(chunk.slice());
+    },
+    close: async () => {
+      if (done) return;
+      done = true;
+      downloadBlob(new Blob(chunks as BlobPart[], { type: 'application/octet-stream' }), filename);
+      chunks.length = 0;
+    },
+    abort: async () => {
+      if (done) return;
+      done = true;
+      chunks.length = 0;
+    },
+  };
+}
+
+function isGestureOrSecurityError(e: unknown): boolean {
+  const name = (e as { name?: string } | null)?.name;
+  // 手势失效 / 非安全上下文：回退 Blob；AbortError（用户取消）不在此列
+  return name === 'NotAllowedError' || name === 'SecurityError';
+}
+
+/**
+ * 流式写入本地文件。
+ * 优先 File System Access API（另存为 → createWritable，边写边落盘）；
+ * 不支持或手势失效时回退为内存 Blob + &lt;a download&gt;。
+ * 须在用户点击手势内尽早调用（先于 pbkdf2 / 网络 await）。
+ */
+export async function openDownloadWriter(
+  filename: string,
+  opts?: { requireFs?: boolean }
+): Promise<DownloadWriter> {
+  const w = window as Window & {
+    showSaveFilePicker?: (opts?: {
+      suggestedName?: string;
+      types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+    }) => Promise<FileSystemFileHandle>;
+  };
+
+  if (typeof w.showSaveFilePicker === 'function') {
+    try {
+      // 注意：调用方须在 click 回调里尽快 await 本函数，否则会 NotAllowedError
+      const handle = await w.showSaveFilePicker({ suggestedName: filename });
+      const writable = await handle.createWritable();
+      let done = false;
+      return {
+        mode: 'fs',
+        write: async (chunk) => {
+          if (chunk.length) await writable.write(chunk);
+        },
+        close: async () => {
+          if (done) return;
+          done = true;
+          await writable.close();
+        },
+        abort: async () => {
+          if (done) return;
+          done = true;
+          try { await writable.abort(); } catch { /* ignore */ }
+        },
+      };
+    } catch (e: any) {
+      // 用户取消：继续抛出
+      if (e?.name === 'AbortError') throw e;
+      if (opts?.requireFs || !isGestureOrSecurityError(e)) throw e;
+      console.warn('[openDownloadWriter] picker failed, fallback to Blob:', e?.name || e);
+    }
+  } else if (opts?.requireFs) {
+    throw new Error('当前浏览器不支持 showSaveFilePicker（请用 Chrome/Edge 打开）');
+  } else {
+    console.warn('[openDownloadWriter] showSaveFilePicker unavailable, fallback to Blob download');
+  }
+
+  return createBlobDownloadWriter(filename);
+}
+
+/** isZip 时在 sink 前接 DecompressionStream('gzip') */
+export function wrapUngzip(sink: DownloadWriter, isZip: boolean): DownloadWriter {
+  if (!isZip) return sink;
+
+  const ds = new DecompressionStream('gzip');
+  const gzWriter = ds.writable.getWriter();
+  const pipeDone = ds.readable.pipeTo(new WritableStream<Uint8Array>({
+    write: (chunk) => sink.write(chunk),
+    close: () => sink.close(),
+    abort: () => sink.abort(),
+  }));
+
+  let closed = false;
+  return {
+    mode: sink.mode,
+    write: async (plain) => {
+      if (plain.length) await gzWriter.write(plain);
+    },
+    close: async () => {
+      if (closed) return;
+      closed = true;
+      await gzWriter.close();
+      await pipeDone;
+    },
+    abort: async () => {
+      if (closed) return;
+      closed = true;
+      try { await gzWriter.abort(); } catch { /* ignore */ }
+      try { await sink.abort(); } catch { /* ignore */ }
+    },
+  };
+}
+
+/**
+ * 打开保存目标；isZip 时先经 DecompressionStream。
+ * 若需在网络请求前先弹另存为，请先 openDownloadWriter，再 wrapUngzip。
+ */
+export async function openPlainDownloadPipeline(
+  filename: string,
+  isZip: boolean
+): Promise<DownloadWriter> {
+  return wrapUngzip(await openDownloadWriter(filename), isZip);
+}
+
 // --- Button Bindings ---
 
 export function bindDecryptBtn(ec: any, state: AppState) {
@@ -695,40 +837,69 @@ export function bindDecryptBtn(ec: any, state: AppState) {
       return;
     }
 
+    // X. 云文件：在任何长 await（pbkdf2）之前先开保存目标，保住用户手势
+    const xFilename = state.fileName || 'decrypted-file';
+    let xSink: DownloadWriter | null = null;
+    if (state.xFileId && state.decryptXFile) {
+      try {
+        xSink = await openDownloadWriter(xFilename);
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+        setErrMsg(messages.errDecryptFile);
+        return;
+      }
+    }
+
     let privkey: string;
-    if (state.G_Input.private) {
-      privkey = state.G_Input.private;
-    } else {
-      let input = document.getElementById("keyphrase") as HTMLInputElement;
-      let phrase = input?.value.trim();
-      if (!phrase) {
-        setErrMsg(messages.errEmptyPhrase);
-        return;
-      }
+    try {
+      if (state.G_Input.private) {
+        privkey = state.G_Input.private;
+      } else {
+        let input = document.getElementById("keyphrase") as HTMLInputElement;
+        let phrase = input?.value.trim();
+        if (!phrase) {
+          setErrMsg(messages.errEmptyPhrase);
+          try { await xSink?.abort(); } catch { /* ignore */ }
+          return;
+        }
 
-      if (!state.G_Input.salt) {
-        setErrMsg('Salt is missing from bookmark');
-        return;
-      }
-      const salt = state.G_Input.salt;
-      const kdf = { ver: state.G_Input.ver || KDF_V2.ver, hash: state.G_Input.kdfHash || KDF_V2.hash, iterations: state.G_Input.kdfIterations || KDF_V2.iterations };
-      let kp = await pbkdf2(phrase, salt, ec, { hash: kdf.hash, iterations: kdf.iterations });
+        if (!state.G_Input.salt) {
+          setErrMsg('Salt is missing from bookmark');
+          try { await xSink?.abort(); } catch { /* ignore */ }
+          return;
+        }
+        const salt = state.G_Input.salt;
+        const kdf = { ver: state.G_Input.ver || KDF_V2.ver, hash: state.G_Input.kdfHash || KDF_V2.hash, iterations: state.G_Input.kdfIterations || KDF_V2.iterations };
+        let kp = await pbkdf2(phrase, salt, ec, { hash: kdf.hash, iterations: kdf.iterations });
 
-      if (kp.public !== state.G_Input.pubkey) {
-        setErrMsg(messages.errPubkeyMismatchPhrase);
-        return;
+        if (kp.public !== state.G_Input.pubkey) {
+          setErrMsg(messages.errPubkeyMismatchPhrase);
+          try { await xSink?.abort(); } catch { /* ignore */ }
+          return;
+        }
+        privkey = kp.private;
       }
-      privkey = kp.private;
+    } catch (e) {
+      try { await xSink?.abort(); } catch { /* ignore */ }
+      throw e;
     }
 
     let base64: string | null = null;
     let binaryCipher: Uint8Array | null = null;
     if (state.xFileId && state.decryptXFile) {
       try {
-        await state.decryptXFile(privkey, state.G_Input.pubkey, state.G_Input.salt, state.fileName || 'decrypted-file');
+        await state.decryptXFile(
+          privkey,
+          state.G_Input.pubkey,
+          state.G_Input.salt,
+          xFilename,
+          xSink ? { sink: xSink } : undefined
+        );
+        xSink = null;
         setSyncStatus(messages.fileDecryptDownload);
         setTimeout(() => exitFileMode(state), 500);
       } catch {
+        try { await xSink?.abort(); } catch { /* ignore */ }
         setErrMsg(messages.errDecryptFile);
       }
       return;

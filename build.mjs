@@ -180,10 +180,15 @@ async function buildLibsLegacy() {
 
 async function buildTest() {
   mkdirp('tmp');
+  // test → stream-crypt → common 会解析 @i18n/js-messages
+  const i18nJsPath = path.resolve('src/ipaste/i18n/cn/js-messages.ts');
   const result = await build({
     entryPoints: ['src/test.ts'],
     bundle: true,
     write: false,
+    alias: {
+      '@i18n/js-messages': i18nJsPath,
+    },
     ...esbuildOpts,
   });
   fs.writeFileSync('tmp/test.js', result.outputFiles[0].text);
