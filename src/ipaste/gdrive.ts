@@ -26,6 +26,8 @@ export interface GDriveFile {
   modifiedTime: string;
   mimeType?: string;
   description?: string;
+  /** Drive API 返回字符串字节数；文件夹通常无此字段 */
+  size?: string;
   appProperties?: Record<string, string>;
 }
 
@@ -1137,7 +1139,7 @@ export class GoogleDriveManager {
     do {
       const params = new URLSearchParams({
         q: query,
-        fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,description,appProperties)',
+        fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,size,description,appProperties)',
         pageSize: '200',
       });
       if (pageToken) params.set('pageToken', pageToken);

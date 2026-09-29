@@ -4,7 +4,7 @@ import {
   setSyncStatus, setResultText, getResultText, getPlainText, encryptContent,
   showBuildInfo, initSquircle, applyComputePrivkeyBtnSquircle,
   hideFileLocked, bindFilePaste, showFileLocked, enterFileModeUI, exitFileMode,
-  fireD1Init,
+  fireD1Init, formatFileSize,
 } from './common';
 import { GoogleDriveManager, maskEmail, isGDriveFolder, GDriveFile } from './gdrive';
 import { pathBasename, joinDrivePath } from './folder';
@@ -520,16 +520,23 @@ function renderGDriveFile(ec: any, state: any, file: GDriveFile): HTMLElement {
   noteEl.textContent = gdriveFileLabel(file);
   div.appendChild(timeEl);
   div.appendChild(noteEl);
+
+  const sizeNum = file.size != null && file.size !== '' ? Number(file.size) : NaN;
+  const sizeStr = formatFileSize(sizeNum);
   let ft = file.appProperties?.fileType || '';
   try {
     const obj = JSON.parse(file.description || '');
     if (obj.ft) ft = obj.ft;
   } catch {}
-  if (ft === 'F' || ft === 'B' || ft === 'X') {
-    const tag = document.createElement('div');
-    tag.className = 'history-item-expire';
-    tag.textContent = 'File';
-    div.appendChild(tag);
+  const isFile = ft === 'F' || ft === 'B' || ft === 'X';
+  if (sizeStr || isFile) {
+    const metaEl = document.createElement('div');
+    metaEl.className = 'history-item-expire';
+    const parts: string[] = [];
+    if (sizeStr) parts.push(sizeStr);
+    if (isFile) parts.push('File');
+    metaEl.textContent = parts.join(' · ');
+    div.appendChild(metaEl);
   }
   div.onclick = () => handleGDriveHistoryClick(ec, state, file, div);
   return div;
