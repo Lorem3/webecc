@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CloudFlare D1 Backup Details</title>
+  <link rel="stylesheet" href="css/readme.min.css">
+  <style lang="">
+
+  body{
+        background-color: #efefef;
+        max-width: 960px;
+        margin:auto;
+    }
+    .main{
+        background-color: white;
+        padding: 2em;
+    }
+    tr:nth-child(even){
+        background-color: #efefef;
+    }
+
+    pre{
+        background-color: #efefef;
+        padding: 2em;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+  </style>
+</head>
+<div class="main">
+<h1 id="-">CloudFlare D1 Backup Details</h1>
+<p>Store encrypted ciphertext in Cloudflare D1's free database, and restore it anytime via your bookmark URL.<br><strong>All encryption is performed locally in the browser. CloudFlare only stores ciphertext and cannot access the plaintext.</strong></p>
+
+<h1 id="-">Security</h1>
+<ul>
+<li>Content is encrypted with <strong>Curve25519 + AES-GCM-256 double-layer encryption</strong> before upload</li>
+<li>The CloudFlare D1 owner, administrators, and any third party cannot decrypt or view the plaintext</li>
+<li>Decryption requires both the <strong>private key / passphrase</strong> and <strong>SALT</strong> — either one alone is insufficient</li>
+<li>CloudFlare only serves as a ciphertext storage medium and does not participate in encryption or decryption</li>
+</ul>
+
+<h1 id="-">Encryption Process</h1>
+<p>When saving to D1, plaintext undergoes two layers of encryption:</p>
+<h2 id="-">Layer 1: Curve25519 Encryption</h2>
+<p>The user's public key is used to Curve25519-encrypt the plaintext, producing ciphertext.<br>Decrypting this layer requires the corresponding <strong>private key</strong> (derived from the passphrase via PBKDF2).</p>
+<blockquote>
+<p><strong>Note:</strong> The private key and passphrase are not stored locally and are not included in the bookmark URL. Please keep them safe. If forgotten, stored data will be <strong>permanently lost and unrecoverable</strong>.</p>
+</blockquote>
+<h2 id="-">Layer 2: AES-GCM-256 Encryption</h2>
+<p>A content key derived from the public key and SALT is used to AES-GCM-256 encrypt the Layer 1 ciphertext.</p>
+
+<h2 id="-">Key Derivation</h2>
+<p>The content encryption key is derived through two-layer HMAC-SHA512:</p>
+<pre><code>PRK = HMAC-SHA512(key=pubkey, data=salt)
+ContentKey = HMAC-SHA512(key=PRK, info="d1_content")[0..31]
+</code></pre>
+<p>The final ContentKey is truncated to the first 32 bytes, used as the AES-GCM-256 encryption key.</p>
+
+<h2 id="-">D1 Storage Key Derivation</h2>
+<p>The unique identifier key for D1 records is also derived via HMAC-SHA512:</p>
+<pre><code>PRK = HMAC-SHA512(key=pubkey, data=salt)
+D1Key = HMAC-SHA512(key=PRK, info="cloudflare-d1-access")[0..32]
+</code></pre>
+<p>The final D1Key is truncated to the first 33 bytes, then Base64-encoded as the D1 record key.</p>
+
+<h2 id="-">AES-GCM Encryption Details</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Algorithm</td>
+<td>AES-GCM</td>
+</tr>
+<tr>
+<td>Key length</td>
+<td>256 bit (32 bytes)</td>
+</tr>
+<tr>
+<td>IV length</td>
+<td>12 bytes, randomly generated</td>
+</tr>
+<tr>
+<td>Storage format</td>
+<td>IV (12 bytes) + ciphertext</td>
+</tr>
+</tbody>
+</table>
+
+<h1 id="-">Storage Format</h1>
+<p>Ciphertext stored in D1 is prefixed with <code>N.</code>. The overall structure is:</p>
+<pre><code>N. + Base64Encode(IV + AES-GCM-Ciphertext)
+</code></pre>
+<p>Where the AES-GCM-Ciphertext plaintext is the result of Curve25519 encryption.</p>
+
+<h1 id="-">Decryption Process</h1>
+<ol>
+<li>Retrieve ciphertext from D1, identify the <code>N.</code> prefix</li>
+<li>Base64 decode, separate IV (first 12 bytes) and ciphertext</li>
+<li>Derive ContentKey using public key + SALT (same as encryption process)</li>
+<li>Use ContentKey + IV for AES-GCM-256 decryption, obtaining Curve25519 ciphertext</li>
+<li>Use user's private key for Curve25519 decryption, obtaining plaintext</li>
+</ol>
+
+<h1 id="-">Bookmark URL</h1>
+<p>The bookmark URL contains the public key and SALT, which are the only credentials for data recovery:</p>
+<pre><code>https://example.com/?t=2026-07-23T01:14:30.454Z#&amp;data2=DAAQACAAIABceG8pL9GtzHPWdMPlq5Gu3RutHpSGd_rYcDrTjabBwd6y1_z_MQevVrlUup0N5vdY7-XYGVqbpMv1ceo04dwdqULRaSyD2saGjmUeW1EbUdSeUjwkEvjjk6BDHYnp_aKtKLnVQEeR4OgBGAe13pa_GpoEfMf1SGCLIk4SVg0pHF3aUdvAwoxmNc_6E5GlDOXiHzIHhny8RPIHTbUwLFZ35c0BTI5kSR-6stze0pAiG2MM3iF6Nu_RXkg70ZG3GWE2R2MS8uf7qKGTBN2YBNiICvy37OeH8DcDCyzAv-CTKYxHcMCz9gKrt5NH1HT8Kow7w1zZxatEAM_yIKVIKjOM8gCmuD1awZjJK4jtV7_RzqiC3snKXLBuGj2tX0VsPW_amt6jNWsNSSA9ADZpA7CazSSAwoGnnJiZoP_jcGSuNZw95sgZMTLW7-zSc5kjYzkHXwiZ1pTVEMS2CLJZY0Vv
+</code></pre>
+<ul>
+<li><strong>Public key</strong>: Used for Curve25519 decryption and key derivation</li>
+<li><strong>SALT</strong>: Used for HMAC-SHA512 key derivation</li>
+</ul>
+<blockquote>
+<p><strong>Privacy note:</strong> The public key and SALT are stored in the URL's <code>#</code> fragment. According to the HTTP specification, the <code>#</code> and everything after it is not sent with requests to the server. The webpage provider cannot access your public key or SALT.</p>
+</blockquote>
+<blockquote>
+<p><strong>Important:</strong> Please keep your bookmark URL safe. Losing the bookmark URL (public key + SALT) means stored data cannot be recovered.</p>
+</blockquote>
+
+<h1 id="-">Notes</h1>
+<ul>
+<li>Uses Cloudflare D1 free database, <strong>reliability is not guaranteed</strong></li>
+<li>Multiple records can be saved under the same public key + SALT, but subject to free D1 capacity limits. Some older data may be deleted later without prior notice</li>
+<li>Please regularly export backups and do not rely solely on D1 storage</li>
+</ul>
+</div>
+</body>
+</html>
