@@ -13,6 +13,8 @@ export interface HtmlMessages {
   backupStep5: string;
   backupStep6: string;
   backupStep7: string;
+  backupStep8: string;
+  backupStep9: string;
   restoreTitle: string;
   restoreStep1: string;
   restoreStep2: string;

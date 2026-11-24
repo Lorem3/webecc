@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CloudFlare D1 备份说明</title>
+  <title>备份说明</title>
   <link rel="stylesheet" href="css/readme.min.css">
   <style lang="">
 
@@ -127,6 +127,28 @@ D1Key = HMAC-SHA512(key=PRK, info="cloudflare-d1-access")[0..32]
 <li>同一公钥 + SALT 下可保存多条记录，但受免费 D1 容量限制，后期可能会删除部分早期数据，恕不另行通知</li>
 <li>请定期导出备份，不要仅依赖 D1 存储</li>
 </ul>
+
+<h1 id="-">保存到 Google Drive</h1>
+<p>除 D1 外，同一份密文也可以保存到<strong>您自己的 Google Drive</strong>。加密方式与上面完全相同：明文先经 Curve25519 加密，再由公钥和 SALT 派生的内容密钥做 AES-GCM-256 加密，最终以 <code>N.</code> 前缀的 Base64 文本上传。</p>
+<blockquote>
+<p><strong>Google 只能看到密文。</strong> 授权范围仅限本应用创建的文件（<code>drive.file</code>），网页不会读取您 Drive 中的其他文件，也无法解密已上传的内容。</p>
+</blockquote>
+
+<h2 id="-">保存位置</h2>
+<p>文件存放在您 Drive 中由本应用创建的 <code>webecc</code> 目录下：</p>
+<pre><code>webecc / P-&lt;公钥前13位&gt; / [文件夹] / &lt;文件名&gt;.ipgd
+</code></pre>
+<ul>
+<li><strong>文件夹</strong>：可选，支持多级路径（如 <code>a/b</code>），不存在时自动创建</li>
+<li><strong>文件名</strong>：必填，对应 Drive 中的 <code>&lt;文件名&gt;.ipgd</code></li>
+<li>同一公钥 + SALT + 相同明文再次保存时，按内容指纹覆盖原文件，不会产生重复副本</li>
+</ul>
+
+<h2 id="-">恢复</h2>
+<p>点击「从 Google Drive 加载」，在列表中选择文件后，密文会填入密文框。之后的解密与 D1 相同：需要书签地址中的<strong>公钥 + SALT</strong>，以及您的<strong>私钥/密码短语</strong>。</p>
+<blockquote>
+<p><strong>注意：</strong> 文件保存在您的 Google 账号中，删除账号或文件即丢失。请同时保管好书签地址和私钥，缺少任意一项都无法恢复明文。</p>
+</blockquote>
 </div>
 </body>
 </html>
